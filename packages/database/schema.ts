@@ -264,6 +264,8 @@ export const organizationInvites = mysqlTable(
 		createdAt: timestamp("createdAt").notNull().defaultNow(),
 		updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
 		expiresAt: timestamp("expiresAt"),
+		token: varchar("token", { length: 32 }).unique(),
+		consumedAt: timestamp("consumedAt"),
 	},
 	(table) => ({
 		organizationIdIndex: index("organization_id_idx").on(table.organizationId),
@@ -272,6 +274,7 @@ export const organizationInvites = mysqlTable(
 			table.invitedByUserId,
 		),
 		statusIndex: index("status_idx").on(table.status),
+		tokenIndex: index("invite_token_idx").on(table.token),
 	}),
 );
 
