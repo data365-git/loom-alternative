@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { serverEnv } from "@cap/env";
-import { eq } from "drizzle-orm";
+import { and, eq, gt, isNull, or } from "drizzle-orm";
 import type { NextAuthOptions } from "next-auth";
 import { getServerSession as _getServerSession } from "next-auth";
 import type { Adapter } from "next-auth/adapters";
@@ -9,8 +9,13 @@ import GoogleProvider from "next-auth/providers/google";
 import type { Provider } from "next-auth/providers/index";
 import WorkOSProvider from "next-auth/providers/workos";
 import { sendEmail } from "../emails/config.ts";
+import { nanoId } from "../helpers.ts";
 import { db } from "../index.ts";
-import { users } from "../schema.ts";
+import {
+	organizationInvites,
+	organizationMembers,
+	users,
+} from "../schema.ts";
 import { isEmailAllowedForSignup } from "./domain-utils.ts";
 import { DrizzleAdapter } from "./drizzle-adapter.ts";
 
@@ -180,6 +185,62 @@ export const authOptions = (): NextAuthOptions => {
 							token.id = user?.id;
 						}
 						return token;
+					}
+
+					// data365 patch: auto-accept any pending invites for this user's email
+					// on every signin. Lets admins invite people without needing to share
+					// the /invite/[id] URL — invitee just signs in and lands in the org.
+					try {
+						const email = (dbUser.email || "").toLowerCase();
+						if (email) {
+							const pending = await db()
+								.select({
+									id: organizationInvites.id,
+									organizationId: organizationInvites.organizationId,
+									role: organizationInvites.role,
+									expiresAt: organizationInvites.expiresAt,
+								})
+								.from(organizationInvites)
+								.where(
+									and(
+										eq(organizationInvites.invitedEmail, email),
+										or(
+											isNull(organizationInvites.expiresAt),
+											gt(organizationInvites.expiresAt, new Date()),
+										),
+									),
+								);
+							for (const invite of pending) {
+								const [already] = await db()
+									.select({ id: organizationMembers.id })
+									.from(organizationMembers)
+									.where(
+										and(
+											eq(organizationMembers.userId, dbUser.id),
+											eq(
+												organizationMembers.organizationId,
+												invite.organizationId,
+											),
+										),
+									)
+									.limit(1);
+								if (!already) {
+									await db()
+										.insert(organizationMembers)
+										.values({
+											id: nanoId(),
+											userId: dbUser.id,
+											organizationId: invite.organizationId,
+											role: invite.role ?? "member",
+										});
+								}
+								await db()
+									.delete(organizationInvites)
+									.where(eq(organizationInvites.id, invite.id));
+							}
+						}
+					} catch (e) {
+						console.error("auto-accept invites failed", e);
 					}
 
 					return {
