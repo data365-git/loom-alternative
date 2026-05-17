@@ -74,6 +74,35 @@ export const authOptions = (): NextAuthOptions => {
 					async sendVerificationRequest({ identifier, token }) {
 						console.log("sendVerificationRequest");
 
+						const normalizedEmail = identifier.trim().toLowerCase();
+						const [existingUser] = await db()
+							.select({ id: users.id })
+							.from(users)
+							.where(eq(users.email, normalizedEmail))
+							.limit(1);
+
+						if (!existingUser) {
+							const [pendingInvite] = await db()
+								.select({ id: organizationInvites.id })
+								.from(organizationInvites)
+								.where(
+									and(
+										eq(organizationInvites.invitedEmail, normalizedEmail),
+										or(
+											isNull(organizationInvites.expiresAt),
+											gt(organizationInvites.expiresAt, new Date()),
+										),
+									),
+								)
+								.limit(1);
+
+							if (!pendingInvite) {
+								throw new Error(
+									"Email not authorized. Contact your administrator to be invited.",
+								);
+							}
+						}
+
 						if (!serverEnv().RESEND_API_KEY) {
 							console.log("\n");
 							console.log(

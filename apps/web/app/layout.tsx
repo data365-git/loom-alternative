@@ -61,16 +61,14 @@ const defaultFont = localFont({
 });
 
 export const metadata: Metadata = {
-	title: "Cap — Beautiful screen recordings, owned by you.",
-	description:
-		"Cap is the open source alternative to Loom. Lightweight, powerful, and cross-platform. Record and share in seconds.",
+	title: "data365",
+	description: "data365 — internal screen recording platform",
 	openGraph: {
-		title: "Cap — Beautiful screen recordings, owned by you.",
-		description:
-			"Cap is the open source alternative to Loom. Lightweight, powerful, and cross-platform. Record and share in seconds.",
+		title: "data365",
+		description: "data365 — internal screen recording platform",
 		type: "website",
-		url: "https://cap.so",
-		images: ["https://cap.so/og.png"],
+		url: "https://cap-web-production-3166.up.railway.app",
+		siteName: "data365",
 	},
 };
 
