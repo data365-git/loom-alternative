@@ -55,7 +55,10 @@ export class ImageUploads extends Effect.Service<ImageUploads>()(
 				const key = ImageUpload.extractFileKey(urlOrKey, s3.isPathStyle);
 
 				return yield* Option.match(key, {
-					onSome: (key) => s3.getSignedObjectUrl(key),
+					onSome: (key) =>
+						s3
+							.getSignedObjectUrl(key)
+							.pipe(Effect.catchTag("S3Error", () => Effect.succeed(urlOrKey))),
 					onNone: () => Effect.succeed(urlOrKey),
 				}).pipe(Effect.map(ImageUpload.ImageUrl.make));
 			});

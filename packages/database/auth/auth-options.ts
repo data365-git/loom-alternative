@@ -11,11 +11,7 @@ import WorkOSProvider from "next-auth/providers/workos";
 import { sendEmail } from "../emails/config.ts";
 import { nanoId } from "../helpers.ts";
 import { db } from "../index.ts";
-import {
-	organizationInvites,
-	organizationMembers,
-	users,
-} from "../schema.ts";
+import { organizationInvites, organizationMembers, users } from "../schema.ts";
 import { isEmailAllowedForSignup } from "./domain-utils.ts";
 import { DrizzleAdapter } from "./drizzle-adapter.ts";
 
@@ -210,6 +206,7 @@ export const authOptions = (): NextAuthOptions => {
 										),
 									),
 								);
+							let firstAcceptedOrgId: string | null = null;
 							for (const invite of pending) {
 								const [already] = await db()
 									.select({ id: organizationMembers.id })
@@ -233,10 +230,19 @@ export const authOptions = (): NextAuthOptions => {
 											organizationId: invite.organizationId,
 											role: invite.role ?? "member",
 										});
+									if (!firstAcceptedOrgId) {
+										firstAcceptedOrgId = invite.organizationId;
+									}
 								}
 								await db()
 									.delete(organizationInvites)
 									.where(eq(organizationInvites.id, invite.id));
+							}
+							if (firstAcceptedOrgId && !dbUser.activeOrganizationId) {
+								await db()
+									.update(users)
+									.set({ activeOrganizationId: firstAcceptedOrgId })
+									.where(eq(users.id, dbUser.id));
 							}
 						}
 					} catch (e) {
