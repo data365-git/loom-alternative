@@ -61,7 +61,7 @@ const defaultFont = localFont({
 });
 
 export const metadata: Metadata = {
-	title: "data365 — pipeline test",
+	title: "data365",
 	description: "data365 — internal screen recording platform",
 	openGraph: {
 		title: "data365",
