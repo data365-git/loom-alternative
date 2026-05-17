@@ -1,18 +1,14 @@
-import crypto from "node:crypto";
 import { serverEnv } from "@cap/env";
-import { and, eq, gt, isNull, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { NextAuthOptions } from "next-auth";
 import { getServerSession as _getServerSession } from "next-auth";
 import type { Adapter } from "next-auth/adapters";
-import EmailProvider from "next-auth/providers/email";
+import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import type { Provider } from "next-auth/providers/index";
 import WorkOSProvider from "next-auth/providers/workos";
-import { sendEmail } from "../emails/config.ts";
-import { nanoId } from "../helpers.ts";
 import { db } from "../index.ts";
-import { organizationInvites, organizationMembers, users } from "../schema.ts";
-import { isEmailAllowedForSignup } from "./domain-utils.ts";
+import { users } from "../schema.ts";
 import { DrizzleAdapter } from "./drizzle-adapter.ts";
 
 export const maxDuration = 120;
@@ -67,69 +63,30 @@ export const authOptions = (): NextAuthOptions => {
 						};
 					},
 				}),
-				EmailProvider({
-					async generateVerificationToken() {
-						return crypto.randomInt(100000, 1000000).toString();
+				CredentialsProvider({
+					id: "email",
+					name: "Email",
+					credentials: {
+						email: { label: "Email", type: "email" },
 					},
-					async sendVerificationRequest({ identifier, token }) {
-						console.log("sendVerificationRequest");
+					async authorize(credentials) {
+						const raw = credentials?.email;
+						if (!raw || typeof raw !== "string") return null;
+						const email = raw.trim().toLowerCase();
 
-						const normalizedEmail = identifier.trim().toLowerCase();
-						const [existingUser] = await db()
-							.select({ id: users.id })
+						const [user] = await db()
+							.select({
+								id: users.id,
+								email: users.email,
+								name: users.name,
+								image: users.image,
+							})
 							.from(users)
-							.where(eq(users.email, normalizedEmail))
+							.where(eq(users.email, email))
 							.limit(1);
 
-						if (!existingUser) {
-							const [pendingInvite] = await db()
-								.select({ id: organizationInvites.id })
-								.from(organizationInvites)
-								.where(
-									and(
-										eq(organizationInvites.invitedEmail, normalizedEmail),
-										or(
-											isNull(organizationInvites.expiresAt),
-											gt(organizationInvites.expiresAt, new Date()),
-										),
-									),
-								)
-								.limit(1);
-
-							if (!pendingInvite) {
-								throw new Error(
-									"Email not authorized. Contact your administrator to be invited.",
-								);
-							}
-						}
-
-						if (!serverEnv().RESEND_API_KEY) {
-							console.log("\n");
-							console.log(
-								"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-							);
-							console.log("🔐 VERIFICATION CODE (Development Mode)");
-							console.log(
-								"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-							);
-							console.log(`📧 Email: ${identifier}`);
-							console.log(`🔢 Code: ${token}`);
-							console.log(`⏱  Expires in: 10 minutes`);
-							console.log(
-								"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-							);
-							console.log("\n");
-						} else {
-							console.log({ identifier, token });
-							const { OTPEmail } = await import("../emails/otp-email");
-							const email = OTPEmail({ code: token, email: identifier });
-							console.log({ email });
-							await sendEmail({
-								email: identifier,
-								subject: `Your Cap Verification Code`,
-								react: email,
-							});
-						}
+						if (!user) return null;
+						return user;
 					},
 				}),
 			];
@@ -148,36 +105,19 @@ export const authOptions = (): NextAuthOptions => {
 			},
 		},
 		callbacks: {
-			async signIn({ user, email, credentials }) {
-				const allowedDomains = serverEnv().CAP_ALLOWED_SIGNUP_DOMAINS;
-				if (!allowedDomains) return true;
+			async signIn({ user, account }) {
+				if (account?.provider === "workos") return true;
 
-				const rawEmail =
-					user?.email ||
-					(typeof email === "string"
-						? email
-						: typeof credentials?.email === "string"
-							? credentials.email
-							: null);
-				if (!rawEmail || typeof rawEmail !== "string") return true;
-				const userEmail = rawEmail.toLowerCase();
+				const email = user?.email?.toLowerCase();
+				if (!email) return false;
 
-				const [existingUser] = await db()
-					.select()
+				const [existing] = await db()
+					.select({ id: users.id })
 					.from(users)
-					.where(eq(users.email, userEmail))
+					.where(eq(users.email, email))
 					.limit(1);
 
-				// Only apply domain restrictions for new users, existing ones can always sign in
-				if (
-					!existingUser &&
-					!isEmailAllowedForSignup(userEmail, allowedDomains)
-				) {
-					console.warn(`Signup blocked for email domain: ${userEmail}`);
-					return false;
-				}
-
-				return true;
+				return !!existing;
 			},
 			async session({ token, session }) {
 				if (!session.user) return session;
@@ -210,72 +150,6 @@ export const authOptions = (): NextAuthOptions => {
 							token.id = user?.id;
 						}
 						return token;
-					}
-
-					// data365 patch: auto-accept any pending invites for this user's email
-					// on every signin. Lets admins invite people without needing to share
-					// the /invite/[id] URL — invitee just signs in and lands in the org.
-					try {
-						const email = (dbUser.email || "").toLowerCase();
-						if (email) {
-							const pending = await db()
-								.select({
-									id: organizationInvites.id,
-									organizationId: organizationInvites.organizationId,
-									role: organizationInvites.role,
-									expiresAt: organizationInvites.expiresAt,
-								})
-								.from(organizationInvites)
-								.where(
-									and(
-										eq(organizationInvites.invitedEmail, email),
-										or(
-											isNull(organizationInvites.expiresAt),
-											gt(organizationInvites.expiresAt, new Date()),
-										),
-									),
-								);
-							let firstAcceptedOrgId: string | null = null;
-							for (const invite of pending) {
-								const [already] = await db()
-									.select({ id: organizationMembers.id })
-									.from(organizationMembers)
-									.where(
-										and(
-											eq(organizationMembers.userId, dbUser.id),
-											eq(
-												organizationMembers.organizationId,
-												invite.organizationId,
-											),
-										),
-									)
-									.limit(1);
-								if (!already) {
-									await db()
-										.insert(organizationMembers)
-										.values({
-											id: nanoId(),
-											userId: dbUser.id,
-											organizationId: invite.organizationId,
-											role: invite.role ?? "member",
-										});
-									if (!firstAcceptedOrgId) {
-										firstAcceptedOrgId = invite.organizationId;
-									}
-								}
-								await db()
-									.delete(organizationInvites)
-									.where(eq(organizationInvites.id, invite.id));
-							}
-							if (firstAcceptedOrgId && !dbUser.activeOrganizationId) {
-								await db()
-									.update(users)
-									.set({ activeOrganizationId: firstAcceptedOrgId })
-									.where(eq(users.id, dbUser.id));
-							}
-						}
-					} catch (e) {
-						console.error("auto-accept invites failed", e);
 					}
 
 					return {

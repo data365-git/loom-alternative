@@ -32,14 +32,10 @@ export function LoginForm() {
 	const next = searchParams?.get("next");
 	const [email, setEmail] = useState("");
 	const [loading, setLoading] = useState(false);
-	const [emailSent, setEmailSent] = useState(false);
 	const [oauthError, setOauthError] = useState(false);
 	const [showOrgInput, setShowOrgInput] = useState(false);
 	const [organizationId, setOrganizationId] = useState("");
 	const [organizationName, setOrganizationName] = useState<string | null>(null);
-	const [lastEmailSentTime, setLastEmailSentTime] = useState<number | null>(
-		null,
-	);
 	const theme = Cookies.get("theme") || "light";
 
 	useEffect(() => {
@@ -75,34 +71,6 @@ export function LoginForm() {
 		};
 		handleErrors();
 	}, [searchParams]);
-
-	useEffect(() => {
-		const pendingPriceId = localStorage.getItem("pendingPriceId");
-		const pendingQuantity = localStorage.getItem("pendingQuantity") ?? "1";
-		if (emailSent && pendingPriceId) {
-			localStorage.removeItem("pendingPriceId");
-			localStorage.removeItem("pendingQuantity");
-
-			// Wait a bit to ensure the user is created
-			setTimeout(async () => {
-				const response = await fetch(`/api/settings/billing/subscribe`, {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						priceId: pendingPriceId,
-						quantity: parseInt(pendingQuantity, 10),
-					}),
-				});
-				const data = await response.json();
-
-				if (data.url) {
-					window.location.href = data.url;
-				}
-			}, 2000);
-		}
-	}, [emailSent]);
 
 	const handleGoogleSignIn = () => {
 		trackEvent("auth_started", {
@@ -252,76 +220,40 @@ export function LoginForm() {
 											e.preventDefault();
 											if (!email) return;
 
-											// Check if we're rate limited on the client side
-											if (lastEmailSentTime) {
-												const timeSinceLastRequest =
-													Date.now() - lastEmailSentTime;
-												const waitTime = 30000; // 30 seconds
-												if (timeSinceLastRequest < waitTime) {
-													const remainingSeconds = Math.ceil(
-														(waitTime - timeSinceLastRequest) / 1000,
-													);
-													toast.error(
-														`Please wait ${remainingSeconds} seconds before requesting a new code`,
-													);
-													return;
-												}
-											}
-
 											setLoading(true);
-											trackEvent("auth_started", {
-												method: "email",
-												is_signup: false,
-												auth_surface: "login",
-											});
 											const normalizedEmail = email.trim().toLowerCase();
-											signIn("email", {
+
+											const res = await signIn("email", {
 												email: normalizedEmail,
 												redirect: false,
 												...(next && next.length > 0
 													? { callbackUrl: next }
 													: {}),
-											})
-												.then((res) => {
-													setLoading(false);
+											});
 
-													if (res?.ok && !res?.error) {
-														setEmailSent(true);
-														setLastEmailSentTime(Date.now());
-														trackEvent("auth_email_sent", {
-															method: "email",
-															is_signup: false,
-															auth_surface: "login",
-															email_domain: normalizedEmail.split("@")[1],
-														});
-														const params = new URLSearchParams({
-															email: normalizedEmail,
-															...(next && { next }),
-															lastSent: Date.now().toString(),
-														});
-														router.push(`/verify-otp?${params.toString()}`);
-													} else {
-														// NextAuth always returns "EmailSignin" for all email provider errors
-														// Since we already check rate limiting on the client side before sending,
-														// if we get an error here, it's likely rate limiting from the server
-														toast.error(
-															"Please wait 30 seconds before requesting a new code",
-														);
-													}
-												})
-												.catch((_error) => {
-													setEmailSent(false);
-													setLoading(false);
-													// Catch block is rarely triggered with NextAuth
-													toast.error("Error sending email - try again?");
-												});
+											setLoading(false);
+
+											if (res?.ok && !res?.error) {
+												router.push(
+													next && next.length > 0 ? next : "/dashboard",
+												);
+												return;
+											}
+
+											if (res?.error === "CredentialsSignin") {
+												toast.error(
+													"This email isn't registered. Ask your admin to add you, then try again.",
+												);
+												return;
+											}
+
+											toast.error("Sign-in failed — try again.");
 										}}
 										className="flex flex-col space-y-3"
 									>
 										<NormalLogin
 											setShowOrgInput={setShowOrgInput}
 											email={email}
-											emailSent={emailSent}
 											setEmail={setEmail}
 											loading={loading}
 											oauthError={oauthError}
@@ -400,7 +332,6 @@ const LoginWithSSO = ({
 const NormalLogin = ({
 	setShowOrgInput,
 	email,
-	emailSent,
 	setEmail,
 	loading,
 	oauthError,
@@ -408,7 +339,6 @@ const NormalLogin = ({
 }: {
 	setShowOrgInput: (show: boolean) => void;
 	email: string;
-	emailSent: boolean;
 	setEmail: (email: string) => void;
 	loading: boolean;
 	oauthError: boolean;
@@ -424,11 +354,11 @@ const NormalLogin = ({
 					name="email"
 					autoFocus
 					type="email"
-					placeholder={emailSent ? "" : "tim@apple.com"}
+					placeholder="tim@apple.com"
 					autoComplete="email"
 					required
 					value={email}
-					disabled={emailSent || loading}
+					disabled={loading}
 					onChange={(e) => {
 						setEmail(e.target.value.toLowerCase());
 					}}
@@ -436,7 +366,7 @@ const NormalLogin = ({
 				<MotionButton
 					variant="dark"
 					type="submit"
-					disabled={loading || emailSent}
+					disabled={loading}
 					icon={<FontAwesomeIcon className="mr-1 size-4" icon={faEnvelope} />}
 				>
 					Login with email
@@ -482,7 +412,7 @@ const NormalLogin = ({
 								type="button"
 								className="flex gap-2 justify-center items-center w-full text-sm"
 								onClick={handleGoogleSignIn}
-								disabled={loading || emailSent}
+								disabled={loading}
 							>
 								<Image src="/google.svg" alt="Google" width={16} height={16} />
 								Login with Google
@@ -508,7 +438,7 @@ const NormalLogin = ({
 								className="w-full"
 								layout
 								onClick={() => setShowOrgInput(true)}
-								disabled={loading || emailSent}
+								disabled={loading}
 							>
 								<LucideArrowUpRight size={20} />
 								Login with SAML SSO
