@@ -1,4 +1,5 @@
 import { Button } from "@cap/ui";
+import { buildEnv } from "@cap/env";
 import { faCheck } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Fit, Layout, useRive } from "@rive-app/react-canvas";
@@ -17,6 +18,7 @@ export const UsageButton = memo(
 		toggleMobileNav?: () => void;
 	}) => {
 		const { sidebarCollapsed } = useDashboardContext();
+		if (!buildEnv.NEXT_PUBLIC_IS_CAP) return null;
 		if (subscribed) {
 			return (
 				<Tooltip position="right" content="Cap Pro">

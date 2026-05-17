@@ -41,7 +41,7 @@ export async function generateMetadata(
 			Option.match({
 				onNone: () => notFound(),
 				onSome: ([video]) => ({
-					title: `${video.name} | Cap Recording`,
+					title: `${video.name} | data365 Recording`,
 					description: "Watch this video on Cap",
 					openGraph: {
 						images: [
@@ -68,7 +68,7 @@ export async function generateMetadata(
 					},
 					twitter: {
 						card: "player",
-						title: `${video.name} | Cap Recording`,
+						title: `${video.name} | data365 Recording`,
 						description: "Watch this video on Cap",
 						images: [
 							new URL(

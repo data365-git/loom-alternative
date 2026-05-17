@@ -386,7 +386,7 @@ const AdminNavItems = ({ toggleMobileNav }: Props) => {
 						</div>
 					)}
 					<p className="mt-2 text-xs text-center truncate text-gray-10">
-						Cap Software, Inc. {new Date().getFullYear()}.
+						data365 {new Date().getFullYear()}.
 					</p>
 				</div>
 			</nav>
