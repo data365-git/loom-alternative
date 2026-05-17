@@ -49,7 +49,7 @@ export function CustomDomain() {
 	});
 
 	const handleRemoveDomain = () => {
-		if (!user.isPro) {
+		if (!user.isPro && buildEnv.NEXT_PUBLIC_IS_CAP) {
 			setShowUpgradeModal(true);
 			return;
 		}

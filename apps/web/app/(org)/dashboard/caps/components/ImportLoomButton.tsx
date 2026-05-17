@@ -1,5 +1,6 @@
 "use client";
 
+import { buildEnv } from "@cap/env";
 import {
 	Button,
 	Dialog,
@@ -33,7 +34,7 @@ export const ImportLoomButton = ({
 	const handleClick = () => {
 		if (!user) return;
 
-		if (!user.isPro) {
+		if (!user.isPro && buildEnv.NEXT_PUBLIC_IS_CAP) {
 			setUpgradeModalOpen(true);
 			return;
 		}

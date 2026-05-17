@@ -1,5 +1,6 @@
 "use client";
 
+import { buildEnv } from "@cap/env";
 import { Button } from "@cap/ui";
 import type { Folder, Organisation } from "@cap/web-domain";
 import { faArrowLeft, faUpload } from "@fortawesome/free-solid-svg-icons";
@@ -26,14 +27,16 @@ export const ImportFilePage = () => {
 	const inputRef = useRef<HTMLInputElement>(null);
 	const { uploadingStore, setUploadStatus } = useUploadingContext();
 	const isUploading = useStore(uploadingStore, (s) => !!s.uploadStatus);
-	const [upgradeModalOpen, setUpgradeModalOpen] = useState(!user?.isPro);
+	const [upgradeModalOpen, setUpgradeModalOpen] = useState(
+		buildEnv.NEXT_PUBLIC_IS_CAP ? !user?.isPro : false,
+	);
 	const [isDragOver, setIsDragOver] = useState(false);
 
 	const processFile = useCallback(
 		async (file: File) => {
 			if (!user || !activeOrganization) return;
 
-			if (!user.isPro) {
+			if (!user.isPro && buildEnv.NEXT_PUBLIC_IS_CAP) {
 				setUpgradeModalOpen(true);
 				return;
 			}
@@ -78,7 +81,7 @@ export const ImportFilePage = () => {
 	const handleBrowseClick = () => {
 		if (!user) return;
 
-		if (!user.isPro) {
+		if (!user.isPro && buildEnv.NEXT_PUBLIC_IS_CAP) {
 			setUpgradeModalOpen(true);
 			return;
 		}

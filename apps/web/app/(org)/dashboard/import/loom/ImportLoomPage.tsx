@@ -234,7 +234,9 @@ export const ImportLoomPage = () => {
 		!!user && user.id === activeOrganization?.organization.ownerId;
 
 	const [mode, setMode] = useState<Mode>("single");
-	const [upgradeModalOpen, setUpgradeModalOpen] = useState(!user?.isPro);
+	const [upgradeModalOpen, setUpgradeModalOpen] = useState(
+		buildEnv.NEXT_PUBLIC_IS_CAP ? !user?.isPro : false,
+	);
 
 	const [loomUrl, setLoomUrl] = useState("");
 	const [isImporting, setIsImporting] = useState(false);
@@ -320,7 +322,7 @@ export const ImportLoomPage = () => {
 	const handleSingleImport = async () => {
 		if (!user || !activeOrganization) return;
 
-		if (!user.isPro) {
+		if (!user.isPro && buildEnv.NEXT_PUBLIC_IS_CAP) {
 			setUpgradeModalOpen(true);
 			return;
 		}
@@ -367,7 +369,7 @@ export const ImportLoomPage = () => {
 	const loadCsvFile = async (file: File) => {
 		if (!user) return;
 
-		if (!user.isPro) {
+		if (!user.isPro && buildEnv.NEXT_PUBLIC_IS_CAP) {
 			setUpgradeModalOpen(true);
 			return;
 		}

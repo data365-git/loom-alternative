@@ -1,5 +1,6 @@
 "use client";
 
+import { buildEnv } from "@cap/env";
 import { CardDescription, Label, Switch } from "@cap/ui";
 import type { Organisation } from "@cap/web-domain";
 import { useMutation } from "@tanstack/react-query";
@@ -132,11 +133,15 @@ export const ShareableLinkIcon = () => {
 						</p>
 					</div>
 					<Switch
-						disabled={!user.isPro || !hasOrganizationIcon || isMutating}
+						disabled={
+							(!user.isPro && buildEnv.NEXT_PUBLIC_IS_CAP) ||
+							!hasOrganizationIcon ||
+							isMutating
+						}
 						checked={useOrganizationIconChecked}
 						onCheckedChange={(checked) => {
 							if (!organizationId) return;
-							if (!user.isPro) {
+							if (!user.isPro && buildEnv.NEXT_PUBLIC_IS_CAP) {
 								setShowUpgradeModal(true);
 								return;
 							}
@@ -156,13 +161,17 @@ export const ShareableLinkIcon = () => {
 					name="shareable-link-icon"
 					onChange={(file) => {
 						if (!file || !organizationId) return;
-						if (!user.isPro) {
+						if (!user.isPro && buildEnv.NEXT_PUBLIC_IS_CAP) {
 							setShowUpgradeModal(true);
 							return;
 						}
 						uploadIcon.mutate({ organizationId, file });
 					}}
-					disabled={!user.isPro || useOrganizationIconChecked || isMutating}
+					disabled={
+						(!user.isPro && buildEnv.NEXT_PUBLIC_IS_CAP) ||
+						useOrganizationIconChecked ||
+						isMutating
+					}
 					isLoading={uploadIcon.isPending}
 					initialPreviewUrl={
 						useOrganizationIconChecked
@@ -171,7 +180,7 @@ export const ShareableLinkIcon = () => {
 					}
 					onRemove={() => {
 						if (!organizationId) return;
-						if (!user.isPro) {
+						if (!user.isPro && buildEnv.NEXT_PUBLIC_IS_CAP) {
 							setShowUpgradeModal(true);
 							return;
 						}

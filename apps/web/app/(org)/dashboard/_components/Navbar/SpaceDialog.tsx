@@ -1,5 +1,6 @@
 "use client";
 
+import { buildEnv } from "@cap/env";
 import {
 	Button,
 	CardDescription,
@@ -252,7 +253,7 @@ export const NewSpaceForm: React.FC<NewSpaceFormProps> = (props) => {
 	};
 
 	const handlePasswordToggle = (checked: boolean) => {
-		if (checked && user && !user.isPro) {
+		if (checked && user && !user.isPro && buildEnv.NEXT_PUBLIC_IS_CAP) {
 			setUpgradeModalOpen(true);
 			return;
 		}
@@ -489,7 +490,7 @@ export const NewSpaceForm: React.FC<NewSpaceFormProps> = (props) => {
 						<div className="grid grid-cols-1 gap-2">
 							{settingOptions.map((option) => {
 								const disabled =
-									(option.pro && !user?.isPro) ||
+									(option.pro && !user?.isPro && buildEnv.NEXT_PUBLIC_IS_CAP) ||
 									((option.value === "disableSummary" ||
 										option.value === "disableChapters") &&
 										settings.disableTranscript);
@@ -502,7 +503,7 @@ export const NewSpaceForm: React.FC<NewSpaceFormProps> = (props) => {
 										<div>
 											<div className="flex items-center gap-1.5">
 												<p className="text-sm text-gray-12">{option.label}</p>
-												{option.pro && (
+												{option.pro && buildEnv.NEXT_PUBLIC_IS_CAP && (
 													<p className="rounded-full bg-blue-11 px-1.5 py-1 text-[10px] font-medium leading-none text-white">
 														Pro
 													</p>

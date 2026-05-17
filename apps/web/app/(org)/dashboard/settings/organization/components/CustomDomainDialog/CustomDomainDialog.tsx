@@ -1,3 +1,4 @@
+import { buildEnv } from "@cap/env";
 import {
 	Button,
 	Dialog,
@@ -384,7 +385,7 @@ const CustomDomainDialog = ({
 					<Stepper steps={steps} onStepClick={handleStepClick} />
 
 					<div className="relative w-full h-full">
-						{!user.isPro && <SubscribeContent />}
+						{!user.isPro && buildEnv.NEXT_PUBLIC_IS_CAP && <SubscribeContent />}
 
 						<div className="p-5">
 							{/* Domain Step */}
@@ -446,7 +447,7 @@ const CustomDomainDialog = ({
 							)}
 
 							{currentStep.id === "domain" &&
-								(user.isPro ? (
+								(user.isPro || !buildEnv.NEXT_PUBLIC_IS_CAP ? (
 									<Button
 										onClick={handleDomainSubmit}
 										size="sm"

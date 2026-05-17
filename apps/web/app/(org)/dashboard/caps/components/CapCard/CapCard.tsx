@@ -363,7 +363,7 @@ export const CapCard = ({
 		Boolean(cap.duration && cap.duration > 0);
 	const handleEditVideo = () => {
 		if (!canEditVideo) return;
-		if (!user.isPro) {
+		if (!user.isPro && buildEnv.NEXT_PUBLIC_IS_CAP) {
 			setEditUpgradeModalOpen(true);
 			return;
 		}
@@ -575,7 +575,8 @@ export const CapCard = ({
 									)}
 									<DropdownMenuItem
 										onClick={() => {
-											if (!user.isPro) setUpgradeModalOpen(true);
+											if (!user.isPro && buildEnv.NEXT_PUBLIC_IS_CAP)
+												setUpgradeModalOpen(true);
 											else setIsPasswordDialogOpen(true);
 										}}
 										className="flex gap-2 items-center rounded-lg"

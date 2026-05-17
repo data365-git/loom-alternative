@@ -1,5 +1,6 @@
 "use client";
 
+import { buildEnv } from "@cap/env";
 import clsx from "clsx";
 import { useDashboardContext } from "../../../Contexts";
 
@@ -85,7 +86,8 @@ export const WebRecorderDialogHeader = ({
 					</svg>
 					<span
 						onClick={() => {
-							if (!user.isPro) setUpgradeModalOpen(true);
+							if (!user.isPro && buildEnv.NEXT_PUBLIC_IS_CAP)
+								setUpgradeModalOpen(true);
 						}}
 						className={planClassName}
 					>

@@ -1,5 +1,6 @@
 "use client";
 
+import { buildEnv } from "@cap/env";
 import { Button, Card, CardDescription, CardHeader, CardTitle } from "@cap/ui";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -68,6 +69,7 @@ export function BillingSummaryCard() {
 	}
 
 	if (!subscription) {
+		if (!buildEnv.NEXT_PUBLIC_IS_CAP) return null;
 		return (
 			<Card className="flex flex-wrap gap-6 justify-between items-center w-full">
 				<CardHeader>

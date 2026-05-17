@@ -1,3 +1,4 @@
+import { buildEnv } from "@cap/env";
 import {
 	Button,
 	DialogContent,
@@ -72,7 +73,7 @@ const CapAIDialog = ({ setOpen }: { setOpen: (open: boolean) => void }) => {
 				</div>
 			</div>
 			<DialogFooter>
-				{!user.isPro ? (
+				{!user.isPro && buildEnv.NEXT_PUBLIC_IS_CAP ? (
 					<div className="flex gap-2 ml-auto">
 						<Button
 							autoFocus={false}
