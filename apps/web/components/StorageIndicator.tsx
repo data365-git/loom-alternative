@@ -17,13 +17,35 @@ function fmtBytes(bytes: number): string {
 }
 
 export function StorageIndicator() {
-	const { data } = useQuery({
+	const { data, isLoading, error } = useQuery({
 		queryKey: ["storage-usage"],
 		queryFn: () => getStorageUsage(),
 		staleTime: 60_000,
+		retry: false,
 	});
 
-	if (!data) return <div className="h-10 animate-pulse bg-gray-3 rounded" />;
+	if (isLoading) {
+		return (
+			<div className="block p-3 rounded-lg border border-gray-5 bg-gray-2">
+				<div className="text-sm font-medium text-gray-12 mb-1.5">Storage</div>
+				<div className="text-xs text-gray-10">Loading…</div>
+			</div>
+		);
+	}
+
+	if (error || !data) {
+		return (
+			<Link
+				href="/dashboard/settings/storage"
+				className="block p-3 rounded-lg border border-red-300 bg-red-50 hover:bg-red-100"
+			>
+				<div className="text-sm font-medium text-red-700 mb-1">Storage</div>
+				<div className="text-xs text-red-600 break-all">
+					{error instanceof Error ? error.message : "Failed to load"}
+				</div>
+			</Link>
+		);
+	}
 
 	const pct = Math.min(100, data.percentUsed);
 	const barColor =
@@ -32,7 +54,7 @@ export function StorageIndicator() {
 	return (
 		<Link
 			href="/dashboard/settings/storage"
-			className="block p-3 rounded-lg border border-gray-4 hover:border-gray-5 hover:bg-gray-3 transition-colors"
+			className="block p-3 rounded-lg border border-gray-5 bg-gray-2 hover:bg-gray-3 transition-colors"
 		>
 			<div className="flex justify-between items-baseline mb-1.5">
 				<span className="text-sm font-medium text-gray-12">Storage</span>
@@ -40,13 +62,13 @@ export function StorageIndicator() {
 					{fmtBytes(data.usedBytes)} / {fmtBytes(data.quotaBytes)}
 				</span>
 			</div>
-			<div className="h-1.5 w-full rounded-full bg-gray-4 overflow-hidden">
+			<div className="h-1.5 w-full rounded-full bg-gray-5 overflow-hidden">
 				<div
 					className={`h-full rounded-full transition-all ${barColor}`}
-					style={{ width: `${pct}%` }}
+					style={{ width: `${Math.max(pct, 1)}%` }}
 				/>
 			</div>
-			<p className="mt-1.5 text-[11px] text-gray-9">
+			<p className="mt-1.5 text-[11px] text-gray-10">
 				{pct >= 99 ? "Quota full" : `${(100 - pct).toFixed(1)}% free`}
 			</p>
 		</Link>
