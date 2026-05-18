@@ -65,18 +65,27 @@ async function probePlaybackSource(
 
 export function detectCrossOriginSupport(
 	url: string,
-	probeWasRedirected = false,
+	_probeWasRedirected = false,
 ): boolean {
-	if (probeWasRedirected) return true;
 	try {
-		const hostname = new URL(url, "https://cap.so").hostname;
+		const resolved = new URL(url, "https://cap.so");
+		if (
+			typeof window !== "undefined" &&
+			resolved.origin === window.location.origin
+		) {
+			return true;
+		}
+		const hostname = resolved.hostname;
 		const isR2OrS3 =
 			hostname.includes("r2.cloudflarestorage.com") ||
 			hostname.includes("s3.amazonaws.com") ||
 			hostname.includes(".s3.");
-		return !isR2OrS3;
+		if (isR2OrS3) return false;
+		const looksLikeMinio =
+			hostname.includes("minio") || hostname.endsWith(".up.railway.app");
+		return !looksLikeMinio;
 	} catch {
-		return true;
+		return false;
 	}
 }
 
