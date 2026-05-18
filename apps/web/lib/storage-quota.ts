@@ -4,7 +4,7 @@ import {
 	videoUploads,
 	videos,
 } from "@cap/database/schema";
-import type { Organisation } from "@cap/web-domain";
+import type { Organisation, User } from "@cap/web-domain";
 import { and, eq, sql } from "drizzle-orm";
 
 const DEFAULT_QUOTA = 50 * 1024 * 1024 * 1024;
@@ -21,7 +21,7 @@ export type QuotaCheckResult =
 
 export async function checkUploadQuota(args: {
 	orgId: Organisation.OrganisationId;
-	userId: string;
+	userId: User.UserId;
 	incomingBytes?: number;
 }): Promise<QuotaCheckResult> {
 	const incoming = Math.max(0, args.incomingBytes ?? 0);

@@ -453,7 +453,7 @@ export const Share = ({
 	}, []);
 
 	const isDisabled = (setting: keyof NonNullable<OrganizationSettings>) =>
-		videoSettings?.[setting] ?? data.orgSettings?.[setting] ?? false;
+		Boolean(videoSettings?.[setting] ?? data.orgSettings?.[setting] ?? false);
 
 	const areChaptersDisabled = isDisabled("disableChapters");
 	const isSummaryDisabled = isDisabled("disableSummary");
