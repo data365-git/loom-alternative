@@ -2,7 +2,7 @@ import { db } from "@cap/database";
 import { getCurrentUser } from "@cap/database/auth/session";
 import { videos, videoUploads } from "@cap/database/schema";
 import { Video } from "@cap/web-domain";
-import { eq } from "drizzle-orm";
+import { and, eq, gt, inArray, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { reconcileStaleEditUpload } from "@/lib/video-edit-processing";
 import { EditVideoClient } from "./EditVideoClient";
@@ -28,10 +28,8 @@ export default async function EditVideoPage(props: {
 			height: videos.height,
 			source: videos.source,
 			isScreenshot: videos.isScreenshot,
-			uploadPhase: videoUploads.phase,
 		})
 		.from(videos)
-		.leftJoin(videoUploads, eq(videos.id, videoUploads.videoId))
 		.where(eq(videos.id, videoId));
 
 	if (
@@ -44,12 +42,23 @@ export default async function EditVideoPage(props: {
 		notFound();
 	}
 
-	if (
-		video.uploadPhase &&
-		["uploading", "processing", "generating_thumbnail"].includes(
-			video.uploadPhase,
+	const [activeUpload] = await db()
+		.select({ phase: videoUploads.phase })
+		.from(videoUploads)
+		.where(
+			and(
+				eq(videoUploads.videoId, videoId),
+				inArray(videoUploads.phase, [
+					"uploading",
+					"processing",
+					"generating_thumbnail",
+				]),
+				gt(videoUploads.startedAt, sql`DATE_SUB(NOW(), INTERVAL 1 HOUR)`),
+			),
 		)
-	) {
+		.limit(1);
+
+	if (activeUpload) {
 		notFound();
 	}
 
