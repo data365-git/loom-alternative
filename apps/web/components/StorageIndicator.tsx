@@ -27,8 +27,12 @@ export function StorageIndicator() {
 	if (isLoading) {
 		return (
 			<div className="block p-3 rounded-lg border border-gray-5 bg-gray-2">
-				<div className="text-sm font-medium text-gray-12 mb-1.5">Storage</div>
-				<div className="text-xs text-gray-10">Loading…</div>
+				<div className="flex justify-between items-baseline mb-1.5">
+					<span className="text-sm font-medium text-gray-12">Storage</span>
+					<span className="h-3 w-16 rounded bg-gray-4 animate-pulse" />
+				</div>
+				<div className="h-1.5 w-full rounded-full bg-gray-4 animate-pulse" />
+				<div className="mt-1.5 h-2.5 w-20 rounded bg-gray-4 animate-pulse" />
 			</div>
 		);
 	}

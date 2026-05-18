@@ -7,10 +7,6 @@ import { notFound } from "next/navigation";
 import { reconcileStaleEditUpload } from "@/lib/video-edit-processing";
 import { EditVideoClient } from "./EditVideoClient";
 
-function isMp4BackedVideo(source: typeof videos.$inferSelect.source) {
-	return source.type === "desktopMP4" || source.type === "webMP4";
-}
-
 export default async function EditVideoPage(props: {
 	params: Promise<{ videoId: string }>;
 }) {
@@ -42,7 +38,6 @@ export default async function EditVideoPage(props: {
 		!video ||
 		video.ownerId !== user.id ||
 		video.isScreenshot ||
-		!isMp4BackedVideo(video.source) ||
 		!video.duration ||
 		video.duration <= 0
 	) {

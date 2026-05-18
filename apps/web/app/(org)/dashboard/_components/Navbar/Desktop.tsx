@@ -1,5 +1,5 @@
 "use client";
-import { Button, Logo } from "@cap/ui";
+import { Button, LogoBadge } from "@cap/ui";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import { useDetectPlatform } from "hooks/useDetectPlatform";
@@ -63,17 +63,19 @@ export const DesktopNav = () => {
 							)}
 						</Link>
 					) : (
-						<Link href="/dashboard">
-							<Logo
-								hideLogoName={sidebarCollapsed}
-								viewBoxDimensions={
-									sidebarCollapsed ? "0 0 40 40" : "0 0 120 40"
-								}
-								className={clsx(
-									"w-[120px] h-[40px]",
-									sidebarCollapsed ? "mx-auto" : "",
-								)}
-							/>
+						<Link
+							href="/dashboard"
+							className={clsx(
+								"flex items-center gap-2",
+								sidebarCollapsed ? "justify-center mx-auto" : "",
+							)}
+						>
+							<LogoBadge className="w-8 h-8 shrink-0" />
+							{!sidebarCollapsed && (
+								<span className="text-base font-semibold text-gray-12 tracking-tight">
+									data365
+								</span>
+							)}
 						</Link>
 					)}
 					<Tooltip

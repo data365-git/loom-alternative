@@ -1,7 +1,7 @@
 "use client";
 
 import { buildEnv, NODE_ENV } from "@cap/env";
-import { Button, Logo } from "@cap/ui";
+import { Button, LogoBadge } from "@cap/ui";
 import type { ViewerSettingKey } from "@cap/web-backend";
 import {
 	faChartSimple,
@@ -342,9 +342,12 @@ export const ShareHeader = ({
 						target="_blank"
 						rel="noreferrer"
 						href={`/?ref=video_${data.id}`}
-						className="inline-flex h-11 items-center"
+						className="inline-flex h-11 items-center gap-2"
 					>
-						<Logo className="h-7 w-auto" />
+						<LogoBadge className="h-7 w-7" />
+						<span className="text-base font-semibold text-gray-12 tracking-tight">
+							data365
+						</span>
 					</a>
 				)}
 			</div>
