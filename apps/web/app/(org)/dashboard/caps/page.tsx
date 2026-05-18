@@ -229,7 +229,13 @@ export default async function CapsPage(props: PageProps<"/dashboard/caps">) {
 			color: folders.color,
 			parentId: folders.parentId,
 			videoCount: sql<number>`(
-        SELECT COUNT(*) FROM videos WHERE videos.folderId = folders.id
+        WITH RECURSIVE folder_tree AS (
+          SELECT id FROM folders f0 WHERE f0.id = folders.id
+          UNION ALL
+          SELECT f.id FROM folders f
+          INNER JOIN folder_tree t ON f.parentId = t.id
+        )
+        SELECT COUNT(*) FROM videos WHERE videos.folderId IN (SELECT id FROM folder_tree)
       )`,
 		})
 		.from(folders)
