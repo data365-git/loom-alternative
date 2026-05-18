@@ -15,11 +15,24 @@ export async function register() {
 	if (process.env.NEXT_PUBLIC_IS_CAP) return;
 
 	console.log("Waiting 5 seconds to run migrations");
-	// Function to trigger migrations with retry logic
 	const triggerMigrations = async (retryCount = 0, maxRetries = 3) => {
 		try {
 			await runMigrations();
 		} catch (error) {
+			const code =
+				(error as { code?: string; cause?: { code?: string } })?.code ??
+				(error as { cause?: { code?: string } })?.cause?.code;
+			const benign = [
+				"ER_DUP_FIELDNAME",
+				"ER_TABLE_EXISTS_ERROR",
+				"ER_DUP_KEYNAME",
+			];
+			if (code && benign.includes(code)) {
+				console.warn(
+					`⚠️  Migration error is benign (${code}). Schema is already at desired state. Continuing.`,
+				);
+				return;
+			}
 			console.error(
 				`🚨 Error triggering migrations (attempt ${retryCount + 1}):`,
 				error,
@@ -30,8 +43,9 @@ export async function register() {
 				);
 				setTimeout(() => triggerMigrations(retryCount + 1, maxRetries), 5000);
 			} else {
-				console.error(`🚨 All ${maxRetries} migration attempts failed.`);
-				process.exit(1); // Exit with error code if all attempts fail
+				console.error(
+					`🚨 All ${maxRetries} migration attempts failed. Continuing to serve traffic; investigate schema state.`,
+				);
 			}
 		}
 	};

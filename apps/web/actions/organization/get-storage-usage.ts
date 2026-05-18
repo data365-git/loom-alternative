@@ -2,13 +2,8 @@
 
 import { db } from "@cap/database";
 import { getCurrentUser } from "@cap/database/auth/session";
-import {
-	folders,
-	users,
-	videoUploads,
-	videos,
-} from "@cap/database/schema";
-import { desc, eq, sql } from "drizzle-orm";
+import { folders, users, videos, videoUploads } from "@cap/database/schema";
+import { eq, sql } from "drizzle-orm";
 
 const DEFAULT_QUOTA = 50 * 1024 * 1024 * 1024;
 
@@ -37,13 +32,13 @@ export async function getStorageUsage() {
 			name: videos.name,
 			folderId: videos.folderId,
 			ownerId: videos.ownerId,
-			bytes: sql<number>`COALESCE(SUM(${videoUploads.total}), 0)`,
+			bytes: sql<number>`COALESCE(SUM(${videoUploads.total}), 0)`.as("bytes"),
 		})
 		.from(videoUploads)
 		.innerJoin(videos, eq(videos.id, videoUploads.videoId))
 		.where(eq(videos.orgId, orgId))
 		.groupBy(videos.id)
-		.orderBy(desc(sql`bytes`))
+		.orderBy(sql`bytes desc`)
 		.limit(50);
 
 	const byUser = await db()
@@ -51,27 +46,27 @@ export async function getStorageUsage() {
 			userId: users.id,
 			email: users.email,
 			name: users.name,
-			bytes: sql<number>`COALESCE(SUM(${videoUploads.total}), 0)`,
+			bytes: sql<number>`COALESCE(SUM(${videoUploads.total}), 0)`.as("bytes"),
 		})
 		.from(videoUploads)
 		.innerJoin(videos, eq(videos.id, videoUploads.videoId))
 		.innerJoin(users, eq(videos.ownerId, users.id))
 		.where(eq(videos.orgId, orgId))
 		.groupBy(users.id)
-		.orderBy(desc(sql`bytes`));
+		.orderBy(sql`bytes desc`);
 
 	const byFolder = await db()
 		.select({
 			folderId: folders.id,
 			folderName: folders.name,
-			bytes: sql<number>`COALESCE(SUM(${videoUploads.total}), 0)`,
+			bytes: sql<number>`COALESCE(SUM(${videoUploads.total}), 0)`.as("bytes"),
 		})
 		.from(videoUploads)
 		.innerJoin(videos, eq(videos.id, videoUploads.videoId))
 		.innerJoin(folders, eq(folders.id, videos.folderId))
 		.where(eq(videos.orgId, orgId))
 		.groupBy(folders.id)
-		.orderBy(desc(sql`bytes`));
+		.orderBy(sql`bytes desc`);
 
 	const folderedBytes = byFolder.reduce((acc, f) => acc + Number(f.bytes), 0);
 	const unfolderedBytes = Math.max(0, usedBytes - folderedBytes);
