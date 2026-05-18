@@ -273,6 +273,24 @@ const getPlaylistResponse = (
 			else if (video.source.type === "MediaConvert")
 				redirect = `${video.ownerId}/${video.id}/output/video_recording_000.m3u8`;
 
+			if (urlParams.videoType === "mp4") {
+				const head = yield* bucket
+					.headObject(redirect)
+					.pipe(Effect.option);
+				const hasResult =
+					Option.isSome(head) && (head.value.ContentLength ?? 0) > 0;
+				if (!hasResult) {
+					const rawKey = yield* resolveRawPreviewKey(video).pipe(
+						Effect.option,
+					);
+					if (Option.isSome(rawKey)) {
+						return HttpServerResponse.redirect(
+							yield* bucket.getSignedObjectUrl(rawKey.value),
+						);
+					}
+				}
+			}
+
 			return HttpServerResponse.redirect(
 				yield* bucket.getSignedObjectUrl(redirect),
 			);
