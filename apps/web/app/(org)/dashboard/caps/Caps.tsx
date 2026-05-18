@@ -244,7 +244,7 @@ export const Caps = ({
 		[data, isUploading, uploadingCapId],
 	);
 
-	if (count === 0 && folders.length === 0) return <EmptyCapState />;
+	const isEmpty = count === 0 && folders.length === 0;
 
 	return (
 		<div className="flex relative flex-col w-full h-full">
@@ -265,6 +265,7 @@ export const Caps = ({
 				<UploadCapButton size="sm" />
 				<WebRecorderDialog />
 			</div>
+			{isEmpty && <EmptyCapState />}
 			{folders.length > 0 && (
 				<>
 					<div className="flex gap-3 items-center mb-6 w-full">
