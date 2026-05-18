@@ -81,8 +81,6 @@ export const CapCardAnalytics = Object.assign(
 				{isOwner && (
 					<Link
 						href={`/dashboard/analytics?capId=${capId}`}
-						target="_blank"
-						rel="noopener noreferrer"
 						className="text-xs text-blue-600 hover:underline"
 					>
 						View analytics

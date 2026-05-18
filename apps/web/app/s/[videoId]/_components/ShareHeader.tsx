@@ -12,6 +12,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Check, Clock, Copy, Globe2, Pencil, Scissors, X } from "lucide-react";
 import moment from "moment";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -338,17 +339,15 @@ export const ShareHeader = ({
 						/>
 					</div>
 				) : (
-					<a
-						target="_blank"
-						rel="noreferrer"
-						href={`/?ref=video_${data.id}`}
+					<Link
+						href={user ? "/dashboard" : "/"}
 						className="inline-flex h-11 items-center gap-2"
 					>
 						<LogoBadge className="h-7 w-7" />
 						<span className="text-base font-semibold text-gray-12 tracking-tight">
 							data365
 						</span>
-					</a>
+					</Link>
 				)}
 			</div>
 		);
