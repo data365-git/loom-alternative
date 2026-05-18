@@ -73,9 +73,8 @@ export const NewFolderDialog: React.FC<Props> = ({
 	onOpenChange,
 	spaceId,
 }) => {
-	const [selectedColor, setSelectedColor] = useState<
-		(typeof FolderOptions)[number]["value"] | null
-	>(null);
+	const [selectedColor, setSelectedColor] =
+		useState<(typeof FolderOptions)[number]["value"]>("normal");
 	const [folderName, setFolderName] = useState<string>("");
 	const router = useRouter();
 
@@ -84,7 +83,7 @@ export const NewFolderDialog: React.FC<Props> = ({
 	});
 
 	useEffect(() => {
-		if (!open) setSelectedColor(null);
+		if (!open) setSelectedColor("normal");
 	}, [open]);
 
 	const folderRefs = useRef(
@@ -112,13 +111,16 @@ export const NewFolderDialog: React.FC<Props> = ({
 			}),
 		onSuccess: () => {
 			setFolderName("");
-			setSelectedColor(null);
+			setSelectedColor("normal");
 			onOpenChange(false);
 			router.refresh();
 			toast.success("Folder created successfully");
 		},
-		onError: () => {
-			toast.error("Failed to create folder");
+		onError: (err) => {
+			console.error("FolderCreate failed:", err);
+			const msg =
+				err instanceof Error ? err.message : "Failed to create folder";
+			toast.error(msg);
 		},
 	});
 
@@ -148,13 +150,7 @@ export const NewFolderDialog: React.FC<Props> = ({
 											: "border-gray-4 hover:bg-gray-3 hover:border-gray-5 bg-transparent",
 									)}
 									key={`rive-${option.value}`}
-									onClick={() => {
-										if (selectedColor === option.value) {
-											setSelectedColor(null);
-											return;
-										}
-										setSelectedColor(option.value);
-									}}
+									onClick={() => setSelectedColor(option.value)}
 									onMouseEnter={() => {
 										const folderRef = folderRefs.current[option.value]?.current;
 										if (!folderRef) return;
@@ -183,18 +179,13 @@ export const NewFolderDialog: React.FC<Props> = ({
 						Cancel
 					</Button>
 					<Button
-						onClick={() => {
-							if (selectedColor === null) return;
-							createFolder.mutate({ name: folderName, color: selectedColor });
-						}}
+						onClick={() =>
+							createFolder.mutate({ name: folderName, color: selectedColor })
+						}
 						size="sm"
 						spinner={createFolder.isPending}
 						variant="dark"
-						disabled={
-							!selectedColor ||
-							!folderName.trim().length ||
-							createFolder.isPending
-						}
+						disabled={!folderName.trim().length || createFolder.isPending}
 					>
 						{createFolder.isPending ? "Creating..." : "Create"}
 					</Button>

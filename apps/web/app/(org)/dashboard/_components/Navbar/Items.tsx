@@ -33,7 +33,7 @@ import { cloneElement, type RefObject, useRef, useState } from "react";
 import { NewOrganization } from "@/components/forms/NewOrganization";
 import { SignedImageUrl } from "@/components/SignedImageUrl";
 import { Tooltip } from "@/components/Tooltip";
-import { UsageButton } from "@/components/UsageButton";
+import { StorageIndicator } from "@/components/StorageIndicator";
 import {
 	canViewOrganizationSettings,
 	getEffectiveOrganizationRole,
@@ -371,23 +371,7 @@ const AdminNavItems = ({ toggleMobileNav }: Props) => {
 					<SpacesList toggleMobileNav={() => toggleMobileNav?.()} />
 				</div>
 				<div className="pb-4 mt-auto w-full">
-					<UsageButton
-						toggleMobileNav={() => toggleMobileNav?.()}
-						subscribed={user.isPro}
-					/>
-					{buildEnv.NEXT_PUBLIC_IS_CAP && (
-						<div className="flex justify-center items-center mt-2">
-							<Link
-								href="/dashboard/refer"
-								className="text-sm underline text-gray-10 hover:text-gray-12"
-							>
-								Earn 40% Referral
-							</Link>
-						</div>
-					)}
-					<p className="mt-2 text-xs text-center truncate text-gray-10">
-						Cap Software, Inc. {new Date().getFullYear()}.
-					</p>
+					<StorageIndicator />
 				</div>
 			</nav>
 			<DialogContent className="p-0 w-full max-w-md rounded-xl bg-gray-2">

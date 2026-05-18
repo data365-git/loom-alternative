@@ -343,8 +343,9 @@ const UpgradeModalImpl = ({
 	);
 };
 
-export const UpgradeModal =
-	buildEnv.NEXT_PUBLIC_IS_CAP !== "true" ? () => null : UpgradeModalImpl;
+export function UpgradeModal(_props: UpgradeModalProps) {
+	return null;
+}
 
 const ProRiveArt = memo(() => {
 	const { RiveComponent: ProModal } = useRive({
