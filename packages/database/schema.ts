@@ -202,6 +202,9 @@ export const organizations = mysqlTable(
 			disableComments?: boolean;
 			hideShareableLinkCapLogo?: boolean;
 			shareableLinkUseOrganizationIcon?: boolean;
+			storageQuotaBytes?: number;
+			userQuotaBytes?: number;
+			enforceQuota?: boolean;
 		}>(),
 		iconUrl: varchar("iconUrl", {
 			length: 1024,

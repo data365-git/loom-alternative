@@ -18,6 +18,7 @@ import { Effect, Option } from "effect";
 import { revalidatePath } from "next/cache";
 import { requireOrganizationAccess } from "@/actions/organization/authorization";
 import { runPromise } from "@/lib/server";
+import { checkUploadQuota } from "@/lib/storage-quota";
 
 const MAX_S3_DELETE_ATTEMPTS = 3;
 const S3_DELETE_RETRY_BACKOFF_MS = 250;
@@ -138,6 +139,14 @@ export async function createVideoAndGetUploadUrl({
 			throw new Error("upgrade_required");
 
 		await requireOrganizationAccess(user.id, orgId);
+
+		const quotaCheck = await checkUploadQuota({
+			orgId,
+			userId: user.id,
+		});
+		if (!quotaCheck.ok) {
+			throw new Error(quotaCheck.message);
+		}
 
 		const date = new Date();
 		const formattedDate = `${date.getDate()} ${date.toLocaleString("default", {

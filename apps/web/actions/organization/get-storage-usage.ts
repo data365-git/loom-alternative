@@ -2,7 +2,13 @@
 
 import { db } from "@cap/database";
 import { getCurrentUser } from "@cap/database/auth/session";
-import { folders, users, videoUploads, videos } from "@cap/database/schema";
+import {
+	folders,
+	organizations,
+	users,
+	videoUploads,
+	videos,
+} from "@cap/database/schema";
 import type { Organisation } from "@cap/web-domain";
 import { eq, sql } from "drizzle-orm";
 
@@ -12,6 +18,9 @@ type StorageUsage = {
 	usedBytes: number;
 	quotaBytes: number;
 	percentUsed: number;
+	userQuotaBytes: number | null;
+	enforceQuota: boolean;
+	isOwner: boolean;
 	byVideo: Array<{
 		videoId: string;
 		name: string;
@@ -24,6 +33,7 @@ type StorageUsage = {
 		email: string;
 		name: string | null;
 		bytes: number;
+		overQuota: boolean;
 	}>;
 	byFolder: Array<{
 		folderId: string | null;
@@ -47,14 +57,17 @@ async function safe<T>(
 
 export async function getStorageUsage(): Promise<StorageUsage> {
 	const me = await getCurrentUser();
-	const quotaBytes = Number(
+	const envQuota = Number(
 		process.env.STORAGE_QUOTA_BYTES_PER_ORG ?? DEFAULT_QUOTA,
 	);
 
 	const empty: StorageUsage = {
 		usedBytes: 0,
-		quotaBytes,
+		quotaBytes: envQuota,
 		percentUsed: 0,
+		userQuotaBytes: null,
+		enforceQuota: false,
+		isOwner: false,
 		byVideo: [],
 		byUser: [],
 		byFolder: [{ folderId: null, folderName: "(Root — no folder)", bytes: 0 }],
@@ -65,6 +78,26 @@ export async function getStorageUsage(): Promise<StorageUsage> {
 	}
 
 	const orgId = me.activeOrganizationId as Organisation.OrganisationId;
+
+	const orgRow = await safe(
+		"orgRow",
+		async () => {
+			const [row] = await db()
+				.select({
+					ownerId: organizations.ownerId,
+					settings: organizations.settings,
+				})
+				.from(organizations)
+				.where(eq(organizations.id, orgId));
+			return row ?? null;
+		},
+		null as { ownerId: string; settings: typeof organizations.$inferSelect.settings } | null,
+	);
+
+	const quotaBytes = Number(orgRow?.settings?.storageQuotaBytes ?? envQuota);
+	const userQuotaBytes = orgRow?.settings?.userQuotaBytes ?? null;
+	const enforceQuota = Boolean(orgRow?.settings?.enforceQuota);
+	const isOwner = orgRow?.ownerId === me.id;
 
 	const usedBytes = await safe(
 		"usedBytes",
@@ -119,12 +152,17 @@ export async function getStorageUsage(): Promise<StorageUsage> {
 			.where(eq(videos.orgId, orgId))
 			.groupBy(users.id)
 			.orderBy(sql`bytes desc`);
-		return rows.map((u) => ({
-			userId: String(u.userId),
-			email: u.email,
-			name: u.name,
-			bytes: Number(u.bytes),
-		}));
+		return rows.map((u) => {
+			const bytes = Number(u.bytes);
+			return {
+				userId: String(u.userId),
+				email: u.email,
+				name: u.name,
+				bytes,
+				overQuota:
+					userQuotaBytes != null && bytes > userQuotaBytes && userQuotaBytes > 0,
+			};
+		});
 	}, []);
 
 	const byFolder = await safe("byFolder", async () => {
@@ -154,6 +192,9 @@ export async function getStorageUsage(): Promise<StorageUsage> {
 		usedBytes,
 		quotaBytes,
 		percentUsed: Math.min(100, (usedBytes / quotaBytes) * 100),
+		userQuotaBytes,
+		enforceQuota,
+		isOwner,
 		byVideo,
 		byUser,
 		byFolder: [
