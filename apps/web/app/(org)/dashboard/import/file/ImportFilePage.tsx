@@ -18,6 +18,7 @@ import {
 	type UploadStatus,
 	useUploadingContext,
 } from "@/app/(org)/dashboard/caps/UploadingContext";
+import { PreUploadTrimmer } from "@/components/PreUploadTrimmer";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { uploadWithTarget } from "@/utils/upload-target";
 
@@ -31,6 +32,7 @@ export const ImportFilePage = () => {
 		buildEnv.NEXT_PUBLIC_IS_CAP ? !user?.isPro : false,
 	);
 	const [isDragOver, setIsDragOver] = useState(false);
+	const [pendingFile, setPendingFile] = useState<File | null>(null);
 
 	const processFile = useCallback(
 		async (file: File) => {
@@ -52,15 +54,20 @@ export const ImportFilePage = () => {
 		[user, activeOrganization, setUploadStatus, router],
 	);
 
-	const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
-		await processFile(file);
+		const maxSize = 500 * 1024 * 1024;
+		if (file.size > maxSize) {
+			void processFile(file);
+		} else {
+			setPendingFile(file);
+		}
 		if (inputRef.current) inputRef.current.value = "";
 	};
 
 	const handleDrop = useCallback(
-		async (e: React.DragEvent) => {
+		(e: React.DragEvent) => {
 			e.preventDefault();
 			setIsDragOver(false);
 			const file = e.dataTransfer.files[0];
@@ -73,7 +80,12 @@ export const ImportFilePage = () => {
 				toast.error("Please drop a video file.");
 				return;
 			}
-			await processFile(file);
+			const maxSize = 500 * 1024 * 1024;
+			if (file.size > maxSize) {
+				void processFile(file);
+			} else {
+				setPendingFile(file);
+			}
 		},
 		[processFile],
 	);
@@ -191,6 +203,17 @@ export const ImportFilePage = () => {
 				open={upgradeModalOpen}
 				onOpenChange={setUpgradeModalOpen}
 			/>
+
+			{pendingFile && (
+				<PreUploadTrimmer
+					file={pendingFile}
+					onConfirm={(trimmed) => {
+						setPendingFile(null);
+						void processFile(trimmed);
+					}}
+					onCancel={() => setPendingFile(null)}
+				/>
+			)}
 		</div>
 	);
 };
