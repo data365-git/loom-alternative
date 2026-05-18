@@ -4,12 +4,11 @@ import { db } from "@cap/database";
 import { getCurrentUser } from "@cap/database/auth/session";
 import {
 	folders,
-	storageIntegrations,
-	storageObjects,
 	users,
+	videoUploads,
 	videos,
 } from "@cap/database/schema";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 
 const DEFAULT_QUOTA = 50 * 1024 * 1024 * 1024;
 
@@ -24,19 +23,11 @@ export async function getStorageUsage() {
 
 	const [usedRow] = await db()
 		.select({
-			usedBytes: sql<number>`COALESCE(SUM(${storageObjects.contentLength}), 0)`,
+			usedBytes: sql<number>`COALESCE(SUM(${videoUploads.total}), 0)`,
 		})
-		.from(storageObjects)
-		.innerJoin(
-			storageIntegrations,
-			eq(storageObjects.integrationId, storageIntegrations.id),
-		)
-		.where(
-			and(
-				eq(storageIntegrations.organizationId, orgId),
-				eq(storageObjects.uploadStatus, "complete"),
-			),
-		);
+		.from(videoUploads)
+		.innerJoin(videos, eq(videos.id, videoUploads.videoId))
+		.where(eq(videos.orgId, orgId));
 
 	const usedBytes = Number(usedRow?.usedBytes ?? 0);
 
@@ -46,13 +37,11 @@ export async function getStorageUsage() {
 			name: videos.name,
 			folderId: videos.folderId,
 			ownerId: videos.ownerId,
-			bytes: sql<number>`COALESCE(SUM(${storageObjects.contentLength}), 0)`,
+			bytes: sql<number>`COALESCE(SUM(${videoUploads.total}), 0)`,
 		})
-		.from(storageObjects)
-		.innerJoin(videos, eq(storageObjects.videoId, videos.id))
-		.where(
-			and(eq(videos.orgId, orgId), eq(storageObjects.uploadStatus, "complete")),
-		)
+		.from(videoUploads)
+		.innerJoin(videos, eq(videos.id, videoUploads.videoId))
+		.where(eq(videos.orgId, orgId))
 		.groupBy(videos.id)
 		.orderBy(desc(sql`bytes`))
 		.limit(50);
@@ -62,14 +51,12 @@ export async function getStorageUsage() {
 			userId: users.id,
 			email: users.email,
 			name: users.name,
-			bytes: sql<number>`COALESCE(SUM(${storageObjects.contentLength}), 0)`,
+			bytes: sql<number>`COALESCE(SUM(${videoUploads.total}), 0)`,
 		})
-		.from(storageObjects)
-		.innerJoin(videos, eq(storageObjects.videoId, videos.id))
+		.from(videoUploads)
+		.innerJoin(videos, eq(videos.id, videoUploads.videoId))
 		.innerJoin(users, eq(videos.ownerId, users.id))
-		.where(
-			and(eq(videos.orgId, orgId), eq(storageObjects.uploadStatus, "complete")),
-		)
+		.where(eq(videos.orgId, orgId))
 		.groupBy(users.id)
 		.orderBy(desc(sql`bytes`));
 
@@ -77,19 +64,17 @@ export async function getStorageUsage() {
 		.select({
 			folderId: folders.id,
 			folderName: folders.name,
-			bytes: sql<number>`COALESCE(SUM(${storageObjects.contentLength}), 0)`,
+			bytes: sql<number>`COALESCE(SUM(${videoUploads.total}), 0)`,
 		})
-		.from(storageObjects)
-		.innerJoin(videos, eq(storageObjects.videoId, videos.id))
-		.innerJoin(folders, eq(videos.folderId, folders.id))
-		.where(
-			and(eq(videos.orgId, orgId), eq(storageObjects.uploadStatus, "complete")),
-		)
+		.from(videoUploads)
+		.innerJoin(videos, eq(videos.id, videoUploads.videoId))
+		.innerJoin(folders, eq(folders.id, videos.folderId))
+		.where(eq(videos.orgId, orgId))
 		.groupBy(folders.id)
 		.orderBy(desc(sql`bytes`));
 
 	const folderedBytes = byFolder.reduce((acc, f) => acc + Number(f.bytes), 0);
-	const unfolderedBytes = usedBytes - folderedBytes;
+	const unfolderedBytes = Math.max(0, usedBytes - folderedBytes);
 
 	return {
 		usedBytes,
