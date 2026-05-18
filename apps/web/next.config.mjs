@@ -55,6 +55,12 @@ const nextConfig = {
 			"date-fns",
 		],
 		turbopackFileSystemCacheForDev: true,
+		serverActions: {
+			allowedOrigins: [
+				"cap-web-production-4817.up.railway.app",
+				"localhost:3000",
+			],
+		},
 	},
 	images: {
 		remotePatterns: [
@@ -77,6 +83,14 @@ const nextConfig = {
 				pathname: "**",
 			},
 		].filter(Boolean),
+	},
+	async headers() {
+		return [
+			{
+				source: "/dashboard/:path*",
+				headers: [{ key: "Cache-Control", value: "no-store, must-revalidate" }],
+			},
+		];
 	},
 	async rewrites() {
 		return [
