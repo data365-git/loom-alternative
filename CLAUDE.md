@@ -120,6 +120,30 @@ cd apps/desktop && pnpm dev      # Start SolidStart + Tauri dev
 pnpm tauri:build                 # Build desktop app (release)
 ```
 
+## Production Deployment (Railway)
+
+- **Fork**: `data365-git/loom-alternative` (forked from `CapSoftware/Cap`)
+- **Railway project**: `data365-cap`
+- **Production URL**: https://cap-web-production-4817.up.railway.app
+- **Auto-deploy**: every push to `main` on `data365-git/loom-alternative` triggers a Railway build (~3–5 min to live)
+- **Branding**: internally branded as "data365" (layout.tsx title, metadata, OG tags)
+
+### Railway services
+
+| Service | Type | Notes |
+|---------|------|-------|
+| `cap-web` | GitHub → Dockerfile (`apps/web/Dockerfile`) | Listens on `$PORT=8080`; domain targets port 8080 |
+| `MySQL` | `mysql:8` image | Volume-backed; `MYSQL_ROOT_PASSWORD` baked in at first init — changing after init requires volume reset |
+| `minio` | `minio/minio` image | S3-compatible storage; use `minio/minio`, NOT `bitnami/minio` |
+| `media-server` | `ghcr.io/capsoftware/cap-media-server:latest` | Prebuilt image; do NOT build from source (Rust workspace issue) |
+
+### Deployment gotchas
+- **Env vars**: always use `variableCollectionUpsert` with `skipDeploys: true` to batch-set vars, then trigger one deploy. Setting vars one-by-one triggers a build per var (deploy storm).
+- **After deploy**: `curl -sL <url>` to verify — a SUCCESS status with HTTP 502 means the app crashed on startup; check runtime logs (not build logs).
+- **MySQL password**: baked in at first container init. Overriding `MYSQL_ROOT_PASSWORD` after the volume is populated does nothing; must delete the volume and redeploy (data loss).
+
+---
+
 ## Development Environment Guidelines
 
 ### Server Management
@@ -614,6 +638,24 @@ For any domain not listed above: find the equivalent senior practitioner instinc
 
 ---
 
+## Multi-Language / i18n Rule
+
+If the project has more than one interface language (check for `/locales`, `/i18n`, `/translations`, `i18next`, `next-intl`, or any `*.json` / `*.po` translation files):
+
+**Every UI string change touches ALL languages — no exceptions.**
+
+- When adding a new label, button, error, tooltip, or any user-facing text → add it to **every** locale file in the same commit
+- When editing an existing string → update the matching key in **every** locale
+- When deleting a string → remove it from **every** locale
+- The current/default interface language (usually `en` or whatever is configured as `defaultLocale`) is where you write the source-of-truth copy first — then translate to all others
+- For translations, write them properly in each target language — not English placeholders. Use the actual translated text, even if rough; mark uncertain ones with a `// TRANSLATE` comment so the user can refine
+
+**Never leave a key missing in one locale.** That causes the UI to fall back to the key name (`"common.submit"`) or break entirely.
+
+If unsure which languages the project supports, list the locale files first and confirm with the user before adding strings.
+
+---
+
 ## Behavioral Guidelines
 
 These rules reduce common LLM coding mistakes. They bias toward caution — use judgment on trivial tasks.
@@ -668,6 +710,74 @@ For multi-step tasks, state a brief plan first:
 
 Run the check before saying "done." If you can't verify (e.g. needs a browser), say so explicitly and describe what the user should check.
 
+**"Build succeeded" ≠ "app works."** Always hit the actual URL / run the real flow before declaring success. A green CI badge with a 502 in production is still a failure.
+
+### 5. Don't Drift From the Stated Goal
+
+**When the user states an explicit goal — execute that goal. Don't substitute "easier but different."**
+
+If the user says "build a fresh project from scratch" and you see an existing similar project, do NOT silently switch to "use the existing one." That's drift, not pragmatism.
+
+- Re-read the user's words before each major decision branch
+- If a shortcut seems compelling, surface it explicitly and ask — don't take it silently
+- "Full ownership" / "from scratch" / "rewrite cleanly" are explicit signals — respect them
+
+### 6. Batch Side-Effect Operations
+
+**When N API calls each trigger an expensive side effect (deploy, rebuild, restart), use the batch API or a "skip side-effect" flag — not a for-loop.**
+
+Concrete pattern (Railway): setting 20 env vars one-by-one triggers 20 builds, all but the last get superseded and FAIL. Instead: `variableCollectionUpsert` with `skipDeploys: true`, then ONE manual deploy at the end.
+
+General rule: before writing a loop that calls a mutation, ask "does each call trigger a deploy / rebuild / notification / charge?" If yes, find the batch endpoint or a skip-side-effect flag.
+
+### 7. Read Failure Logs Before Iterating
+
+**One minute reading the actual error beats five minutes guessing.**
+
+When something fails:
+1. Get the real log output (build log, runtime log, deployment diagnosis)
+2. Quote the exact error in your next response
+3. THEN form a hypothesis
+
+Do NOT iterate on "let me try X" without seeing the error from the previous attempt. Each blind iteration wastes time AND user trust.
+
+### 8. Respect User Pause Signals
+
+**When the user says "stop," "wait," "you're slowing down," "let me check" — STOP all action and read carefully.**
+
+The user usually sees a pattern (deploy storm, drift from goal, wrong direction) before you do. Their pause is data, not friction.
+
+After a pause: summarize what happened, diagnose what went wrong, present a clean plan, ask for approval. Do not resume execution until they explicitly say go.
+
 ---
 
-**These guidelines are working when:** diffs are clean, rewrites are rare, and questions come before implementation — not after.
+**These guidelines are working when:** diffs are clean, rewrites are rare, questions come before implementation — not after, and the user never has to hit the brakes mid-task.
+
+---
+
+## Railway-Specific Gotchas
+
+These are real lessons from production Railway deployments. Apply when working on any Railway project.
+
+### Deployment hygiene
+- **NEVER call `variableUpsert` in a loop.** Use `variableCollectionUpsert` with `skipDeploys: true` for all env vars, then trigger ONE deploy at the end. Each `variableUpsert` without `skipDeploys: true` triggers a fresh build — running it 20 times creates a deploy storm where all but the last build get superseded and fail.
+- **Always batch then deploy:** set ALL env vars / volumes / service config first, verify by reading back, THEN trigger deploy. Never the other way around.
+- **A "FAILED" deploy completed in under 30 seconds** is almost always either (a) superseded by a newer deploy, (b) `service config at '/railway.toml' not found`, or (c) missing GitHub App access. Read logs to disambiguate.
+
+### Image-based services (databases, MinIO, etc.)
+- **MySQL `MYSQL_ROOT_PASSWORD` is baked in at FIRST init.** Overriding it after the volume is populated does NOT change the actual MySQL user password. Fix: delete the volume, redeploy, MySQL re-initializes with the current env var. (Lose all data — don't do this on a production DB.)
+- **Same applies to Postgres, MongoDB, Redis** — first-init passwords are permanent unless you reset the data volume or run `ALTER USER` manually.
+- **`minio/minio` and `bitnami/minio` are NOT drop-in compatible.** Different env var conventions, different start commands, different default paths. Pick one and use its documented config — don't mix.
+
+### GitHub-sourced services
+- **`railwayConfigFile: /railway.toml` requires that file to actually exist on the deployed branch.** If `railway.toml` is on `data365-patches` but you deploy `main`, you get `service config at '/railway.toml' not found`. Either (a) put railway.toml on the deployed branch, or (b) clear the `railwayConfigFile` setting and configure via API (`dockerfilePath`, `healthcheckPath`, etc.).
+- **Setting `dockerfilePath` via API forces DOCKERFILE builder.** The `Builder` enum in GraphQL doesn't include `DOCKERFILE` — it's auto-detected from `dockerfilePath` being non-null.
+- **Don't try to build a Rust workspace member with `rootDirectory: apps/<crate>`.** Cargo workspace members reference sibling crates at the repo root — cutting off the workspace breaks the build. For services you don't customize (e.g. media-server), use a prebuilt image (`ghcr.io/...`) instead.
+
+### Networking
+- **Next.js in Docker on Railway listens on `$PORT=8080` by default**, not the `EXPOSE 3000` from your Dockerfile. The Railway PORT env var wins. Set your public domain's `targetPort` to 8080, or override `PORT=3000` in env vars.
+- **Internal service-to-service URLs use `${{<service-name>.RAILWAY_PRIVATE_DOMAIN}}`** in env vars. Use lowercase service names exactly as named in the dashboard. These resolve only inside Railway's private network.
+
+### Verification
+- **Always `curl -sL <url>` after deploy succeeds.** A SUCCESS status with HTTP 502 means the app crashed on startup — check runtime logs (not build logs) for the real error.
+- **Read runtime logs via `deploymentLogs`** (not `buildLogs`) for crashes after the build phase.
