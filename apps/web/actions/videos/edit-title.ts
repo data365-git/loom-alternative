@@ -10,8 +10,12 @@ import { revalidatePath } from "next/cache";
 export async function editTitle(videoId: Video.VideoId, title: string) {
 	const user = await getCurrentUser();
 
-	if (!user || !title || !videoId) {
+	const trimmed = typeof title === "string" ? title.trim() : "";
+	if (!user || !trimmed || !videoId) {
 		throw new Error("Missing required data for updating video title");
+	}
+	if (trimmed.length > 255) {
+		throw new Error("Title must be 255 characters or fewer");
 	}
 
 	const userId = user.id;
@@ -33,7 +37,7 @@ export async function editTitle(videoId: Video.VideoId, title: string) {
 	try {
 		await db()
 			.update(videos)
-			.set({ name: title })
+			.set({ name: trimmed })
 			.where(eq(videos.id, videoId));
 
 		revalidatePath("/dashboard/caps");

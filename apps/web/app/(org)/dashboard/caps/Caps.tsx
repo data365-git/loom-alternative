@@ -82,6 +82,7 @@ export const Caps = ({
 	const [openNewFolderDialog, setOpenNewFolderDialog] = useState(false);
 	const totalPages = Math.ceil(count / limit);
 	const previousCountRef = useRef<number>(0);
+	const bulkDeleteToastRef = useRef<string | number | undefined>(undefined);
 	const [selectedCaps, setSelectedCaps] = useState<Video.VideoId[]>([]);
 	const [isDraggingCap, setIsDraggingCap] = useState(false);
 
@@ -137,11 +138,13 @@ export const Caps = ({
 			}
 		}),
 		onMutate: (ids: Video.VideoId[]) => {
-			toast.loading(
+			bulkDeleteToastRef.current = toast.loading(
 				`Deleting ${ids.length} cap${ids.length === 1 ? "" : "s"}...`,
 			);
 		},
 		onSuccess: (data: { success: number; error?: number }) => {
+			toast.dismiss(bulkDeleteToastRef.current);
+			bulkDeleteToastRef.current = undefined;
 			setSelectedCaps([]);
 			router.refresh();
 			if (data.error) {
@@ -161,6 +164,8 @@ export const Caps = ({
 			}
 		},
 		onError: (error: unknown) => {
+			toast.dismiss(bulkDeleteToastRef.current);
+			bulkDeleteToastRef.current = undefined;
 			const message =
 				error instanceof Error
 					? error.message

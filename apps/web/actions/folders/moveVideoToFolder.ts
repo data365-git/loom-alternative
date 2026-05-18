@@ -26,13 +26,16 @@ export async function moveVideoToFolder({
 
 	if (!videoId) throw new Error("Video ID is required");
 
-	// Get the current video to know its original folder
+	// Get the current video to know its original folder and verify ownership
 	const [currentVideo] = await db()
-		.select({ folderId: videos.folderId, id: videos.id })
+		.select({ folderId: videos.folderId, id: videos.id, ownerId: videos.ownerId })
 		.from(videos)
 		.where(eq(videos.id, videoId));
 
-	const originalFolderId = currentVideo?.folderId;
+	if (!currentVideo) throw new Error("Video not found");
+	if (currentVideo.ownerId !== user.id) throw new Error("Unauthorized");
+
+	const originalFolderId = currentVideo.folderId;
 
 	const isAllSpacesEntry = spaceId === user.activeOrganizationId;
 

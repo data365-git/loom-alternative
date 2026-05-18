@@ -33,9 +33,11 @@ export async function editDate(videoId: Video.VideoId, date: string) {
 
 	try {
 		const newDate = new Date(date);
+		if (isNaN(newDate.getTime())) {
+			throw new Error("Invalid date value");
+		}
 		const currentDate = new Date();
 
-		// Prevent future dates
 		if (newDate > currentDate) {
 			throw new Error("Cannot set a date in the future");
 		}

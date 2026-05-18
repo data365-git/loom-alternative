@@ -1,8 +1,18 @@
 "use client";
 
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { getStorageUsage } from "@/actions/organization/get-storage-usage";
+
+function isStaleActionError(err: unknown): boolean {
+	if (!(err instanceof Error)) return false;
+	return (
+		err.message.includes("Failed to find Server Action") ||
+		err.message.includes("was not found on the server") ||
+		err.message.includes("older or newer deployment")
+	);
+}
 
 function fmtBytes(bytes: number): string {
 	if (bytes < 1024) return `${bytes} B`;
@@ -37,16 +47,29 @@ export function StorageIndicator() {
 		);
 	}
 
+	useEffect(() => {
+		if (isStaleActionError(error)) {
+			const t = setTimeout(() => window.location.reload(), 1500);
+			return () => clearTimeout(t);
+		}
+	}, [error]);
+
 	if (error || !data) {
+		if (isStaleActionError(error)) {
+			return (
+				<div className="block p-3 rounded-lg border border-gray-5 bg-gray-2">
+					<div className="text-sm font-medium text-gray-12 mb-1">Storage</div>
+					<div className="text-xs text-gray-10">Updating…</div>
+				</div>
+			);
+		}
 		return (
 			<Link
 				href="/dashboard/settings/storage"
 				className="block p-3 rounded-lg border border-red-300 bg-red-50 hover:bg-red-100"
 			>
 				<div className="text-sm font-medium text-red-700 mb-1">Storage</div>
-				<div className="text-xs text-red-600 break-all">
-					{error instanceof Error ? error.message : "Failed to load"}
-				</div>
+				<div className="text-xs text-red-600">Couldn't load — click to retry</div>
 			</Link>
 		);
 	}

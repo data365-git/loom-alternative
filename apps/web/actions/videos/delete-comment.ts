@@ -45,6 +45,13 @@ export async function deleteComment({
 				.delete(comments)
 				.where(and(eq(comments.id, commentId), eq(comments.authorId, user.id)));
 
+			// When deleting a parent comment, cascade its replies
+			if (!parentId) {
+				await tx
+					.delete(comments)
+					.where(eq(comments.parentCommentId, commentId));
+			}
+
 			// Delete related notifications
 			if (parentId) {
 				await tx

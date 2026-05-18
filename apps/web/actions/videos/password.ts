@@ -21,7 +21,7 @@ export async function setVideoPassword(
 	try {
 		const user = await getCurrentUser();
 
-		if (!user || !videoId || typeof password !== "string") {
+		if (!user || !videoId || typeof password !== "string" || !password.trim()) {
 			throw new Error("Missing required data");
 		}
 
