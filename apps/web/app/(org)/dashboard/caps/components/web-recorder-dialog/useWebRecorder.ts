@@ -1,6 +1,6 @@
 "use client";
 
-import { Organisation } from "@cap/web-domain";
+import { Folder, Organisation } from "@cap/web-domain";
 import { useQueryClient } from "@tanstack/react-query";
 import { Cause, Exit, Option } from "effect";
 import { useRouter } from "next/navigation";
@@ -63,6 +63,7 @@ import {
 
 interface UseWebRecorderOptions {
 	organisationId: string | undefined;
+	folderId?: string | null;
 	selectedMicId: string | null;
 	micEnabled: boolean;
 	systemAudioEnabled: boolean;
@@ -126,6 +127,7 @@ const recoveredToastId = (id: string) => `recovered-${id}`;
 
 export const useWebRecorder = ({
 	organisationId,
+	folderId,
 	selectedMicId,
 	micEnabled,
 	systemAudioEnabled,
@@ -981,7 +983,9 @@ export const useWebRecorder = ({
 				const creation = unwrapExitOrThrow(
 					await videoInstantCreate.mutateAsync({
 						orgId: Organisation.OrganisationId.make(organisationId),
-						folderId: Option.none(),
+						folderId: Option.fromNullable(
+							folderId ? Folder.FolderId.make(folderId) : null,
+						),
 						resolution,
 						width,
 						height,
@@ -1187,7 +1191,9 @@ export const useWebRecorder = ({
 				const result = unwrapExitOrThrow(
 					await videoInstantCreate.mutateAsync({
 						orgId: Organisation.OrganisationId.make(orgId),
-						folderId: Option.none(),
+						folderId: Option.fromNullable(
+							folderId ? Folder.FolderId.make(folderId) : null,
+						),
 						resolution,
 						durationSeconds,
 						width,
@@ -1416,6 +1422,7 @@ export const useWebRecorder = ({
 		resolveFailureBlob,
 		disposeRecordingSpool,
 		clearInstantChunkGuard,
+		folderId,
 	]);
 
 	useEffect(() => {

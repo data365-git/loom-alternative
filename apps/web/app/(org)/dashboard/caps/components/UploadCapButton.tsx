@@ -11,9 +11,11 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 
 export const UploadCapButton = ({
 	size = "md",
+	folderId,
 }: {
 	size?: "sm" | "lg" | "md";
 	grey?: boolean;
+	folderId?: string;
 }) => {
 	const { user } = useDashboardContext();
 	const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
@@ -27,7 +29,11 @@ export const UploadCapButton = ({
 			return;
 		}
 
-		router.push("/dashboard/import");
+		router.push(
+			folderId
+				? `/dashboard/import?folderId=${encodeURIComponent(folderId)}`
+				: "/dashboard/import",
+		);
 	};
 
 	return (

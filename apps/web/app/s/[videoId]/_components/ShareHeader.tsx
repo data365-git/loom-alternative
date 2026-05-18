@@ -246,17 +246,8 @@ export const ShareHeader = ({
 	};
 
 	const userIsOwnerAndNotPro = user?.id === data.owner.id && !data.owner.isPro;
-	const canEditVideo =
-		isOwner &&
-		!data.isScreenshot &&
-		!data.hasActiveUpload &&
-		(data.source.type === "desktopMP4" || data.source.type === "webMP4");
+	const canEditVideo = isOwner && !data.isScreenshot && !data.hasActiveUpload;
 	const handleEditVideo = () => {
-		if (userIsOwnerAndNotPro) {
-			setUpgradeModalOpen(true);
-			return;
-		}
-
 		navigateWithTransition("edit-enter", () => push(`/s/${data.id}/edit`));
 	};
 

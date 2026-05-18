@@ -5,6 +5,11 @@ export const metadata: Metadata = {
 	title: "Import — Cap",
 };
 
-export default function Page() {
-	return <ImportPage />;
+export default async function Page({
+	searchParams,
+}: {
+	searchParams: Promise<{ folderId?: string }>;
+}) {
+	const { folderId } = await searchParams;
+	return <ImportPage folderId={folderId} />;
 }

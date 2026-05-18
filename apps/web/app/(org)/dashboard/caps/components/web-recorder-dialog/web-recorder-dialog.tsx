@@ -7,6 +7,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@cap/ui";
+import type { Folder } from "@cap/web-domain";
 import { AnimatePresence, motion } from "framer-motion";
 import { MonitorIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -42,7 +43,11 @@ const recoveredRecordingTimeFormatter = new Intl.DateTimeFormat(undefined, {
 	timeStyle: "short",
 });
 
-export const WebRecorderDialog = () => {
+export const WebRecorderDialog = ({
+	folderId,
+}: {
+	folderId?: Folder.FolderId | null;
+} = {}) => {
 	const [open, setOpen] = useState(false);
 	const [settingsOpen, setSettingsOpen] = useState(false);
 	const [howItWorksOpen, setHowItWorksOpen] = useState(false);
@@ -155,6 +160,7 @@ export const WebRecorderDialog = () => {
 		dismissRecoveredDownload,
 	} = useWebRecorder({
 		organisationId,
+		folderId,
 		selectedMicId,
 		micEnabled,
 		systemAudioEnabled,

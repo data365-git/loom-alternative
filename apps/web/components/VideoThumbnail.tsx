@@ -8,6 +8,7 @@ import type { CSSProperties } from "react";
 import { memo, useEffect, useRef, useState } from "react";
 import { useEffectQuery } from "@/lib/EffectRuntime";
 import { ThumbnailRequest } from "@/lib/Requests/ThumbnailRequest";
+import { VideoFrameFallback } from "./VideoFrameFallback";
 
 export type ImageLoadingStatus = "loading" | "success" | "error";
 
@@ -19,6 +20,7 @@ type PreviewState = {
 
 interface VideoThumbnailProps {
 	videoId: Video.VideoId;
+	ownerId?: string | null;
 	alt: string;
 	imageClass?: string;
 	objectFit?: CSSProperties["objectFit"];
@@ -79,6 +81,7 @@ export const useThumnailQuery = (
 export const VideoThumbnail: React.FC<VideoThumbnailProps> = memo(
 	({
 		videoId,
+		ownerId,
 		alt,
 		imageClass,
 		objectFit = "cover",
@@ -160,10 +163,19 @@ export const VideoThumbnail: React.FC<VideoThumbnailProps> = memo(
 			>
 				<div className="flex absolute inset-0 z-10 justify-center items-center">
 					{showError ? (
-						<div
-							className="w-full h-full"
-							style={{ backgroundImage: randomGradient }}
-						/>
+						ownerId ? (
+							<VideoFrameFallback
+								videoId={videoId}
+								ownerId={ownerId}
+								className="rounded-t-xl"
+								objectFit="cover"
+							/>
+						) : (
+							<div
+								className="w-full h-full"
+								style={{ backgroundImage: randomGradient }}
+							/>
+						)
 					) : (
 						showLoading &&
 						!thumbnailUrl.data && (

@@ -5,6 +5,11 @@ export const metadata: Metadata = {
 	title: "Record a Cap",
 };
 
-export default function RecordVideoRoute() {
-	return <RecordVideoPage />;
+export default async function RecordVideoRoute({
+	searchParams,
+}: {
+	searchParams: Promise<{ folderId?: string }>;
+}) {
+	const { folderId } = await searchParams;
+	return <RecordVideoPage folderId={folderId} />;
 }

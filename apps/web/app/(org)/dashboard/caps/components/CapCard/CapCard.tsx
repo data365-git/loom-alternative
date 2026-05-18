@@ -39,7 +39,6 @@ import { toast } from "sonner";
 import { ConfirmationDialog } from "@/app/(org)/dashboard/_components/ConfirmationDialog";
 import { useDashboardContext } from "@/app/(org)/dashboard/Contexts";
 import { useUploadProgress } from "@/app/s/[videoId]/_components/ProgressCircle";
-import { UpgradeModal } from "@/components/UpgradeModal";
 import {
 	type ImageLoadingStatus,
 	VideoThumbnail,
@@ -160,8 +159,6 @@ export const CapCard = ({
 	const [isDragging, setIsDragging] = useState(false);
 	const [isSettingsDialogOpen, setIsSettingsDialogOpen] = useState(false);
 	const { user, setUpgradeModalOpen } = useDashboardContext();
-	const [editUpgradeModalOpen, setEditUpgradeModalOpen] = useState(false);
-
 	const [confirmOpen, setConfirmOpen] = useState(false);
 
 	const [isFreshlyUploaded, setIsFreshlyUploaded] = useState(() => {
@@ -377,23 +374,14 @@ export const CapCard = ({
 		!sharedCapCard &&
 		cap.isScreenshot !== true &&
 		!cap.hasActiveUpload &&
-		(cap.source?.type === "desktopMP4" || cap.source?.type === "webMP4") &&
 		Boolean(cap.duration && cap.duration > 0);
 	const handleEditVideo = () => {
 		if (!canEditVideo) return;
-		if (!user.isPro && buildEnv.NEXT_PUBLIC_IS_CAP) {
-			setEditUpgradeModalOpen(true);
-			return;
-		}
 		router.push(`/s/${cap.id}/edit`);
 	};
 
 	return (
 		<>
-			<UpgradeModal
-				open={editUpgradeModalOpen}
-				onOpenChange={setEditUpgradeModalOpen}
-			/>
 			<SharingDialog
 				isOpen={isSharingDialogOpen}
 				onClose={() => setIsSharingDialogOpen(false)}
@@ -785,6 +773,7 @@ export const CapCard = ({
 							)}
 							containerClass="absolute inset-0"
 							videoId={cap.id}
+							ownerId={cap.ownerId}
 							alt={`${cap.name} Thumbnail`}
 							imageStatus={imageStatus}
 							setImageStatus={setImageStatus}

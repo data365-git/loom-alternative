@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@cap/ui";
+import { Folder } from "@cap/web-domain";
 import { faDownload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { ChevronDown } from "lucide-react";
@@ -9,7 +10,7 @@ import { useCallback, useId, useRef, useState } from "react";
 import { FREE_PLAN_MAX_RECORDING_MS } from "../components/web-recorder-dialog/web-recorder-constants";
 import { WebRecorderDialog } from "../components/web-recorder-dialog/web-recorder-dialog";
 
-export const RecordVideoPage = () => {
+export const RecordVideoPage = ({ folderId }: { folderId?: string }) => {
 	const checkingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const openDesktop = useCallback(() => {
@@ -60,7 +61,9 @@ export const RecordVideoPage = () => {
 								Open Cap Desktop
 							</Button>
 							<p className="text-sm text-gray-10">or</p>
-							<WebRecorderDialog />
+							<WebRecorderDialog
+								folderId={folderId ? Folder.FolderId.make(folderId) : undefined}
+							/>
 						</div>
 						<FaqAccordion />
 					</div>

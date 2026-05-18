@@ -13,6 +13,7 @@ import { runPromise } from "@/lib/server";
 
 import { UploadCapButton } from "../../caps/components";
 import FolderCard from "../../caps/components/Folder";
+import { WebRecorderDialog } from "../../caps/components/web-recorder-dialog/web-recorder-dialog";
 import {
 	BreadcrumbItem,
 	ClientMyCapsLink,
@@ -40,7 +41,8 @@ const FolderPage = async (props: PageProps<"/dashboard/folder/[id]">) => {
 			<div>
 				<div className="flex gap-2 items-center mb-10">
 					<NewSubfolderButton parentFolderId={folderId} />
-					<UploadCapButton size="sm" />
+					<UploadCapButton size="sm" folderId={folderId} />
+					<WebRecorderDialog folderId={folderId} />
 				</div>
 				<div className="flex justify-between items-center mb-6 w-full">
 					<div className="flex overflow-x-auto items-center font-medium">

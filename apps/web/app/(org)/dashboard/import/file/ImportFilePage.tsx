@@ -22,7 +22,7 @@ import { PreUploadTrimmer } from "@/components/PreUploadTrimmer";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { uploadWithTarget } from "@/utils/upload-target";
 
-export const ImportFilePage = () => {
+export const ImportFilePage = ({ folderId }: { folderId?: string }) => {
 	const { user, activeOrganization } = useDashboardContext();
 	const router = useRouter();
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -45,13 +45,16 @@ export const ImportFilePage = () => {
 
 			const ok = await uploadVideoForServerProcessing(
 				file,
-				undefined,
+				folderId ? Folder.FolderId.make(folderId) : undefined,
 				activeOrganization.organization.id,
 				setUploadStatus,
 			);
-			if (ok) router.push("/dashboard/caps");
+			if (ok)
+				router.push(
+					folderId ? `/dashboard/folder/${folderId}` : "/dashboard/caps",
+				);
 		},
-		[user, activeOrganization, setUploadStatus, router],
+		[user, activeOrganization, setUploadStatus, router, folderId],
 	);
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
