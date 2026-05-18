@@ -194,7 +194,6 @@ export default async function CapsPage(props: PageProps<"/dashboard/caps">) {
 		.leftJoin(comments, eq(videos.id, comments.videoId))
 		.leftJoin(organizations, eq(videos.orgId, organizations.id))
 		.leftJoin(users, eq(videos.ownerId, users.id))
-		.leftJoin(videoUploads, eq(videos.id, videoUploads.videoId))
 		.where(
 			and(
 				eq(videos.ownerId, userId),
