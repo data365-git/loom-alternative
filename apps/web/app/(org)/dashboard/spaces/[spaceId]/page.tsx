@@ -254,7 +254,7 @@ export default async function SharedCapsPage(props: {
 						ownerName: users.name,
 						effectiveDate: videos.effectiveCreatedAt,
 						hasActiveUpload:
-							sql`${videoUploads.videoId} IS NOT NULL AND ${videoUploads.phase} IN ('uploading', 'processing', 'generating_thumbnail')`.mapWith(
+							sql`EXISTS (SELECT 1 FROM ${videoUploads} vu WHERE vu.videoId = ${videos.id} AND vu.phase IN ('uploading','processing','generating_thumbnail') AND vu.createdAt > DATE_SUB(NOW(), INTERVAL 1 HOUR))`.mapWith(
 								Boolean,
 							),
 					})
@@ -380,7 +380,7 @@ export default async function SharedCapsPage(props: {
 						ownerName: users.name,
 						effectiveDate: videos.effectiveCreatedAt,
 						hasActiveUpload:
-							sql`${videoUploads.videoId} IS NOT NULL AND ${videoUploads.phase} IN ('uploading', 'processing', 'generating_thumbnail')`.mapWith(
+							sql`EXISTS (SELECT 1 FROM ${videoUploads} vu WHERE vu.videoId = ${videos.id} AND vu.phase IN ('uploading','processing','generating_thumbnail') AND vu.createdAt > DATE_SUB(NOW(), INTERVAL 1 HOUR))`.mapWith(
 								Boolean,
 							),
 					})
