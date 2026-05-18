@@ -413,7 +413,7 @@ export default async function ShareVideoPage(props: PageProps<"/s/[videoId]">) {
 					organizationIconUrl: organizations.iconUrl,
 					shareableLinkIconUrl: organizations.shareableLinkIconUrl,
 					hasActiveUpload:
-						sql`EXISTS (SELECT 1 FROM ${videoUploads} vu WHERE vu.videoId = ${videos.id} AND vu.phase IN ('uploading','processing','generating_thumbnail') AND vu.createdAt > DATE_SUB(NOW(), INTERVAL 1 HOUR))`.mapWith(
+						sql`EXISTS (SELECT 1 FROM ${videoUploads} vu WHERE vu.video_id = ${videos.id} AND vu.phase IN ('uploading','processing','generating_thumbnail') AND vu.started_at > DATE_SUB(NOW(), INTERVAL 1 HOUR))`.mapWith(
 							Boolean,
 						),
 					activeUploadRawFileKey: videoUploads.rawFileKey,

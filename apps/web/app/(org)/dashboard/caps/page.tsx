@@ -185,7 +185,7 @@ export default async function CapsPage(props: PageProps<"/dashboard/caps">) {
 			effectiveDate: videos.effectiveCreatedAt,
 			hasPassword: sql`${videos.password} IS NOT NULL`.mapWith(Boolean),
 			hasActiveUpload:
-				sql`EXISTS (SELECT 1 FROM ${videoUploads} vu WHERE vu.videoId = ${videos.id} AND vu.phase IN ('uploading','processing','generating_thumbnail') AND vu.createdAt > DATE_SUB(NOW(), INTERVAL 1 HOUR))`.mapWith(
+				sql`EXISTS (SELECT 1 FROM ${videoUploads} vu WHERE vu.video_id = ${videos.id} AND vu.phase IN ('uploading','processing','generating_thumbnail') AND vu.started_at > DATE_SUB(NOW(), INTERVAL 1 HOUR))`.mapWith(
 					Boolean,
 				),
 			settings: videos.settings,
