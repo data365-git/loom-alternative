@@ -412,9 +412,10 @@ export default async function ShareVideoPage(props: PageProps<"/s/[videoId]">) {
 					organizationName: organizations.name,
 					organizationIconUrl: organizations.iconUrl,
 					shareableLinkIconUrl: organizations.shareableLinkIconUrl,
-					hasActiveUpload: sql`${videoUploads.videoId} IS NOT NULL`.mapWith(
-						Boolean,
-					),
+					hasActiveUpload:
+						sql`${videoUploads.videoId} IS NOT NULL AND ${videoUploads.phase} IN ('uploading', 'processing', 'generating_thumbnail')`.mapWith(
+							Boolean,
+						),
 					activeUploadRawFileKey: videoUploads.rawFileKey,
 					owner: users,
 				})

@@ -316,8 +316,12 @@ export const Share = ({
 			return false;
 		}
 
+		const videoAgeMs =
+			Date.now() - new Date(data.createdAt as unknown as string).getTime();
+		const olderThanFiveMin = videoAgeMs > 5 * 60 * 1000;
+
 		if (!transcriptionStatus || transcriptionStatus === "PROCESSING") {
-			return true;
+			return !olderThanFiveMin;
 		}
 
 		if (
@@ -340,10 +344,10 @@ export const Share = ({
 				aiData.aiGenerationStatus === "QUEUED" ||
 				aiData.aiGenerationStatus === "PROCESSING"
 			) {
-				return true;
+				return !olderThanFiveMin;
 			}
 			if (!aiData.aiGenerationStatus && !aiData.summary && !aiData.chapters) {
-				return true;
+				return !olderThanFiveMin;
 			}
 		}
 

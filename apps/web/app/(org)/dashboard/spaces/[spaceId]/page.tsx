@@ -253,9 +253,10 @@ export default async function SharedCapsPage(props: {
 						totalReactions: sql<number>`COUNT(DISTINCT CASE WHEN ${comments.type} = 'emoji' THEN ${comments.id} END)`,
 						ownerName: users.name,
 						effectiveDate: videos.effectiveCreatedAt,
-						hasActiveUpload: sql`${videoUploads.videoId} IS NOT NULL`.mapWith(
-							Boolean,
-						),
+						hasActiveUpload:
+							sql`${videoUploads.videoId} IS NOT NULL AND ${videoUploads.phase} IN ('uploading', 'processing', 'generating_thumbnail')`.mapWith(
+								Boolean,
+							),
 					})
 					.from(spaceVideos)
 					.innerJoin(videos, eq(spaceVideos.videoId, videos.id))
@@ -378,9 +379,10 @@ export default async function SharedCapsPage(props: {
 						totalReactions: sql<number>`COUNT(DISTINCT CASE WHEN ${comments.type} = 'emoji' THEN ${comments.id} END)`,
 						ownerName: users.name,
 						effectiveDate: videos.effectiveCreatedAt,
-						hasActiveUpload: sql`${videoUploads.videoId} IS NOT NULL`.mapWith(
-							Boolean,
-						),
+						hasActiveUpload:
+							sql`${videoUploads.videoId} IS NOT NULL AND ${videoUploads.phase} IN ('uploading', 'processing', 'generating_thumbnail')`.mapWith(
+								Boolean,
+							),
 					})
 					.from(sharedVideos)
 					.innerJoin(videos, eq(sharedVideos.videoId, videos.id))

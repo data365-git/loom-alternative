@@ -184,9 +184,10 @@ export default async function CapsPage(props: PageProps<"/dashboard/caps">) {
 			ownerName: users.name,
 			effectiveDate: videos.effectiveCreatedAt,
 			hasPassword: sql`${videos.password} IS NOT NULL`.mapWith(Boolean),
-			hasActiveUpload: sql`${videoUploads.videoId} IS NOT NULL`.mapWith(
-				Boolean,
-			),
+			hasActiveUpload:
+				sql`${videoUploads.videoId} IS NOT NULL AND ${videoUploads.phase} IN ('uploading', 'processing', 'generating_thumbnail')`.mapWith(
+					Boolean,
+				),
 			settings: videos.settings,
 		})
 		.from(videos)
