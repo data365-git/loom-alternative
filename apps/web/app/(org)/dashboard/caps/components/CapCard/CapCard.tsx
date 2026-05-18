@@ -164,6 +164,24 @@ export const CapCard = ({
 
 	const [confirmOpen, setConfirmOpen] = useState(false);
 
+	const [isFreshlyUploaded, setIsFreshlyUploaded] = useState(() => {
+		if (!cap.createdAt) return false;
+		const ageMs = Date.now() - new Date(cap.createdAt).getTime();
+		return ageMs < 30_000;
+	});
+
+	useEffect(() => {
+		if (!isFreshlyUploaded || !cap.createdAt) return;
+		const ageMs = Date.now() - new Date(cap.createdAt).getTime();
+		const remaining = 30_000 - ageMs;
+		if (remaining <= 0) {
+			setIsFreshlyUploaded(false);
+			return;
+		}
+		const t = setTimeout(() => setIsFreshlyUploaded(false), remaining);
+		return () => clearTimeout(t);
+	}, [cap.createdAt, isFreshlyUploaded]);
+
 	const router = useRouter();
 	const rpc = useRpcClient();
 
@@ -805,6 +823,22 @@ export const CapCard = ({
 						isOwner={isOwner}
 						setIsSharingDialogOpen={setIsSharingDialogOpen}
 					/>
+					{isFreshlyUploaded && canEditVideo && (
+						<button
+							type="button"
+							onClick={(e) => {
+								e.stopPropagation();
+								e.preventDefault();
+								handleEditVideo();
+							}}
+							className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-3 text-blue-11 border border-blue-6 hover:bg-blue-4 transition-colors self-start"
+							title="Trim this video"
+						>
+							<FontAwesomeIcon icon={faScissors} className="size-2.5" />
+							Edit
+							<span className="ml-0.5 animate-pulse">✨</span>
+						</button>
+					)}
 					{children}
 					<CapCardAnalytics
 						capId={cap.id}
