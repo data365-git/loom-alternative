@@ -43,8 +43,6 @@ export class S3Buckets extends Effect.Service<S3Buckets>()("S3Buckets", {
 				credentials: defaultConfigs.credentials,
 				forcePathStyle: defaultConfigs.forcePathStyle,
 				requestStreamBufferSize: 16 * 1024,
-				requestChecksumCalculation: "WHEN_REQUIRED",
-				responseChecksumValidation: "WHEN_REQUIRED",
 			});
 
 		const endpointIsPathStyle = (endpoint: string, bucket: string) => {
@@ -80,8 +78,6 @@ export class S3Buckets extends Effect.Service<S3Buckets>()("S3Buckets", {
 						Option.getOrNull,
 					) ?? true,
 				useArnRegion: false,
-				requestChecksumCalculation: "WHEN_REQUIRED",
-				responseChecksumValidation: "WHEN_REQUIRED",
 			});
 		};
 

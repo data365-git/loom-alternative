@@ -680,7 +680,7 @@ export function EditVideoClient({ video }: { video: EditableVideo }) {
 		() => getTimelineDisplaySplitPoints(state),
 		[state],
 	);
-	const playbackSrc = `/api/playlist?userId=${video.ownerId}&videoId=${video.id}&videoType=mp4`;
+	const playbackSrc = `/api/video-proxy/${video.id}`;
 	const timelineThumbnailUrl = useTimelineCoverThumbnail(video.id);
 	const visibleThumbnailRange = useVisibleTimelineThumbnailRange({
 		scrollContainerRef,
