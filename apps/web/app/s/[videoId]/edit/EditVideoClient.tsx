@@ -262,20 +262,23 @@ function getTimelineSourceTimeFromClientX(
 
 function HeaderIconButton({
 	label,
+	shortcut,
 	disabled,
 	onClick,
 	children,
 }: {
 	label: string;
+	shortcut?: string;
 	disabled?: boolean;
 	onClick: () => void;
 	children: React.ReactNode;
 }) {
+	const title = shortcut ? `${label} (${shortcut})` : label;
 	return (
 		<button
 			type="button"
 			aria-label={label}
-			title={label}
+			title={title}
 			disabled={disabled}
 			onClick={onClick}
 			className="inline-flex size-9 items-center justify-center rounded-full text-gray-12 transition hover:bg-gray-3 active:bg-gray-4 disabled:pointer-events-none disabled:opacity-30"
@@ -285,12 +288,80 @@ function HeaderIconButton({
 	);
 }
 
+function KeyboardShortcutsPopover() {
+	const [open, setOpen] = useState(false);
+	const isMac =
+		typeof navigator !== "undefined" && /Mac|iPhone|iPad/i.test(navigator.platform);
+	const mod = isMac ? "⌘" : "Ctrl";
+	const shortcuts: Array<{ keys: string; description: string }> = [
+		{ keys: "Space", description: "Play / Pause" },
+		{ keys: "S", description: "Hold to split (or click button)" },
+		{ keys: "← / →", description: "Step 0.1s (Shift = 1s)" },
+		{ keys: "Backspace / Del", description: "Delete selected segment" },
+		{ keys: `${mod}+Z`, description: "Undo" },
+		{ keys: `${mod}+⇧+Z`, description: "Redo" },
+		{ keys: "+ / −", description: "Zoom in / out" },
+		{ keys: "0", description: "Reset zoom" },
+		{ keys: "Esc", description: "Exit split mode" },
+	];
+	useEffect(() => {
+		if (!open) return;
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === "Escape") setOpen(false);
+		};
+		window.addEventListener("keydown", onKey);
+		return () => window.removeEventListener("keydown", onKey);
+	}, [open]);
+	return (
+		<div className="relative">
+			<button
+				type="button"
+				aria-label="Keyboard shortcuts"
+				title="Keyboard shortcuts (?)"
+				onClick={() => setOpen((v) => !v)}
+				className="inline-flex size-9 items-center justify-center rounded-full text-gray-12 transition hover:bg-gray-3 active:bg-gray-4"
+			>
+				<span className="text-[14px] font-semibold leading-none">?</span>
+			</button>
+			{open && (
+				<>
+					<button
+						type="button"
+						aria-label="Close shortcuts"
+						onClick={() => setOpen(false)}
+						className="fixed inset-0 z-40 cursor-default"
+					/>
+					<div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-xl border border-gray-5 bg-white p-3 shadow-xl">
+						<div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-gray-10">
+							Keyboard shortcuts
+						</div>
+						<ul className="space-y-1.5">
+							{shortcuts.map((s) => (
+								<li
+									key={s.keys}
+									className="flex items-center justify-between gap-3 text-[13px]"
+								>
+									<span className="text-gray-12">{s.description}</span>
+									<kbd className="rounded bg-gray-3 px-1.5 py-0.5 font-mono text-[11px] font-medium text-gray-12 ring-1 ring-gray-5">
+										{s.keys}
+									</kbd>
+								</li>
+							))}
+						</ul>
+					</div>
+				</>
+			)}
+		</div>
+	);
+}
+
 function ToolButton({
 	active,
 	disabled,
 	onClick,
 	icon,
 	label,
+	title,
 	tone = "default",
 }: {
 	active?: boolean;
@@ -298,6 +369,7 @@ function ToolButton({
 	onClick: () => void;
 	icon: React.ReactNode;
 	label: string;
+	title?: string;
 	tone?: "default" | "danger";
 }) {
 	return (
@@ -305,6 +377,7 @@ function ToolButton({
 			type="button"
 			disabled={disabled}
 			onClick={onClick}
+			title={title ?? label}
 			className={[
 				"inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-medium transition",
 				active
@@ -1588,8 +1661,10 @@ export function EditVideoClient({ video }: { video: EditableVideo }) {
 						</h1>
 					</div>
 					<div className="flex items-center gap-1">
+						<KeyboardShortcutsPopover />
 						<HeaderIconButton
 							label="Undo"
+							shortcut="⌘Z"
 							disabled={!canUndo}
 							onClick={handleUndo}
 						>
@@ -1597,6 +1672,7 @@ export function EditVideoClient({ video }: { video: EditableVideo }) {
 						</HeaderIconButton>
 						<HeaderIconButton
 							label="Redo"
+							shortcut="⌘⇧Z"
 							disabled={!canRedo}
 							onClick={handleRedo}
 						>
@@ -1923,7 +1999,7 @@ export function EditVideoClient({ video }: { video: EditableVideo }) {
 				<div className="mt-4 flex items-center justify-between gap-3 px-1 sm:mt-5">
 					<button
 						type="button"
-						title="Click to split — hold to add multiple"
+						title="Click to split — hold to add multiple (S)"
 						onPointerDown={handleSplitButtonPointerDown}
 						onPointerUp={handleSplitButtonPointerUp}
 						className={[
@@ -1998,6 +2074,7 @@ export function EditVideoClient({ video }: { video: EditableVideo }) {
 						onClick={handleDelete}
 						icon={<Trash2 className="size-3.5" aria-hidden />}
 						label="Delete"
+						title="Delete selected segment (Backspace)"
 					/>
 				</div>
 			</main>
