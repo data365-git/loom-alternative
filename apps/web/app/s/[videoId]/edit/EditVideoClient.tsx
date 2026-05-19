@@ -1025,13 +1025,20 @@ export function EditVideoClient({ video }: { video: EditableVideo }) {
 		}
 		setIsSaving(true);
 		try {
-			await saveVideoEdits(video.id, editSpec);
+			const result = await saveVideoEdits(video.id, editSpec);
+			if (!result.ok) {
+				toast.error(result.error);
+				setIsSaving(false);
+				return;
+			}
 			if (draftStorage) clearTimelineDraft(draftStorage, draftStorageKey);
 			router.push(`/s/${video.id}`);
 			router.refresh();
 		} catch (error) {
 			toast.error(
-				error instanceof Error ? error.message : "Failed to start video edit",
+				error instanceof Error
+					? error.message
+					: "Something went wrong saving your edit. Please try again.",
 			);
 			setIsSaving(false);
 		}
