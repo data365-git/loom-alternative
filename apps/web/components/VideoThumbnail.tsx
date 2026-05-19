@@ -1,4 +1,3 @@
-import { LogoSpinner } from "@cap/ui";
 import type { Video } from "@cap/web-domain";
 import clsx from "clsx";
 import { Effect } from "effect";
@@ -8,7 +7,10 @@ import type { CSSProperties } from "react";
 import { memo, useEffect, useRef, useState } from "react";
 import { useEffectQuery } from "@/lib/EffectRuntime";
 import { ThumbnailRequest } from "@/lib/Requests/ThumbnailRequest";
-import { VideoFrameFallback } from "./VideoFrameFallback";
+import {
+	readThumbnailCache,
+	VideoFrameFallback,
+} from "./VideoFrameFallback";
 
 export type ImageLoadingStatus = "loading" | "success" | "error";
 
@@ -137,8 +139,12 @@ export const VideoThumbnail: React.FC<VideoThumbnailProps> = memo(
 
 		const showError =
 			!hasActiveUpload && (thumbnailUrl.isError || imageStatus === "error");
-		const showLoading =
-			hasActiveUpload || thumbnailUrl.isPending || imageStatus === "loading";
+		const [hasCachedFallback, setHasCachedFallback] = useState(false);
+		useEffect(() => {
+			setHasCachedFallback(readThumbnailCache(videoId) !== null);
+		}, [videoId]);
+		const showFallbackLayer =
+			!hasActiveUpload && Boolean(ownerId) && (showError || hasCachedFallback);
 		const previewStatus =
 			previewState.videoId === videoId ? previewState.status : "loading";
 		const isPreviewHovered =
@@ -157,32 +163,21 @@ export const VideoThumbnail: React.FC<VideoThumbnailProps> = memo(
 			<div
 				ref={containerRef}
 				className={clsx(
-					`overflow-hidden relative mx-auto w-full h-full bg-black rounded-t-xl border-b border-gray-3 aspect-video`,
+					`overflow-hidden relative mx-auto w-full h-full rounded-t-xl border-b border-gray-3 aspect-video`,
 					containerClass,
 				)}
+				style={{ backgroundImage: randomGradient }}
 			>
-				<div className="flex absolute inset-0 z-10 justify-center items-center">
-					{showError ? (
-						ownerId ? (
-							<VideoFrameFallback
-								videoId={videoId}
-								ownerId={ownerId}
-								className="rounded-t-xl"
-								objectFit="cover"
-							/>
-						) : (
-							<div
-								className="w-full h-full"
-								style={{ backgroundImage: randomGradient }}
-							/>
-						)
-					) : (
-						showLoading &&
-						!thumbnailUrl.data && (
-							<LogoSpinner className="w-5 h-auto animate-spin md:w-8" />
-						)
-					)}
-				</div>
+				{showFallbackLayer && ownerId && (
+					<div className="absolute inset-0 z-0">
+						<VideoFrameFallback
+							videoId={videoId}
+							ownerId={ownerId}
+							className="rounded-t-xl"
+							objectFit="cover"
+						/>
+					</div>
+				)}
 				{thumbnailUrl.data && (
 					<Image
 						ref={imageRef}

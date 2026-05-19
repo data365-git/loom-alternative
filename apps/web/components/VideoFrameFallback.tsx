@@ -2,10 +2,12 @@
 
 import type { Video } from "@cap/web-domain";
 import { useEffect, useRef, useState } from "react";
+import { saveCapturedThumbnail } from "@/actions/video/save-thumbnail";
 
 const CACHE_PREFIX = "cap_thumb_fb_v1_";
+const SAVED_PREFIX = "cap_thumb_saved_v1_";
 
-function readCache(videoId: Video.VideoId): string | null {
+export function readThumbnailCache(videoId: Video.VideoId): string | null {
 	try {
 		return localStorage.getItem(`${CACHE_PREFIX}${videoId}`);
 	} catch {
@@ -16,6 +18,20 @@ function readCache(videoId: Video.VideoId): string | null {
 function writeCache(videoId: Video.VideoId, dataUrl: string) {
 	try {
 		localStorage.setItem(`${CACHE_PREFIX}${videoId}`, dataUrl);
+	} catch {}
+}
+
+function hasBeenSaved(videoId: Video.VideoId): boolean {
+	try {
+		return localStorage.getItem(`${SAVED_PREFIX}${videoId}`) === "1";
+	} catch {
+		return false;
+	}
+}
+
+function markSaved(videoId: Video.VideoId) {
+	try {
+		localStorage.setItem(`${SAVED_PREFIX}${videoId}`, "1");
 	} catch {}
 }
 
@@ -33,13 +49,22 @@ export const VideoFrameFallback = ({
 	objectFit = "cover",
 }: Props) => {
 	const [frameUrl, setFrameUrl] = useState<string | null>(() =>
-		readCache(videoId),
+		readThumbnailCache(videoId),
 	);
 	const videoRef = useRef<HTMLVideoElement>(null);
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 
 	useEffect(() => {
-		if (frameUrl) return;
+		if (frameUrl) {
+			if (!hasBeenSaved(videoId)) {
+				void saveCapturedThumbnail({ videoId, dataUrl: frameUrl })
+					.then((res) => {
+						if (res.ok) markSaved(videoId);
+					})
+					.catch(() => {});
+			}
+			return;
+		}
 
 		const video = videoRef.current;
 		const canvas = canvasRef.current;
@@ -56,6 +81,13 @@ export const VideoFrameFallback = ({
 				if (dataUrl !== "data:,") {
 					setFrameUrl(dataUrl);
 					writeCache(videoId, dataUrl);
+					if (!hasBeenSaved(videoId)) {
+						void saveCapturedThumbnail({ videoId, dataUrl })
+							.then((res) => {
+								if (res.ok) markSaved(videoId);
+							})
+							.catch(() => {});
+					}
 				}
 			} catch {}
 		};
