@@ -34,6 +34,13 @@ export function StorageIndicator() {
 		retry: false,
 	});
 
+	useEffect(() => {
+		if (isStaleActionError(error)) {
+			const t = setTimeout(() => window.location.reload(), 1500);
+			return () => clearTimeout(t);
+		}
+	}, [error]);
+
 	if (isLoading) {
 		return (
 			<div className="block p-3 rounded-lg border border-gray-5 bg-gray-2">
@@ -46,13 +53,6 @@ export function StorageIndicator() {
 			</div>
 		);
 	}
-
-	useEffect(() => {
-		if (isStaleActionError(error)) {
-			const t = setTimeout(() => window.location.reload(), 1500);
-			return () => clearTimeout(t);
-		}
-	}, [error]);
 
 	if (error || !data) {
 		if (isStaleActionError(error)) {
