@@ -99,6 +99,7 @@ export const NewFolderDialog: React.FC<Props> = ({
 		),
 	);
 
+	const inputRef = useRef<HTMLInputElement>(null);
 	const rpc = useRpcClient();
 
 	const createFolder = useEffectMutation({
@@ -117,12 +118,17 @@ export const NewFolderDialog: React.FC<Props> = ({
 			toast.success("Folder created successfully");
 		},
 		onError: (err) => {
-			console.error("FolderCreate failed:", err);
 			const msg =
 				err instanceof Error ? err.message : "Failed to create folder";
 			toast.error(msg);
 		},
 	});
+
+	function handleSubmit() {
+		const name = (inputRef.current?.value ?? folderName).trim();
+		if (!name || createFolder.isPending) return;
+		createFolder.mutate({ name, color: selectedColor });
+	}
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -134,8 +140,16 @@ export const NewFolderDialog: React.FC<Props> = ({
 				</DialogHeader>
 				<div className="p-5">
 					<Input
+						ref={inputRef}
 						value={folderName}
 						onChange={(e) => setFolderName(e.target.value)}
+						onInput={(e) => setFolderName((e.target as HTMLInputElement).value)}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") {
+								e.preventDefault();
+								handleSubmit();
+							}
+						}}
 						required
 						placeholder="Folder name"
 					/>
@@ -179,13 +193,11 @@ export const NewFolderDialog: React.FC<Props> = ({
 						Cancel
 					</Button>
 					<Button
-						onClick={() =>
-							createFolder.mutate({ name: folderName, color: selectedColor })
-						}
+						onClick={handleSubmit}
 						size="sm"
 						spinner={createFolder.isPending}
 						variant="dark"
-						disabled={!folderName.trim().length || createFolder.isPending}
+						disabled={createFolder.isPending}
 					>
 						{createFolder.isPending ? "Creating..." : "Create"}
 					</Button>
