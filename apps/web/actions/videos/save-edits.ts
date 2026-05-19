@@ -62,13 +62,31 @@ async function ensureOriginalSourceCopy(
 ) {
 	const bucket = await getVideoBucket(video);
 	const hasSource = await objectExists(bucket, sourceKey);
+	if (hasSource) return sourceKey;
 
-	if (!hasSource) {
-		const resultKey = getResultKey(video.ownerId, video.id);
-		await bucket
-			.copyObject(`${bucket.bucketName}/${resultKey}`, sourceKey)
-			.pipe(runPromise);
+	const candidates = [
+		getResultKey(video.ownerId, video.id),
+		`${video.ownerId}/${video.id}/raw-upload.mp4`,
+		`${video.ownerId}/${video.id}/raw-upload.webm`,
+	];
+
+	let copiedFrom: string | null = null;
+	for (const key of candidates) {
+		if (await objectExists(bucket, key)) {
+			copiedFrom = key;
+			break;
+		}
 	}
+
+	if (!copiedFrom) {
+		throw new Error(
+			"No processed video found for this clip yet — wait for processing to finish before editing.",
+		);
+	}
+
+	await bucket
+		.copyObject(`${bucket.bucketName}/${copiedFrom}`, sourceKey)
+		.pipe(runPromise);
 
 	return sourceKey;
 }
@@ -193,14 +211,15 @@ export async function saveVideoEdits(
 	try {
 		sourceKey = await ensureOriginalSourceCopy(video, existingEdit?.sourceKey);
 	} catch (error) {
+		const message =
+			error instanceof Error && error.message
+				? error.message
+				: "Couldn't prepare the source video. Try again in a moment.";
 		console.error("[saveVideoEdits] source copy failed", {
 			videoId,
 			err: error instanceof Error ? error.message : String(error),
 		});
-		return {
-			ok: false,
-			error: "Couldn't prepare the source video. Try again in a moment.",
-		};
+		return { ok: false, error: message };
 	}
 
 	const aiGenerationEnabled = await isAiGenerationEnabled(user);
