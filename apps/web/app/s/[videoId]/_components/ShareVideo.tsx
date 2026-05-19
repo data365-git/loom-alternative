@@ -52,6 +52,7 @@ export const ShareVideo = forwardRef<
 		canRetryProcessing?: boolean;
 		showPlaybackStatusBadge?: boolean;
 		isEditProcessing: boolean;
+		editVersion?: number;
 	}
 >(
 	(
@@ -66,6 +67,7 @@ export const ShareVideo = forwardRef<
 			canRetryProcessing,
 			showPlaybackStatusBadge = false,
 			isEditProcessing,
+			editVersion,
 		},
 		ref,
 	) => {
@@ -236,17 +238,18 @@ export const ShareVideo = forwardRef<
 			}
 		}, [awaitingSourceRefresh, isSegmentsSource]);
 
+		const vParam = editVersion ? `&v=${editVersion}` : "";
 		let videoSrc: string;
 		const rawFallbackSrc =
 			data.source.type === "webMP4"
-				? `/api/playlist?userId=${data.owner.id}&videoId=${data.id}&videoType=raw-preview`
+				? `/api/playlist?userId=${data.owner.id}&videoId=${data.id}&videoType=raw-preview${vParam}`
 				: undefined;
 		let enableCrossOrigin = false;
 
 		if (isSegmentsSource) {
 			videoSrc = `/api/playlist?userId=${data.owner.id}&videoId=${data.id}&videoType=segments-master`;
 		} else if (isMp4Source) {
-			videoSrc = `/api/playlist?userId=${data.owner.id}&videoId=${data.id}&videoType=mp4`;
+			videoSrc = `/api/playlist?userId=${data.owner.id}&videoId=${data.id}&videoType=mp4${vParam}`;
 			enableCrossOrigin = true;
 		} else if (
 			NODE_ENV === "development" ||

@@ -10,6 +10,7 @@ import {
 import type { Organisation } from "@cap/web-domain";
 import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { recordAudit } from "@/lib/audit";
 import {
 	canRemoveOrganizationMember,
 	getEffectiveOrganizationRole,
@@ -93,6 +94,15 @@ export async function removeOrganizationMember(
 			);
 
 		if (result.affectedRows === 0) throw new Error("Member not found");
+	});
+
+	void recordAudit({
+		orgId: organizationId,
+		actorUserId: user.id,
+		action: "member.remove",
+		entityType: "member",
+		entityId: memberId,
+		metadata: { removedUserId: member.userId },
 	});
 
 	revalidatePath("/dashboard/settings/organization");

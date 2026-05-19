@@ -8,6 +8,7 @@ import {
 	spaces,
 	spaceVideos,
 	users,
+	videoEdits,
 	videos,
 	videoUploads,
 } from "@cap/database/schema";
@@ -794,6 +795,13 @@ async function AuthorizedContent({
 		rawFileKey: video.activeUploadRawFileKey,
 	});
 
+	const [editRow] = await db()
+		.select({ updatedAt: videoEdits.updatedAt })
+		.from(videoEdits)
+		.where(eq(videoEdits.videoId, videoId))
+		.limit(1);
+	const editVersion = editRow?.updatedAt?.getTime();
+
 	return (
 		<div className="container flex-1 px-4 mx-auto">
 			<ShareHeader
@@ -825,6 +833,7 @@ async function AuthorizedContent({
 				userOrganizations={userOrganizations}
 				viewerId={user?.id ?? null}
 				isEditProcessing={isEditProcessing}
+				editVersion={editVersion}
 				initialAiData={initialAiData}
 				aiGenerationEnabled={aiGenerationEnabled}
 			/>

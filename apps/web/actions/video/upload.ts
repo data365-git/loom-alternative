@@ -117,6 +117,7 @@ export async function createVideoAndGetUploadUrl({
 	folderId,
 	orgId,
 	supportsUploadProgress = false,
+	fileSize,
 }: {
 	videoId?: Video.VideoId;
 	duration?: number;
@@ -127,8 +128,8 @@ export async function createVideoAndGetUploadUrl({
 	isUpload?: boolean;
 	folderId?: Folder.FolderId;
 	orgId: Organisation.OrganisationId;
-	// TODO: Remove this once we are happy with it's stability
 	supportsUploadProgress?: boolean;
+	fileSize?: number;
 }) {
 	const user = await getCurrentUser();
 
@@ -143,6 +144,7 @@ export async function createVideoAndGetUploadUrl({
 		const quotaCheck = await checkUploadQuota({
 			orgId,
 			userId: user.id,
+			incomingBytes: fileSize,
 		});
 		if (!quotaCheck.ok) {
 			throw new Error(quotaCheck.message);
@@ -224,10 +226,13 @@ export async function createVideoAndGetUploadUrl({
 
 		await db().insert(videos).values(videoData);
 
-		if (supportsUploadProgress)
-			await db().insert(videoUploads).values({
-				videoId: idToUse,
-			});
+		if (supportsUploadProgress || fileSize !== undefined)
+			await db()
+				.insert(videoUploads)
+				.values({
+					videoId: idToUse,
+					total: fileSize ?? 0,
+				});
 
 		if (buildEnv.NEXT_PUBLIC_IS_CAP && NODE_ENV === "production") {
 			await dub()

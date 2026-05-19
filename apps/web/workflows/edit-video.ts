@@ -6,6 +6,7 @@ import {
 import { db } from "@cap/database";
 import {
 	comments,
+	videoEditHistory,
 	videoEdits,
 	videos,
 	videoUploads,
@@ -601,6 +602,14 @@ async function saveEditResultAndComplete(
 				),
 			);
 	});
+
+	await db()
+		.insert(videoEditHistory)
+		.values({
+			videoId: videoId as Video.VideoId,
+			editSpec,
+			resultKey: `${video.ownerId}/${videoId}/result.mp4`,
+		});
 
 	try {
 		await clearTranscriptObjects(video);

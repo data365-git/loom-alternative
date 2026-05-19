@@ -43,6 +43,24 @@ export async function createInviteLink({
 	const normalized = email.trim().toLowerCase();
 	if (!normalized.includes("@")) throw new Error("Invalid email");
 
+	const [existingInvite] = await db()
+		.select({ id: organizationInvites.id })
+		.from(organizationInvites)
+		.where(
+			and(
+				eq(organizationInvites.organizationId, me.activeOrganizationId),
+				eq(organizationInvites.invitedEmail, normalized),
+				eq(organizationInvites.status, "pending"),
+			),
+		)
+		.limit(1);
+
+	if (existingInvite) {
+		throw new Error(
+			"An invite for this email is already pending. Resend it from the members page instead.",
+		);
+	}
+
 	const token = nanoIdToken();
 	const expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000);
 

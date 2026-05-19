@@ -22,6 +22,7 @@ interface ActivityProps {
 	isOwnerOrMember: boolean;
 	isOwner: boolean;
 	commentsDisabled: boolean;
+	videoOwnerId?: string | null;
 }
 
 export const Activity = Object.assign(
@@ -37,6 +38,7 @@ export const Activity = Object.assign(
 				setOptimisticComments,
 				setComments,
 				commentsDisabled,
+				videoOwnerId,
 				...props
 			},
 			ref,
@@ -67,6 +69,7 @@ export const Activity = Object.assign(
 							setShowAuthOverlay={setShowAuthOverlay}
 							onSeek={props.onSeek}
 							commentsDisabled={commentsDisabled}
+							videoOwnerId={videoOwnerId}
 						/>
 					)}
 				</Activity.Shell>

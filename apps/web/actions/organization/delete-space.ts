@@ -13,6 +13,7 @@ import type { Space } from "@cap/web-domain";
 import { eq } from "drizzle-orm";
 import { Effect, Option } from "effect";
 import { revalidatePath } from "next/cache";
+import { recordAudit } from "@/lib/audit";
 import { runPromise } from "@/lib/server";
 import { requireSpaceManager } from "./space-authorization";
 
@@ -89,6 +90,15 @@ export async function deleteSpace(
 		}
 
 		await db().delete(spaces).where(eq(spaces.id, spaceId));
+
+		void recordAudit({
+			orgId: user.activeOrganizationId ?? undefined,
+			actorUserId: user.id,
+			action: "folder.delete",
+			entityType: "folder",
+			entityId: spaceId,
+			metadata: { spaceName: spaceData?.name },
+		});
 
 		revalidatePath("/dashboard");
 

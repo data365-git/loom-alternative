@@ -150,6 +150,7 @@ interface ShareProps {
 	userOrganizations?: { id: string; name: string }[];
 	viewerId?: string | null;
 	isEditProcessing: boolean;
+	editVersion?: number;
 	initialAiData?: {
 		title?: string | null;
 		summary?: string | null;
@@ -263,6 +264,7 @@ export const Share = ({
 	videoSettings,
 	viewerId,
 	isEditProcessing,
+	editVersion,
 }: ShareProps) => {
 	const effectiveDate: Date = data.metadata?.customCreatedAt
 		? new Date(data.metadata.customCreatedAt)
@@ -487,6 +489,7 @@ export const Share = ({
 									canRetryProcessing={viewerId === data.owner.id}
 									showPlaybackStatusBadge={viewerId === data.owner.id}
 									isEditProcessing={isEditProcessing}
+									editVersion={editVersion}
 									ref={playerRef}
 								/>
 							</div>

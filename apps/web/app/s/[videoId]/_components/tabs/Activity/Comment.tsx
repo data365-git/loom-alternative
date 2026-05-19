@@ -1,12 +1,14 @@
 import { Button } from "@cap/ui";
 import type { Comment } from "@cap/web-domain";
-import { faReply, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faPen, faReply, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import type React from "react";
+import { useState } from "react";
+import { editComment } from "@/actions/videos/edit-comment";
 import { useCurrentUser } from "@/app/Layout/AuthContext";
 import { SignedImageUrl } from "@/components/SignedImageUrl";
 import { Tooltip } from "@/components/Tooltip";
@@ -25,6 +27,8 @@ const CommentComponent: React.FC<{
 		commentId: Comment.CommentId,
 		parentId: Comment.CommentId | null,
 	) => void;
+	onEditSuccess: (commentId: Comment.CommentId, newContent: string) => void;
+	videoOwnerId: string | null | undefined;
 	level?: number;
 	onSeek?: (time: number) => void;
 }> = ({
@@ -35,12 +39,17 @@ const CommentComponent: React.FC<{
 	handleReply,
 	onCancelReply,
 	onDelete,
+	onEditSuccess,
+	videoOwnerId,
 	level = 0,
 	onSeek,
 }) => {
 	const user = useCurrentUser();
+	const [isEditing, setIsEditing] = useState(false);
 	const isReplying = replyingToId === comment.id;
 	const isOwnComment = user?.id === comment.authorId;
+	const canDelete =
+		isOwnComment || (user?.id != null && user.id === videoOwnerId);
 	const commentParams = useSearchParams().get("comment");
 	const replyParams = useSearchParams().get("reply");
 	const nestedReplies =
@@ -126,7 +135,24 @@ const CommentComponent: React.FC<{
 							)}
 						</div>
 					</div>
-					<p className="mt-2 text-sm text-gray-11">{comment.content}</p>
+					{isEditing ? (
+						<div className="mt-2">
+							<CommentInput
+								defaultValue={comment.content}
+								onSubmit={async (content) => {
+									await editComment({ commentId: comment.id, content });
+									onEditSuccess(comment.id, content.trim());
+									setIsEditing(false);
+								}}
+								onCancel={() => setIsEditing(false)}
+								placeholder="Edit comment..."
+								showCancelButton={true}
+								autoFocus={true}
+							/>
+						</div>
+					) : (
+						<p className="mt-2 text-sm text-gray-11">{comment.content}</p>
+					)}
 					<div className="flex items-center pt-2 mt-2.5 space-x-3 border-t border-gray-3">
 						{user && !isReplying && canReply && (
 							<Tooltip content="Reply">
@@ -141,7 +167,20 @@ const CommentComponent: React.FC<{
 								/>
 							</Tooltip>
 						)}
-						{isOwnComment && (
+						{isOwnComment && !isEditing && (
+							<Tooltip content="Edit comment">
+								<Button
+									onClick={() => setIsEditing(true)}
+									size="icon"
+									variant="outline"
+									icon={
+										<FontAwesomeIcon className="size-[10px]" icon={faPen} />
+									}
+									className="text-[13px] p-0 size-6"
+								/>
+							</Tooltip>
+						)}
+						{canDelete && (
 							<Tooltip content="Delete comment">
 								<Button
 									onClick={handleDelete}
@@ -182,6 +221,8 @@ const CommentComponent: React.FC<{
 							handleReply={handleReply}
 							onCancelReply={onCancelReply}
 							onDelete={onDelete}
+							onEditSuccess={onEditSuccess}
+							videoOwnerId={videoOwnerId}
 							level={1}
 							onSeek={onSeek}
 						/>

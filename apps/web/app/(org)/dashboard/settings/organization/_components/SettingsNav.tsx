@@ -1,6 +1,5 @@
 "use client";
 
-import { buildEnv } from "@cap/env";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -19,8 +18,20 @@ export function SettingsNav() {
 			href: "/dashboard/settings/organization/integrations",
 		},
 		{
-			label: buildEnv.NEXT_PUBLIC_IS_CAP ? "Billing & Members" : "Members",
+			label: "Billing",
 			href: "/dashboard/settings/organization/billing",
+		},
+		{
+			label: "Members",
+			href: "/dashboard/settings/organization/members",
+		},
+		{
+			label: "Permissions",
+			href: "/dashboard/settings/organization/permissions",
+		},
+		{
+			label: "Activity",
+			href: "/dashboard/settings/organization/activity",
 		},
 	] as const;
 

@@ -35,6 +35,7 @@ export const Comments = Object.assign(
 			onSeek?: (time: number) => void;
 			setShowAuthOverlay: (v: boolean) => void;
 			commentsDisabled: boolean;
+			videoOwnerId?: string | null;
 		}
 	>((props, ref) => {
 		const {
@@ -44,6 +45,7 @@ export const Comments = Object.assign(
 			handleCommentSuccess,
 			onSeek,
 			commentsDisabled,
+			videoOwnerId,
 		} = props;
 		const commentParams = useSearchParams().get("comment");
 		const replyParams = useSearchParams().get("reply");
@@ -194,6 +196,19 @@ export const Comments = Object.assign(
 			}
 		};
 
+		const handleEditComment = (
+			commentId: Comment.CommentId,
+			newContent: string,
+		) => {
+			setComments((prev) =>
+				prev.map((c) =>
+					c.id === commentId
+						? { ...c, content: newContent, updatedAt: new Date() }
+						: c,
+				),
+			);
+		};
+
 		return (
 			<Comments.Shell
 				commentInputProps={{
@@ -230,6 +245,8 @@ export const Comments = Object.assign(
 								handleReply={handleReply}
 								onCancelReply={handleCancelReply}
 								onDelete={handleDeleteComment}
+								onEditSuccess={handleEditComment}
+								videoOwnerId={videoOwnerId}
 								onSeek={onSeek}
 							/>
 						))}

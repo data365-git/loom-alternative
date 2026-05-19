@@ -2,18 +2,17 @@
 
 import { buildEnv } from "@cap/env";
 import { Card, CardDescription, CardHeader, CardTitle } from "@cap/ui";
+import Link from "next/link";
 import { useDashboardContext } from "@/app/(org)/dashboard/Contexts";
 import {
 	canManageOrganizationBilling,
 	getEffectiveOrganizationRole,
 } from "@/lib/permissions/roles";
 import { BillingSummaryCard } from "../components/BillingSummaryCard";
-import { MembersCard } from "../components/MembersCard";
 import { SeatManagementCard } from "../components/SeatManagementCard";
 
 export default function BillingAndMembersPage() {
-	const { activeOrganization, user, setInviteDialogOpen } =
-		useDashboardContext();
+	const { activeOrganization, user } = useDashboardContext();
 	const currentMember = activeOrganization?.members.find(
 		(member) => member.userId === user.id,
 	);
@@ -42,7 +41,21 @@ export default function BillingAndMembersPage() {
 						</CardHeader>
 					</Card>
 				))}
-			<MembersCard setIsInviteDialogOpen={setInviteDialogOpen} />
+			<Card>
+				<CardHeader>
+					<CardTitle>Members</CardTitle>
+					<CardDescription>
+						Member and invite management has moved to the{" "}
+						<Link
+							href="/dashboard/settings/organization/members"
+							className="underline"
+						>
+							Members tab
+						</Link>
+						.
+					</CardDescription>
+				</CardHeader>
+			</Card>
 		</div>
 	);
 }

@@ -5,11 +5,13 @@ import type { Video } from "@cap/web-domain";
 import {
 	ChevronLeft,
 	ChevronRight,
+	Clock,
 	Minus,
 	Pause,
 	Play,
 	Plus,
 	Redo2,
+	RotateCcw,
 	Scissors,
 	Trash2,
 	Undo2,
@@ -25,6 +27,11 @@ import {
 	useState,
 } from "react";
 import { toast } from "sonner";
+import {
+	type EditHistoryEntry,
+	getEditHistory,
+} from "@/actions/videos/get-edit-history";
+import { restoreOriginal } from "@/actions/videos/restore-original";
 import { saveVideoEdits } from "@/actions/videos/save-edits";
 import {
 	clearTimelineDraft,
@@ -291,7 +298,8 @@ function HeaderIconButton({
 function KeyboardShortcutsPopover() {
 	const [open, setOpen] = useState(false);
 	const isMac =
-		typeof navigator !== "undefined" && /Mac|iPhone|iPad/i.test(navigator.platform);
+		typeof navigator !== "undefined" &&
+		/Mac|iPhone|iPad/i.test(navigator.platform);
 	const mod = isMac ? "⌘" : "Ctrl";
 	const shortcuts: Array<{ keys: string; description: string }> = [
 		{ keys: "Space", description: "Play / Pause" },
@@ -717,6 +725,12 @@ export function EditVideoClient({ video }: { video: EditableVideo }) {
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [zoom, setZoom] = useState(1);
 	const [isSaving, setIsSaving] = useState(false);
+	const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+	const [historyEntries, setHistoryEntries] = useState<
+		EditHistoryEntry[] | null
+	>(null);
+	const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+	const [isRestoring, setIsRestoring] = useState(false);
 	const [selectedSplitIndex, setSelectedSplitIndex] = useState<number | null>(
 		null,
 	);
@@ -1644,6 +1658,48 @@ export function EditVideoClient({ video }: { video: EditableVideo }) {
 		updateZoomAround,
 	]);
 
+	const handleToggleHistory = useCallback(async () => {
+		if (isHistoryOpen) {
+			setIsHistoryOpen(false);
+			return;
+		}
+		setIsHistoryOpen(true);
+		if (historyEntries !== null) return;
+		setIsLoadingHistory(true);
+		try {
+			const result = await getEditHistory(video.id);
+			if (result.ok) setHistoryEntries(result.entries);
+		} finally {
+			setIsLoadingHistory(false);
+		}
+	}, [historyEntries, isHistoryOpen, video.id]);
+
+	const handleRestoreOriginal = useCallback(async () => {
+		if (isRestoring) return;
+		if (
+			!window.confirm(
+				"Restore the original unedited video? This cannot be undone.",
+			)
+		)
+			return;
+		setIsRestoring(true);
+		try {
+			const result = await restoreOriginal(video.id);
+			if (!result.ok) {
+				toast.error(result.error);
+				return;
+			}
+			router.push(`/s/${video.id}`);
+			router.refresh();
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : "Failed to restore original.",
+			);
+		} finally {
+			setIsRestoring(false);
+		}
+	}, [isRestoring, router, video.id]);
+
 	return (
 		<div className="flex min-h-screen flex-col bg-gray-1 text-gray-12">
 			<header className="sticky top-0 z-30 border-b border-gray-4 bg-white/85 backdrop-blur">
@@ -1661,6 +1717,22 @@ export function EditVideoClient({ video }: { video: EditableVideo }) {
 						</h1>
 					</div>
 					<div className="flex items-center gap-1">
+						<button
+							type="button"
+							aria-label="Edit history"
+							title="Edit history"
+							onClick={() => {
+								void handleToggleHistory();
+							}}
+							className={[
+								"inline-flex size-9 items-center justify-center rounded-full transition",
+								isHistoryOpen
+									? "bg-gray-3 text-gray-12"
+									: "text-gray-12 hover:bg-gray-3 active:bg-gray-4",
+							].join(" ")}
+						>
+							<Clock className="size-[18px]" />
+						</button>
 						<KeyboardShortcutsPopover />
 						<HeaderIconButton
 							label="Undo"
@@ -1691,6 +1763,55 @@ export function EditVideoClient({ video }: { video: EditableVideo }) {
 					</div>
 				</div>
 			</header>
+
+			{isHistoryOpen && (
+				<div className="border-b border-gray-4 bg-white px-3 py-3 sm:px-5">
+					<div className="mx-auto w-full max-w-6xl">
+						<div className="mb-2 flex items-center justify-between">
+							<span className="text-[13px] font-semibold text-gray-12">
+								Edit history
+							</span>
+							<button
+								type="button"
+								onClick={handleRestoreOriginal}
+								disabled={isRestoring}
+								className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-medium text-red-600 transition hover:bg-red-50 active:bg-red-100 disabled:pointer-events-none disabled:opacity-40"
+							>
+								<RotateCcw className="size-3" />
+								{isRestoring ? "Restoring…" : "Restore original"}
+							</button>
+						</div>
+						{isLoadingHistory ? (
+							<p className="text-[13px] text-gray-9">Loading…</p>
+						) : historyEntries && historyEntries.length === 0 ? (
+							<p className="text-[13px] text-gray-9">No edits saved yet.</p>
+						) : (
+							<ul className="max-h-40 space-y-1 overflow-y-auto">
+								{(historyEntries ?? []).map((entry) => (
+									<li
+										key={entry.id}
+										className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[12px] text-gray-11 hover:bg-gray-2"
+									>
+										<Clock className="size-3 shrink-0 text-gray-8" />
+										<span>
+											{new Date(entry.createdAt).toLocaleString(undefined, {
+												month: "short",
+												day: "numeric",
+												hour: "2-digit",
+												minute: "2-digit",
+											})}
+										</span>
+										<span className="text-gray-8">
+											{entry.editSpec.keepRanges.length} segment
+											{entry.editSpec.keepRanges.length !== 1 ? "s" : ""}
+										</span>
+									</li>
+								))}
+							</ul>
+						)}
+					</div>
+				</div>
+			)}
 
 			<main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-3 pt-3 pb-4 sm:px-5 sm:pt-4 sm:pb-5">
 				<section className="flex min-h-0 flex-1 items-center justify-center">

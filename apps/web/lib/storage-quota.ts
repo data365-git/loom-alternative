@@ -1,9 +1,5 @@
 import { db } from "@cap/database";
-import {
-	organizations,
-	videoUploads,
-	videos,
-} from "@cap/database/schema";
+import { organizations, videoUploads, videos } from "@cap/database/schema";
 import type { Organisation, User } from "@cap/web-domain";
 import { and, eq, sql } from "drizzle-orm";
 
@@ -39,13 +35,20 @@ export async function checkUploadQuota(args: {
 	const orgQuotaBytes = Number(org.settings.storageQuotaBytes ?? envQuota);
 	const userQuotaBytes = org.settings.userQuotaBytes ?? null;
 
+	const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
 	const [orgRow] = await db()
 		.select({
 			used: sql<number>`COALESCE(SUM(${videoUploads.total}), 0)`,
 		})
 		.from(videoUploads)
 		.innerJoin(videos, eq(videos.id, videoUploads.videoId))
-		.where(eq(videos.orgId, args.orgId));
+		.where(
+			and(
+				eq(videos.orgId, args.orgId),
+				sql`(${videoUploads.phase} != 'uploading' OR ${videoUploads.startedAt} > ${oneHourAgo})`,
+			),
+		);
 
 	const orgUsed = Number(orgRow?.used ?? 0);
 
@@ -67,7 +70,11 @@ export async function checkUploadQuota(args: {
 			.from(videoUploads)
 			.innerJoin(videos, eq(videos.id, videoUploads.videoId))
 			.where(
-				and(eq(videos.orgId, args.orgId), eq(videos.ownerId, args.userId)),
+				and(
+					eq(videos.orgId, args.orgId),
+					eq(videos.ownerId, args.userId),
+					sql`(${videoUploads.phase} != 'uploading' OR ${videoUploads.startedAt} > ${oneHourAgo})`,
+				),
 			);
 
 		const userUsed = Number(userRow?.used ?? 0);

@@ -165,6 +165,7 @@ export const Sidebar = forwardRef<{ scrollToBottom: () => void }, SidebarProps>(
 								isOwner={isOwner}
 								onSeek={onSeek}
 								videoId={data.id}
+								videoOwnerId={data.owner.id}
 							/>
 						</Suspense>
 					);

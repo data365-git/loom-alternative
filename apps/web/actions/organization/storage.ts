@@ -25,6 +25,7 @@ import {
 import { type Organisation, S3Bucket, Storage } from "@cap/web-domain";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { recordAudit } from "@/lib/audit";
 import { runPromise } from "@/lib/server";
 import { requireOrganizationSettingsManager } from "./authorization";
 
@@ -408,6 +409,15 @@ export async function saveOrganizationS3Config(input: S3ConfigInput) {
 		});
 	});
 
+	void recordAudit({
+		orgId: input.organizationId,
+		actorUserId: user.id,
+		action: "quota.update",
+		entityType: "organization",
+		entityId: input.organizationId,
+		metadata: { provider: input.provider, bucketName: input.bucketName },
+	});
+
 	revalidateStorageSettings();
 	return { success: true };
 }
@@ -415,11 +425,21 @@ export async function saveOrganizationS3Config(input: S3ConfigInput) {
 export async function removeOrganizationS3Config(
 	organizationId: Organisation.OrganisationId,
 ) {
-	await requireOrganizationStorageManagerPro(organizationId);
+	const { user } = await requireOrganizationStorageManagerPro(organizationId);
 	await db()
 		.update(s3Buckets)
 		.set({ active: false })
 		.where(eq(s3Buckets.organizationId, organizationId));
+
+	void recordAudit({
+		orgId: organizationId,
+		actorUserId: user.id,
+		action: "quota.update",
+		entityType: "organization",
+		entityId: organizationId,
+		metadata: { change: "s3_removed" },
+	});
+
 	revalidateStorageSettings();
 	return { success: true };
 }

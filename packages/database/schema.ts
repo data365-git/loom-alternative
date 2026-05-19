@@ -405,7 +405,10 @@ export const sharedVideos = mysqlTable(
 	"shared_videos",
 	{
 		id: nanoId("id").notNull().primaryKey(),
-		videoId: nanoId("videoId").notNull().$type<Video.VideoId>(),
+		videoId: nanoId("videoId")
+			.notNull()
+			.$type<Video.VideoId>()
+			.references(() => videos.id, { onDelete: "cascade" }),
 		folderId: nanoIdNullable("folderId").$type<Folder.FolderId>(),
 		organizationId: nanoId("organizationId")
 			.notNull()
@@ -438,11 +441,15 @@ export const comments = mysqlTable(
 		content: text("content").notNull(),
 		timestamp: float("timestamp"),
 		authorId: nanoId("authorId").notNull().$type<User.UserId>(),
-		videoId: nanoId("videoId").notNull().$type<Video.VideoId>(),
+		videoId: nanoId("videoId")
+			.notNull()
+			.$type<Video.VideoId>()
+			.references(() => videos.id, { onDelete: "cascade" }),
 		createdAt: timestamp("createdAt").notNull().defaultNow(),
 		updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
-		parentCommentId:
-			nanoIdNullable("parentCommentId").$type<Comment.CommentId>(),
+		parentCommentId: nanoIdNullable("parentCommentId")
+			.$type<Comment.CommentId>()
+			.references(() => comments.id, { onDelete: "cascade" }),
 	},
 	(table) => ({
 		videoTypeCreatedIndex: index("video_type_created_idx").on(
@@ -481,7 +488,9 @@ export const notifications = mysqlTable(
 				location?: string | null;
 			}>()
 			.notNull(),
-		videoId: varchar("videoId", { length: 50 }),
+		videoId: nanoIdNullable("videoId")
+			.$type<Video.VideoId>()
+			.references(() => videos.id, { onDelete: "cascade" }),
 		dedupKey: varchar("dedupKey", { length: 128 }),
 		readAt: timestamp("readAt"),
 		createdAt: timestamp("createdAt").notNull().defaultNow(),
@@ -681,7 +690,9 @@ export const storageObjects = mysqlTable(
 			.references(() => storageIntegrations.id, { onDelete: "restrict" })
 			.$type<Storage.StorageIntegrationId>(),
 		ownerId: nanoId("ownerId").notNull().$type<User.UserId>(),
-		videoId: nanoIdNullable("videoId").$type<Video.VideoId>(),
+		videoId: nanoIdNullable("videoId")
+			.$type<Video.VideoId>()
+			.references(() => videos.id, { onDelete: "cascade" }),
 		objectKey: text("objectKey").notNull(),
 		objectKeyHash: varchar("objectKeyHash", { length: 64 }).notNull(),
 		providerObjectId: varchar("providerObjectId", { length: 255 }).notNull(),
@@ -912,6 +923,33 @@ export const videoEditsRelations = relations(videoEdits, ({ one }) => ({
 	}),
 }));
 
+export const videoEditHistory = mysqlTable(
+	"video_edit_history",
+	{
+		id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+		videoId: nanoId("videoId")
+			.notNull()
+			.$type<Video.VideoId>()
+			.references(() => videos.id, { onDelete: "cascade" }),
+		editSpec: json("edit_spec").notNull().$type<VideoEditSpec>(),
+		resultKey: varchar("result_key", { length: 500 }),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+	},
+	(table) => ({
+		videoIdIndex: index("video_edit_history_video_id_idx").on(table.videoId),
+	}),
+);
+
+export const videoEditHistoryRelations = relations(
+	videoEditHistory,
+	({ one }) => ({
+		video: one(videos, {
+			fields: [videoEditHistory.videoId],
+			references: [videos.id],
+		}),
+	}),
+);
+
 export const sharedVideosRelations = relations(sharedVideos, ({ one }) => ({
 	video: one(videos, {
 		fields: [sharedVideos.videoId],
@@ -993,7 +1031,10 @@ export const spaceVideos = mysqlTable(
 		id: nanoId("id").notNull().primaryKey(),
 		spaceId: nanoId("spaceId").notNull().$type<Space.SpaceIdOrOrganisationId>(),
 		folderId: nanoIdNullable("folderId").$type<Folder.FolderId>(),
-		videoId: nanoId("videoId").notNull().$type<Video.VideoId>(),
+		videoId: nanoId("videoId")
+			.notNull()
+			.$type<Video.VideoId>()
+			.references(() => videos.id, { onDelete: "cascade" }),
 		addedById: nanoId("addedById").notNull().$type<User.UserId>(),
 		addedAt: timestamp("addedAt").notNull().defaultNow(),
 	},
@@ -1070,7 +1111,11 @@ export const foldersRelations = relations(folders, ({ one, many }) => ({
 }));
 
 export const videoUploads = mysqlTable("video_uploads", {
-	videoId: nanoId("video_id").primaryKey().notNull().$type<Video.VideoId>(),
+	videoId: nanoId("video_id")
+		.primaryKey()
+		.notNull()
+		.$type<Video.VideoId>()
+		.references(() => videos.id, { onDelete: "cascade" }),
 	uploaded: bigint("uploaded", { mode: "number", unsigned: true })
 		.notNull()
 		.$defaultFn(() => 0),
@@ -1383,3 +1428,14 @@ export const developerDailyStorageSnapshotsRelations = relations(
 		}),
 	}),
 );
+
+export const auditLog = mysqlTable("audit_log", {
+	id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),
+	orgId: varchar("org_id", { length: 36 }),
+	actorUserId: varchar("actor_user_id", { length: 36 }),
+	action: varchar("action", { length: 100 }).notNull(),
+	entityType: varchar("entity_type", { length: 50 }).notNull(),
+	entityId: varchar("entity_id", { length: 100 }),
+	metadata: json("metadata"),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+});

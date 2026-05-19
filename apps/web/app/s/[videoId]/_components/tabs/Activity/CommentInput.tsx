@@ -10,6 +10,7 @@ interface CommentInputProps {
 	buttonLabel?: string;
 	autoFocus?: boolean;
 	disabled?: boolean;
+	defaultValue?: string;
 }
 
 const CommentInput: React.FC<CommentInputProps> = ({
@@ -20,8 +21,9 @@ const CommentInput: React.FC<CommentInputProps> = ({
 	buttonLabel = "Reply",
 	autoFocus = false,
 	disabled,
+	defaultValue = "",
 }) => {
-	const [content, setContent] = useState("");
+	const [content, setContent] = useState(defaultValue);
 	const inputRef = useRef<HTMLTextAreaElement>(null);
 
 	useEffect(() => {
