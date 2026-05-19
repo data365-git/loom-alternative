@@ -82,7 +82,6 @@ export function DashboardContexts({
 	referClicked: boolean;
 }) {
 	const user = useCurrentUser();
-	if (!user) redirect("/login");
 
 	const [theme, setTheme] = useState<ITheme>(initialTheme);
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(
@@ -95,31 +94,6 @@ export function DashboardContexts({
 		null,
 	);
 	const pathname = usePathname();
-	const isDeveloperSection = pathname.startsWith("/dashboard/developers");
-
-	// Calculate user's spaces (both owned and member of)
-	const userSpaces =
-		spacesData?.filter((space) =>
-			// User might be the space owner or a member of the space in the organization
-			activeOrganization?.members.some(
-				(member) =>
-					member.userId === user.id &&
-					member.organizationId === space.organizationId,
-			),
-		) || null;
-
-	// Spaces shared with the user but not owned by them
-	const sharedSpaces =
-		spacesData?.filter((space) =>
-			activeOrganization?.members.some(
-				(member) =>
-					member.userId === user.id &&
-					member.organizationId === space.organizationId &&
-					member.role === "member",
-			),
-		) || null;
-
-	// Get activeSpace from URL if on a space page
 	const [activeSpace, setActiveSpace] = useState<Spaces | null>(null);
 
 	useEffect(() => {
@@ -166,6 +140,31 @@ export function DashboardContexts({
 			expires: 365,
 		});
 	};
+
+	if (!user) {
+		redirect("/login");
+	}
+
+	const isDeveloperSection = pathname.startsWith("/dashboard/developers");
+
+	const userSpaces =
+		spacesData?.filter((space) =>
+			activeOrganization?.members.some(
+				(member) =>
+					member.userId === user.id &&
+					member.organizationId === space.organizationId,
+			),
+		) || null;
+
+	const sharedSpaces =
+		spacesData?.filter((space) =>
+			activeOrganization?.members.some(
+				(member) =>
+					member.userId === user.id &&
+					member.organizationId === space.organizationId &&
+					member.role === "member",
+			),
+		) || null;
 
 	return (
 		<ThemeContext.Provider value={{ theme, setThemeHandler }}>
