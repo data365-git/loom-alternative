@@ -64,7 +64,7 @@ export const DesktopNav = () => {
 						</Link>
 					) : (
 						<Link
-							href="/dashboard"
+							href="/dashboard/caps"
 							className={clsx(
 								"flex items-center gap-2",
 								sidebarCollapsed ? "justify-center mx-auto" : "",

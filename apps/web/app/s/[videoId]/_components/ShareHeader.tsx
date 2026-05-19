@@ -340,7 +340,7 @@ export const ShareHeader = ({
 					</div>
 				) : (
 					<Link
-						href={user ? "/dashboard" : "/"}
+						href={user ? "/dashboard/caps" : "/"}
 						className="inline-flex h-11 items-center gap-2"
 					>
 						<LogoBadge className="h-7 w-7" />
