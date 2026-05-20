@@ -3,7 +3,11 @@
 import { db } from "@cap/database";
 import { getCurrentUser } from "@cap/database/auth/session";
 import { nanoId } from "@cap/database/helpers";
-import { organizationMembers, users } from "@cap/database/schema";
+import {
+	organizationInvites,
+	organizationMembers,
+	users,
+} from "@cap/database/schema";
 import type { User } from "@cap/web-domain";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -41,6 +45,16 @@ export async function inviteByEmail({ email, name, role }: InviteInput) {
 
 	const normalized = email.trim().toLowerCase();
 	if (!normalized.includes("@")) throw new Error("Invalid email");
+
+	await db()
+		.delete(organizationInvites)
+		.where(
+			and(
+				eq(organizationInvites.organizationId, orgId),
+				eq(organizationInvites.invitedEmail, normalized),
+				eq(organizationInvites.status, "pending"),
+			),
+		);
 
 	const [existing] = await db()
 		.select({ id: users.id })

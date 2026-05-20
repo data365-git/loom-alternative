@@ -1,6 +1,7 @@
 "use client";
 
 import { Button, Input } from "@cap/ui";
+import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 import { inviteByEmail } from "@/actions/organization/invite-by-email";
@@ -11,6 +12,7 @@ type Mode = "direct" | "link";
 export function InviteMemberForm() {
 	const emailId = useId();
 	const roleId = useId();
+	const router = useRouter();
 	const [mode, setMode] = useState<Mode>("direct");
 	const [email, setEmail] = useState("");
 	const [role, setRole] = useState<"admin" | "member">("member");
@@ -49,8 +51,12 @@ export function InviteMemberForm() {
 					try {
 						if (mode === "direct") {
 							await inviteByEmail({ email, role });
-							toast.success(`${email} added. They can sign in now.`);
+							toast.success(
+								`${email} added — they can sign in at /login with this email.`,
+								{ duration: 6000 },
+							);
 							setEmail("");
+							router.refresh();
 						} else {
 							const { url, expiresAt } = await createInviteLink({
 								email,

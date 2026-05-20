@@ -20,6 +20,7 @@ import { faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -224,22 +225,18 @@ export const MembersCard = ({ setIsInviteDialogOpen }: MembersCardProps) => {
 						<CardTitle>Members</CardTitle>
 						<CardDescription>Manage your organization members.</CardDescription>
 					</CardHeader>
-					<Button
-						type="button"
-						size="sm"
-						variant="dark"
-						className="px-6 min-w-auto"
-						onClick={() => {
-							if (!canManageMembers) {
-								showMemberManagerToast();
-								return;
-							}
-							setIsInviteDialogOpen(true);
-						}}
-						disabled={!canManageMembers}
-					>
-						+ Invite users
-					</Button>
+					{canManageMembers && (
+						<Link href="/dashboard/settings/organization/members">
+							<Button
+								type="button"
+								size="sm"
+								variant="dark"
+								className="px-6 min-w-auto"
+							>
+								Manage members →
+							</Button>
+						</Link>
+					)}
 				</div>
 				<Table className="mt-5">
 					<TableHeader>
