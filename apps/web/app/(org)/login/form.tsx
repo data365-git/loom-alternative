@@ -15,11 +15,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 import { getOrganizationSSOData } from "@/actions/organization/get-organization-sso-data";
 import { trackEvent } from "@/app/utils/analytics";
 import { usePublicEnv } from "@/utils/public-env";
+import { getEmailCodeCooldownSeconds, requestEmailCode } from "../auth-email";
 
 const MotionInput = motion(Input);
 const MotionLogoBadge = motion(LogoBadge);
@@ -39,10 +40,7 @@ export function LoginForm() {
 	const theme = Cookies.get("theme") || "light";
 
 	useEffect(() => {
-		theme === "dark"
-			? (document.body.className = "dark")
-			: (document.body.className = "light");
-		//remove the dark mode when we leave the dashboard
+		document.body.className = theme === "dark" ? "dark" : "light";
 		return () => {
 			document.body.className = "light";
 		};
@@ -216,9 +214,9 @@ export function LoginForm() {
 											ease: "easeInOut",
 											opacity: { delay: 0.05 },
 										}}
+										noValidate
 										onSubmit={async (e) => {
 											e.preventDefault();
-											if (!email) return;
 
 											setLoading(true);
 											const normalizedEmail = email.trim().toLowerCase();
@@ -304,6 +302,8 @@ const LoginWithSSO = ({
 	setOrganizationId: (organizationId: string) => void;
 	organizationName: string | null;
 }) => {
+	const organizationIdInputId = useId();
+
 	return (
 		<motion.form
 			layout
@@ -311,7 +311,7 @@ const LoginWithSSO = ({
 			className="relative space-y-2"
 		>
 			<MotionInput
-				id="organizationId"
+				id={organizationIdInputId}
 				placeholder="Enter your Organization ID..."
 				value={organizationId}
 				onChange={(e) => setOrganizationId(e.target.value)}
@@ -345,12 +345,13 @@ const NormalLogin = ({
 	handleGoogleSignIn: () => void;
 }) => {
 	const publicEnv = usePublicEnv();
+	const emailInputId = useId();
 
 	return (
 		<motion.div>
 			<motion.div layout className="flex flex-col space-y-3">
 				<MotionInput
-					id="email"
+					id={emailInputId}
 					name="email"
 					autoFocus
 					type="email"
@@ -367,9 +368,14 @@ const NormalLogin = ({
 					variant="dark"
 					type="submit"
 					disabled={loading}
-					icon={<FontAwesomeIcon className="mr-1 size-4" icon={faEnvelope} />}
+					spinner={loading}
+					icon={
+						loading ? undefined : (
+							<FontAwesomeIcon className="mr-1 size-4" icon={faEnvelope} />
+						)
+					}
 				>
-					Login with email
+					{loading ? "Sending code..." : "Login with email"}
 				</MotionButton>
 				{/* {NODE_ENV === "development" && (
                   <div className="flex justify-center items-center px-6 py-3 mt-3 bg-red-600 rounded-xl">

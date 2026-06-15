@@ -17,7 +17,9 @@ import {
 import { type ImageUpload, Organisation } from "@cap/web-domain";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Effect, Option } from "effect";
+import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 import { deleteAccount } from "@/actions/account/delete-account";
@@ -27,7 +29,7 @@ import { useEffectMutation, useRpcClient } from "@/lib/EffectRuntime";
 import { useDashboardContext } from "../../Contexts";
 import { ApiKeysSection } from "./components/ApiKeysSection";
 import { ProfileImage } from "./components/ProfileImage";
-import { patchAccountSettings } from "./server";
+import { patchAccountSettings, signOutAllDevices } from "./server";
 
 type NotificationPrefs = {
 	pauseComments: boolean;
@@ -220,6 +222,7 @@ export const Settings = () => {
 	const [defaultOrgId, setDefaultOrgId] = useState<
 		Organisation.OrganisationId | undefined
 	>(user?.defaultOrgId || undefined);
+	const [signOutAllDevicesOpen, setSignOutAllDevicesOpen] = useState(false);
 	const firstNameId = useId();
 	const lastNameId = useId();
 	const contactEmailId = useId();
@@ -261,6 +264,18 @@ export const Settings = () => {
 		},
 		onError: () => {
 			toast.error("Failed to update name");
+		},
+	});
+
+	const signOutAllDevicesMutation = useMutation({
+		mutationFn: signOutAllDevices,
+		onSuccess: () => {
+			toast.success("Signed out of all devices");
+			setSignOutAllDevicesOpen(false);
+			signOut({ callbackUrl: "/login" });
+		},
+		onError: () => {
+			toast.error("Failed to sign out of all devices");
 		},
 	});
 
@@ -465,6 +480,69 @@ export const Settings = () => {
 					{updateNamePending ? "Saving..." : "Save"}
 				</Button>
 			</form>
+			<Card className="flex flex-col gap-4 mt-6 md:flex-row md:items-center md:justify-between">
+				<div className="space-y-1">
+					<CardTitle>Sign out of all devices</CardTitle>
+					<CardDescription>
+						Invalidate every Cap web session and desktop app authentication
+						token connected to your account.
+					</CardDescription>
+				</div>
+				<Button
+					type="button"
+					size="sm"
+					variant="destructive"
+					icon={<LogOut className="size-4" />}
+					onClick={() => setSignOutAllDevicesOpen(true)}
+				>
+					Sign out all devices
+				</Button>
+			</Card>
+			<Dialog
+				open={signOutAllDevicesOpen}
+				onOpenChange={setSignOutAllDevicesOpen}
+			>
+				<DialogContent>
+					<DialogHeader
+						icon={<LogOut className="size-4" />}
+						description="This will immediately invalidate existing Cap web sessions, desktop session tokens, and desktop API keys for your account."
+					>
+						<DialogTitle>Sign out of all devices?</DialogTitle>
+					</DialogHeader>
+					<div className="p-5 space-y-3 text-sm text-gray-11">
+						<p>
+							You will be signed out of this browser after the reset completes.
+						</p>
+						<p>
+							The Cap desktop app may need you to click Sign out, then sign in
+							again before uploads and settings sync work.
+						</p>
+					</div>
+					<DialogFooter>
+						<Button
+							type="button"
+							size="sm"
+							variant="gray"
+							onClick={() => setSignOutAllDevicesOpen(false)}
+						>
+							Cancel
+						</Button>
+						<Button
+							type="button"
+							size="sm"
+							variant="destructive"
+							icon={<LogOut className="size-4" />}
+							onClick={() => signOutAllDevicesMutation.mutate()}
+							spinner={signOutAllDevicesMutation.isPending}
+							disabled={signOutAllDevicesMutation.isPending}
+						>
+							{signOutAllDevicesMutation.isPending
+								? "Signing out..."
+								: "Sign out all devices"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 			<DangerZone userEmail={user?.email as string} />
 		</>
 	);

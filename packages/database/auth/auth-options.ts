@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import type { NextAuthOptions } from "next-auth";
 import { getServerSession as _getServerSession } from "next-auth";
 import type { Adapter } from "next-auth/adapters";
+import { decode, type JWT, type JWTDecodeParams } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import type { Provider } from "next-auth/providers/index";
@@ -14,6 +15,31 @@ import { organizationInvites, organizationMembers, users } from "../schema.ts";
 import { DrizzleAdapter } from "./drizzle-adapter.ts";
 
 export const maxDuration = 120;
+
+export async function decodeSessionToken(
+	params: JWTDecodeParams,
+): Promise<JWT | null> {
+	const token = await decode(params);
+	if (!token) return null;
+
+	const userId = typeof token.id === "string" ? token.id : null;
+	if (!userId) return token;
+
+	const [user] = await db()
+		.select({ authSessionVersion: users.authSessionVersion })
+		.from(users)
+		.where(eq(users.id, User.UserId.make(userId)))
+		.limit(1);
+
+	if (!user) return null;
+
+	const sessionVersion =
+		typeof token.sessionVersion === "number" ? token.sessionVersion : 0;
+
+	if (sessionVersion !== user.authSessionVersion) return null;
+
+	return token;
+}
 
 export const authOptions = (): NextAuthOptions => {
 	let _adapter: Adapter | undefined;
@@ -29,6 +55,9 @@ export const authOptions = (): NextAuthOptions => {
 		session: {
 			strategy: "jwt",
 		},
+		jwt: {
+			decode: decodeSessionToken,
+		},
 		get secret() {
 			return serverEnv().NEXTAUTH_SECRET;
 		},
@@ -39,8 +68,8 @@ export const authOptions = (): NextAuthOptions => {
 			if (_providers) return _providers;
 			_providers = [
 				GoogleProvider({
-					clientId: serverEnv().GOOGLE_CLIENT_ID!,
-					clientSecret: serverEnv().GOOGLE_CLIENT_SECRET!,
+					clientId: serverEnv().GOOGLE_CLIENT_ID as string,
+					clientSecret: serverEnv().GOOGLE_CLIENT_SECRET as string,
 					authorization: {
 						params: {
 							scope: [
@@ -223,6 +252,7 @@ export const authOptions = (): NextAuthOptions => {
 							lastName: users.lastName,
 							email: users.email,
 							image: users.image,
+							authSessionVersion: users.authSessionVersion,
 						})
 						.from(users)
 						.where(eq(users.email, (token.email || "").toLowerCase()))
@@ -241,6 +271,7 @@ export const authOptions = (): NextAuthOptions => {
 						lastName: dbUser.lastName,
 						email: dbUser.email,
 						picture: dbUser.image,
+						sessionVersion: dbUser.authSessionVersion,
 					};
 				}
 

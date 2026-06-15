@@ -1,8 +1,10 @@
 import type {
+	AiGenerationLanguage,
 	Comment,
 	Folder,
 	ImageUpload,
 	Organisation,
+	PublicCollection,
 	S3Bucket,
 	Space,
 	Storage,
@@ -123,6 +125,7 @@ export const users = mysqlTable(
 		defaultOrgId:
 			nanoIdNullable("defaultOrgId").$type<Organisation.OrganisationId>(),
 		geminiApiKey: encryptedTextNullable("geminiApiKey"),
+		authSessionVersion: int("authSessionVersion").notNull().default(0),
 	},
 	(table) => ({
 		emailIndex: uniqueIndex("email_idx").on(table.email),
@@ -206,6 +209,8 @@ export const organizations = mysqlTable(
 			storageQuotaBytes?: number;
 			userQuotaBytes?: number;
 			enforceQuota?: boolean;
+			aiGenerationLanguage?: AiGenerationLanguage;
+			defaultPlaybackSpeed?: number;
 		}>(),
 		iconUrl: varchar("iconUrl", {
 			length: 1024,
@@ -293,6 +298,11 @@ export const folders = mysqlTable(
 		})
 			.notNull()
 			.default("normal"),
+		// Internet-facing public collection link (/c/[id]).
+		public: boolean("public").notNull().default(false),
+		settings: json("settings").$type<{
+			publicPage?: PublicCollection.PublicPageSettings;
+		}>(),
 		organizationId: nanoId("organizationId")
 			.notNull()
 			.$type<Organisation.OrganisationId>(),
@@ -307,6 +317,15 @@ export const folders = mysqlTable(
 		createdByIdIndex: index("created_by_id_idx").on(table.createdById),
 		parentIdIndex: index("parent_id_idx").on(table.parentId),
 		spaceIdIndex: index("space_id_idx").on(table.spaceId),
+		publicParentIdIndex: index("public_parent_id_idx").on(
+			table.public,
+			table.parentId,
+		),
+		publicSpaceParentIdIndex: index("public_space_parent_id_idx").on(
+			table.public,
+			table.spaceId,
+			table.parentId,
+		),
 	}),
 );
 
@@ -335,6 +354,7 @@ export const videos = mysqlTable(
 			disableReactions?: boolean;
 			disableTranscript?: boolean;
 			disableComments?: boolean;
+			defaultPlaybackSpeed?: number;
 		}>(),
 		transcriptionStatus: varchar("transcriptionStatus", { length: 255 }).$type<
 			"PROCESSING" | "COMPLETE" | "ERROR" | "SKIPPED" | "NO_AUDIO"
@@ -996,17 +1016,26 @@ export const spaces = mysqlTable(
 			disableReactions?: boolean;
 			disableTranscript?: boolean;
 			disableComments?: boolean;
+			publicPage?: PublicCollection.PublicPageSettings;
 		}>(),
 		password: encryptedTextNullable("password"),
 		createdAt: timestamp("createdAt").notNull().defaultNow(),
 		updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
+		// Org-internal browsability: "Public" spaces are visible to all org
+		// members. Unrelated to the internet-facing `public` flag below.
 		privacy: varchar("privacy", { length: 255, enum: ["Public", "Private"] })
 			.notNull()
 			.default("Private"),
+		// Internet-facing public collection link (/c/[id]).
+		public: boolean("public").notNull().default(false),
 	},
 	(table) => ({
 		organizationIdIndex: index("organization_id_idx").on(table.organizationId),
 		createdByIdIndex: index("created_by_id_idx").on(table.createdById),
+		publicOrganizationIdIndex: index("public_organization_id_idx").on(
+			table.public,
+			table.organizationId,
+		),
 	}),
 );
 
@@ -1117,32 +1146,42 @@ export const foldersRelations = relations(folders, ({ one, many }) => ({
 	videos: many(videos),
 }));
 
-export const videoUploads = mysqlTable("video_uploads", {
-	videoId: nanoId("video_id")
-		.primaryKey()
-		.notNull()
-		.$type<Video.VideoId>()
-		.references(() => videos.id, { onDelete: "cascade" }),
-	uploaded: bigint("uploaded", { mode: "number", unsigned: true })
-		.notNull()
-		.$defaultFn(() => 0),
-	total: bigint("total", { mode: "number", unsigned: true })
-		.notNull()
-		.$defaultFn(() => 0),
-	startedAt: timestamp("started_at").notNull().defaultNow(),
-	updatedAt: timestamp("updated_at").notNull().defaultNow(),
-	mode: varchar("mode", { length: 255, enum: ["singlepart", "multipart"] }),
-	phase: varchar("phase", { length: 32 })
-		.$type<
-			"uploading" | "processing" | "generating_thumbnail" | "complete" | "error"
-		>()
-		.notNull()
-		.default("uploading"),
-	processingProgress: int("processing_progress").notNull().default(0),
-	processingMessage: varchar("processing_message", { length: 255 }),
-	processingError: text("processing_error"),
-	rawFileKey: varchar("raw_file_key", { length: 512 }),
-});
+export const videoUploads = mysqlTable(
+	"video_uploads",
+	{
+		videoId: nanoId("video_id").primaryKey().notNull().$type<Video.VideoId>(),
+		uploaded: bigint("uploaded", { mode: "number", unsigned: true })
+			.notNull()
+			.$defaultFn(() => 0),
+		total: bigint("total", { mode: "number", unsigned: true })
+			.notNull()
+			.$defaultFn(() => 0),
+		startedAt: timestamp("started_at").notNull().defaultNow(),
+		updatedAt: timestamp("updated_at").notNull().defaultNow(),
+		mode: varchar("mode", { length: 255, enum: ["singlepart", "multipart"] }),
+		phase: varchar("phase", { length: 32 })
+			.$type<
+				| "uploading"
+				| "processing"
+				| "generating_thumbnail"
+				| "complete"
+				| "error"
+			>()
+			.notNull()
+			.default("uploading"),
+		processingProgress: int("processing_progress").notNull().default(0),
+		processingMessage: varchar("processing_message", { length: 255 }),
+		processingError: text("processing_error"),
+		rawFileKey: varchar("raw_file_key", { length: 512 }),
+	},
+	(table) => [
+		index("phase_updated_at_video_id_idx").on(
+			table.phase,
+			table.updatedAt,
+			table.videoId,
+		),
+	],
+);
 
 export const importedVideos = mysqlTable(
 	"imported_videos",

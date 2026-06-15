@@ -33,8 +33,8 @@ import { useDashboardContext } from "@/app/(org)/dashboard/Contexts";
 import {
 	type AssignableOrganizationRole,
 	canChangeOrganizationMemberRole,
-	canManageOrganizationBilling,
 	canManageOrganizationMembers,
+	canManageOrganizationProSeats,
 	canRemoveOrganizationMember,
 	getEffectiveOrganizationRole,
 	normalizeAssignableOrganizationRole,
@@ -59,7 +59,7 @@ export const MembersCard = ({ setIsInviteDialogOpen }: MembersCardProps) => {
 		memberRole: currentMember?.role,
 	});
 	const canManageMembers = canManageOrganizationMembers(currentRole);
-	const canManageBilling = canManageOrganizationBilling(currentRole);
+	const canManageProSeats = canManageOrganizationProSeats(currentRole);
 
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [pendingMember, setPendingMember] = useState<{
@@ -319,7 +319,7 @@ export const MembersCard = ({ setIsInviteDialogOpen }: MembersCardProps) => {
 														})
 													}
 													disabled={
-														!canManageBilling ||
+														!canManageProSeats ||
 														(toggleProSeatMutation.isPending &&
 															toggleProSeatMutation.variables?.memberId ===
 																member.id) ||

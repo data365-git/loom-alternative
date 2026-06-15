@@ -10,12 +10,14 @@ import {
 	users,
 	videos,
 } from "@cap/database/schema";
+import { userIsPro } from "@cap/utils";
 import { Database, ImageUploads } from "@cap/web-backend";
 import type { ImageUpload } from "@cap/web-domain";
 import { and, count, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { Effect } from "effect";
 import {
 	canManageOrganizationMembers,
+	canManageOrganizationProSeats,
 	canManageSpace,
 	getEffectiveOrganizationRole,
 	getEffectiveSpaceRole,
@@ -23,6 +25,7 @@ import {
 	type SpaceRole,
 } from "@/lib/permissions/roles";
 import { runPromise } from "@/lib/server";
+import { selectProSeatProvider } from "@/utils/organization";
 
 export type Organization = {
 	organization: Omit<
@@ -41,6 +44,8 @@ export type Organization = {
 	invites: (typeof organizationInvites.$inferSelect)[];
 	inviteQuota: number;
 	totalInvites: number;
+	/** Whether the organization OWNER is on Pro — gates org-wide Pro features. */
+	ownerIsPro: boolean;
 };
 
 export type OrganizationSettings = NonNullable<
@@ -61,25 +66,57 @@ export type Spaces = Omit<
 
 export type UserPreferences = (typeof users.$inferSelect)["preferences"];
 
+function mergeUserOrganizations(
+	ownedOrganizations: (typeof organizations.$inferSelect)[],
+	memberOrganizations: { organization: typeof organizations.$inferSelect }[],
+) {
+	const organizationsById = new Map<
+		string,
+		typeof organizations.$inferSelect
+	>();
+
+	for (const organization of ownedOrganizations) {
+		organizationsById.set(organization.id, organization);
+	}
+
+	for (const { organization } of memberOrganizations) {
+		organizationsById.set(organization.id, organization);
+	}
+
+	return Array.from(organizationsById.values());
+}
+
 export async function getDashboardData(user: typeof userSelectProps) {
 	try {
-		const memberOrgIds = db()
-			.select({ id: organizationMembers.organizationId })
-			.from(organizationMembers)
-			.where(eq(organizationMembers.userId, user.id));
-
-		const userOrganizations = await db()
-			.select()
-			.from(organizations)
-			.where(
-				and(
-					isNull(organizations.tombstoneAt),
-					or(
+		const [ownedOrganizations, memberOrganizations] = await Promise.all([
+			db()
+				.select()
+				.from(organizations)
+				.where(
+					and(
+						isNull(organizations.tombstoneAt),
 						eq(organizations.ownerId, user.id),
-						inArray(organizations.id, memberOrgIds),
 					),
 				),
-			);
+			db()
+				.select({ organization: organizations })
+				.from(organizationMembers)
+				.innerJoin(
+					organizations,
+					eq(organizations.id, organizationMembers.organizationId),
+				)
+				.where(
+					and(
+						eq(organizationMembers.userId, user.id),
+						isNull(organizations.tombstoneAt),
+					),
+				),
+		]);
+
+		const userOrganizations = mergeUserOrganizations(
+			ownedOrganizations,
+			memberOrganizations,
+		);
 
 		const organizationIds = userOrganizations.map((org) => org.id);
 
@@ -157,6 +194,7 @@ export async function getDashboardData(user: typeof userSelectProps) {
 								id: spaces.id,
 								primary: spaces.primary,
 								privacy: spaces.privacy,
+								public: spaces.public,
 								name: spaces.name,
 								description: spaces.description,
 								organizationId: spaces.organizationId,
@@ -272,6 +310,7 @@ export async function getDashboardData(user: typeof userSelectProps) {
 						videoCount: orgVideoCount,
 						settings: null,
 						hasPassword: false,
+						public: false,
 						currentUserRole: currentOrganizationRole,
 						currentUserCanManage: canManageOrganizationMembers(
 							currentOrganizationRole,
@@ -314,15 +353,41 @@ export async function getDashboardData(user: typeof userSelectProps) {
 							.where(eq(organizationMembers.organizationId, organization.id)),
 					);
 
-					const owner = yield* db.use((db) =>
+					const managerIds = Array.from(
+						new Set([organization.ownerId, user.id]),
+					);
+					const managers = yield* db.use((db) =>
 						db
 							.select({
+								id: users.id,
 								inviteQuota: users.inviteQuota,
+								stripeSubscriptionId: users.stripeSubscriptionId,
+								stripeSubscriptionStatus: users.stripeSubscriptionStatus,
+								thirdPartyStripeSubscriptionId:
+									users.thirdPartyStripeSubscriptionId,
 							})
 							.from(users)
-							.where(eq(users.id, organization.ownerId))
-							.then((result) => result[0]),
+							.where(inArray(users.id, managerIds)),
 					);
+					const owner = managers.find(
+						(manager) => manager.id === organization.ownerId,
+					);
+					const currentManager = managers.find(
+						(manager) => manager.id === user.id,
+					);
+					const currentMember = allMembers.find(
+						(member) => member.member.userId === user.id,
+					);
+					const currentRole = getEffectiveOrganizationRole({
+						userId: user.id,
+						ownerId: organization.ownerId,
+						memberRole: currentMember?.member.role,
+					});
+					const proSeatProvider = selectProSeatProvider({
+						actor: currentManager,
+						owner,
+						actorCanManageProSeats: canManageOrganizationProSeats(currentRole),
+					});
 
 					const ownedOrgIds = db.use((db) =>
 						db
@@ -395,8 +460,9 @@ export async function getDashboardData(user: typeof userSelectProps) {
 						invites: organizationInvitesData.filter(
 							(invite) => invite.organizationId === organization.id,
 						),
-						inviteQuota: owner?.inviteQuota || 1,
+						inviteQuota: proSeatProvider?.inviteQuota || 1,
 						totalInvites,
+						ownerIsPro: userIsPro(owner ?? null),
 					};
 				}),
 			),

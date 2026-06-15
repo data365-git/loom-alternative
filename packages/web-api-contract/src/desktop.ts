@@ -126,7 +126,7 @@ const protectedContract = c.router(
 			contentType: "application/x-www-form-urlencoded",
 			body: z.object({
 				feedback: z.string(),
-				os: z.union([z.literal("macos"), z.literal("windows")]),
+				os: z.enum(["macos", "windows", "linux"]),
 				version: z.string(),
 			}),
 			responses: {
@@ -140,6 +140,17 @@ const protectedContract = c.router(
 				200: z.object({
 					upgraded: z.boolean(),
 					stripeSubscriptionStatus: z.string().nullable(),
+				}),
+			},
+		},
+		getUserProfile: {
+			method: "GET",
+			path: "/desktop/user/profile",
+			responses: {
+				200: z.object({
+					name: z.string().nullable(),
+					email: z.string().nullable(),
+					imageUrl: z.string().nullable(),
 				}),
 			},
 		},

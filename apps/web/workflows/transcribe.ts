@@ -58,25 +58,31 @@ export async function transcribeVideoWorkflow(
 		return { success: true, message: "Transcription disabled - skipped" };
 	}
 
-	const audioUrl = await extractAudio(videoId, userId, videoData.video);
+	try {
+		const audioUrl = await extractAudio(videoId, userId, videoData.video);
 
-	if (!audioUrl) {
-		await markNoAudio(videoId);
-		return {
-			success: true,
-			message: "Video has no audio track - skipped transcription",
-		};
+		if (!audioUrl) {
+			await markNoAudio(videoId);
+			return {
+				success: true,
+				message: "Video has no audio track - skipped transcription",
+			};
+		}
+
+		const [transcription] = await Promise.all([
+			transcribeAudio(
+				audioUrl,
+				videoData.video.duration,
+				videoData.ownerEncryptedGeminiKey,
+			),
+		]);
+
+		await saveTranscription(videoId, userId, videoData.video, transcription);
+	} catch (error) {
+		await markError(videoId);
+		await cleanupTempAudio(videoId, userId, videoData.video);
+		throw error;
 	}
-
-	const [transcription] = await Promise.all([
-		transcribeAudio(
-			audioUrl,
-			videoData.video.duration,
-			videoData.ownerEncryptedGeminiKey,
-		),
-	]);
-
-	await saveTranscription(videoId, userId, videoData.video, transcription);
 
 	await cleanupTempAudio(videoId, userId, videoData.video);
 
@@ -150,6 +156,15 @@ async function markNoAudio(videoId: string): Promise<void> {
 	await db()
 		.update(videos)
 		.set({ transcriptionStatus: "NO_AUDIO" })
+		.where(eq(videos.id, videoId as Video.VideoId));
+}
+
+async function markError(videoId: string): Promise<void> {
+	"use step";
+
+	await db()
+		.update(videos)
+		.set({ transcriptionStatus: "ERROR" })
 		.where(eq(videos.id, videoId as Video.VideoId));
 }
 
