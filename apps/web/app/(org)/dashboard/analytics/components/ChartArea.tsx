@@ -1,5 +1,6 @@
 "use client";
 
+import { formatPlatformDateShort } from "@cap/utils";
 import { useId, useMemo } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
@@ -247,5 +248,5 @@ const formatBucketLabel = (bucket: string, hourly: boolean) => {
 			hour: "numeric",
 			minute: undefined,
 		});
-	return date.toLocaleDateString([], { month: "short", day: "numeric" });
+	return formatPlatformDateShort(date);
 };

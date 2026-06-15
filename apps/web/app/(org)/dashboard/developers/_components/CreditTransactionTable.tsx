@@ -1,5 +1,6 @@
 "use client";
 
+import { formatPlatformDate } from "@cap/utils";
 import type { DeveloperTransaction } from "../developer-data";
 
 const typeLabels: Record<string, string> = {
@@ -60,7 +61,7 @@ export function CreditTransactionTable({
 								${(tx.balanceAfterMicroCredits / 100_000).toFixed(2)}
 							</td>
 							<td className="px-4 py-2.5 text-right text-gray-10">
-								{new Date(tx.createdAt).toLocaleDateString()}
+								{formatPlatformDate(tx.createdAt)}
 							</td>
 						</tr>
 					))}

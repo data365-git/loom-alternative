@@ -1,3 +1,4 @@
+import { formatPlatformDateRelative, formatPlatformDateTime } from "@cap/utils";
 import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import clsx from "clsx";
@@ -213,14 +214,16 @@ export const CapCardContent: React.FC<CapContentProps> = ({
 						/>
 					</div>
 				) : (
-					<Tooltip content={`Cap created at ${effectiveDate}`}>
+					<Tooltip
+						content={`Cap created at ${formatPlatformDateTime(effectiveDate)}`}
+					>
 						<p
 							className="text-sm truncate text-gray-10 cursor-pointer flex items-center h-full leading-[1.5rem]"
 							onClick={handleDateClick}
 						>
 							{showFullDate
-								? moment(effectiveDate).format("YYYY-MM-DD HH:mm:ss")
-								: moment(effectiveDate).fromNow()}
+								? formatPlatformDateTime(effectiveDate)
+								: formatPlatformDateRelative(effectiveDate)}
 						</p>
 					</Tooltip>
 				)}

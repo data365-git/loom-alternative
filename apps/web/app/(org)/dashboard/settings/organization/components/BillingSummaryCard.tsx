@@ -3,7 +3,7 @@
 import { buildEnv } from "@cap/env";
 import { Button, Card, CardDescription, CardHeader, CardTitle } from "@cap/ui";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { formatPlatformDate } from "@cap/utils";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -95,9 +95,8 @@ export function BillingSummaryCard() {
 	const intervalLabel =
 		subscription.billingInterval === "year" ? "annually" : "monthly";
 	const totalAmount = subscription.pricePerSeat * subscription.currentQuantity;
-	const nextBillingDate = format(
+	const nextBillingDate = formatPlatformDate(
 		new Date(subscription.currentPeriodEnd * 1000),
-		"MMM d, yyyy",
 	);
 
 	return (

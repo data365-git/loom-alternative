@@ -1,6 +1,7 @@
 "use client";
 
 import { Button, Input } from "@cap/ui";
+import { formatPlatformDateTime } from "@cap/utils";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import { toast } from "sonner";
@@ -63,7 +64,7 @@ export function InviteMemberForm() {
 								role,
 							});
 							setGeneratedLink(url);
-							toast.success(`Link valid until ${expiresAt.toLocaleString()}`);
+							toast.success(`Link valid until ${formatPlatformDateTime(expiresAt)}`);
 						}
 					} catch (err) {
 						toast.error((err as Error).message);

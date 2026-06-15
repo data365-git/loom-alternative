@@ -1,6 +1,6 @@
-import { format, parseISO } from "date-fns";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { formatPlatformDate } from "@cap/utils";
 import {
 	getGitHubReleases,
 	hasDownloads,
@@ -124,7 +124,7 @@ function ReleaseRow({
 					)}
 				</div>
 				<div className="flex items-center gap-3 text-sm text-gray-10">
-					<span>{format(parseISO(release.publishedAt), "MMMM d, yyyy")}</span>
+					<span>{formatPlatformDate(release.publishedAt)}</span>
 					<a
 						href={release.htmlUrl}
 						target="_blank"

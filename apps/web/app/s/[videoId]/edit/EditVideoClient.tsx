@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@cap/ui";
+import { formatPlatformDateTime } from "@cap/utils";
 import type { Video } from "@cap/web-domain";
 import {
 	ChevronLeft,
@@ -1793,14 +1794,7 @@ export function EditVideoClient({ video }: { video: EditableVideo }) {
 										className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[12px] text-gray-11 hover:bg-gray-2"
 									>
 										<Clock className="size-3 shrink-0 text-gray-8" />
-										<span>
-											{new Date(entry.createdAt).toLocaleString(undefined, {
-												month: "short",
-												day: "numeric",
-												hour: "2-digit",
-												minute: "2-digit",
-											})}
-										</span>
+										<span>{formatPlatformDateTime(entry.createdAt)}</span>
 										<span className="text-gray-8">
 											{entry.editSpec.keepRanges.length} segment
 											{entry.editSpec.keepRanges.length !== 1 ? "s" : ""}

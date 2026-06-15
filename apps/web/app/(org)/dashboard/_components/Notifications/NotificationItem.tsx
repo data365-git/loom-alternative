@@ -3,7 +3,7 @@ import type { ImageUpload } from "@cap/web-domain";
 import { faComment, faEye, faReply } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import clsx from "clsx";
-import moment from "moment";
+import { formatPlatformDateRelative } from "@cap/utils";
 import Link from "next/link";
 import { markAsRead } from "@/actions/notifications/mark-as-read";
 import { AnimalAvatar } from "@/components/AnimalAvatar";
@@ -93,7 +93,7 @@ export const NotificationItem = ({
 					</p>
 				)}
 				<p className="text-xs text-gray-10">
-					{moment(notification.createdAt).fromNow()}
+					{formatPlatformDateRelative(notification.createdAt)}
 				</p>
 			</div>
 

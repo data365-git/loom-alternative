@@ -1,5 +1,5 @@
 import { buildEnv } from "@cap/env";
-import { format, parseISO } from "date-fns";
+import { formatPlatformDate } from "@cap/utils";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -103,13 +103,9 @@ export default async function PostPage(props: PostProps) {
 						<h1 className="mb-2 font-semibold">{post.metadata.title}</h1>
 						<p className="space-x-1 text-xs text-gray-12">
 							<span>
-								{format(
-									parseISO(
-										(post.metadata as any).publishedAt ||
-											new Date().toISOString(),
-									),
-									"MMMM dd, yyyy",
-								)}
+								{formatPlatformDate(
+								(post.metadata as any).publishedAt ?? new Date().toISOString(),
+							)}
 							</span>
 							<span>—</span>
 							<span>{readingTime} min read</span>

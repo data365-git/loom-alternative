@@ -1,6 +1,7 @@
 import { db } from "@cap/database";
 import { auditLog, users } from "@cap/database/schema";
 import { getCurrentUser } from "@cap/database/auth/session";
+import { formatPlatformDateTime } from "@cap/utils";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
@@ -90,7 +91,7 @@ export default async function ActivityPage() {
 									className="border-b border-gray-4 last:border-0 hover:bg-gray-2"
 								>
 									<td className="px-4 py-3 text-gray-11 whitespace-nowrap">
-										{row.createdAt.toLocaleString()}
+										{formatPlatformDateTime(row.createdAt)}
 									</td>
 									<td className="px-4 py-3 text-gray-12">
 										{row.actorName ?? row.actorEmail ?? row.actorUserId ?? "—"}

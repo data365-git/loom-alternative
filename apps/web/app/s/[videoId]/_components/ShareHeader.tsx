@@ -10,7 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Check, Clock, Copy, Globe2, Pencil, Scissors, X } from "lucide-react";
-import moment from "moment";
+import { formatPlatformDateRelative } from "@cap/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -498,7 +498,7 @@ export const ShareHeader = ({
 								<div className="flex flex-col text-left">
 									<p className="text-sm text-gray-12">{data.owner.name}</p>
 									<p className="text-xs text-gray-10">
-										{moment(data.createdAt).fromNow()}
+										{formatPlatformDateRelative(data.createdAt)}
 									</p>
 								</div>
 							</div>

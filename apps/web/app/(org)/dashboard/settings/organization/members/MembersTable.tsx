@@ -3,7 +3,7 @@
 import { Button } from "@cap/ui";
 import type { Organisation } from "@cap/web-domain";
 import { useMutation } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { formatPlatformDate } from "@cap/utils";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -123,7 +123,7 @@ export function MembersTable({
 										{isOwner ? "Owner" : m.role}
 									</span>
 									<span className="text-xs text-gray-400">
-										{format(m.joinedAt, "MMM d, yyyy")}
+										{formatPlatformDate(m.joinedAt)}
 									</span>
 									{!isOwner && !isMe && (
 										<Button
@@ -155,7 +155,7 @@ export function MembersTable({
 								<div>
 									<div className="font-medium">{invite.invitedEmail}</div>
 									<div className="text-xs text-gray-400">
-										Invited {format(invite.createdAt, "MMM d, yyyy")} ·{" "}
+										Invited {formatPlatformDate(invite.createdAt)} ·{" "}
 										{invite.role}
 									</div>
 								</div>

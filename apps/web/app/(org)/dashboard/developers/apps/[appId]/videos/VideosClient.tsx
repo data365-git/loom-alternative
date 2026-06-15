@@ -9,6 +9,7 @@ import {
 	CardTitle,
 	Input,
 } from "@cap/ui";
+import { formatPlatformDate } from "@cap/utils";
 import { useMutation } from "@tanstack/react-query";
 import { Search, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -121,7 +122,7 @@ function VideoRow({ video, appId }: { video: Video; appId: string }) {
 				{video.duration ? `${(video.duration / 60).toFixed(1)}m` : "\u2014"}
 			</td>
 			<td className="px-4 py-2.5 text-right text-gray-10">
-				{new Date(video.createdAt).toLocaleDateString()}
+				{formatPlatformDate(video.createdAt)}
 			</td>
 			<td className="px-4 py-2.5 text-right">
 				<button

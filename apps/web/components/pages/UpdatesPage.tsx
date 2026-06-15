@@ -1,4 +1,4 @@
-import { format, parseISO } from "date-fns";
+import { formatPlatformDate } from "@cap/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { type BlogPost, getBlogPosts, type PostMetadata } from "@/utils/blog";
@@ -95,11 +95,8 @@ export const UpdatesPage = () => {
 											)}
 											{"publishedAt" in post.metadata && (
 												<p className="text-gray-10">
-													{format(
-														parseISO(
-															(post.metadata as PostMetadata).publishedAt,
-														),
-														"MMMM dd, yyyy",
+													{formatPlatformDate(
+														(post.metadata as PostMetadata).publishedAt,
 													)}
 												</p>
 											)}
@@ -174,9 +171,8 @@ export const UpdatesPage = () => {
 										)}
 										{"publishedAt" in post.metadata && (
 											<p className="text-gray-10">
-												{format(
-													parseISO((post.metadata as PostMetadata).publishedAt),
-													"MMMM dd, yyyy",
+												{formatPlatformDate(
+													(post.metadata as PostMetadata).publishedAt,
 												)}
 											</p>
 										)}
