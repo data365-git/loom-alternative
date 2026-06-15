@@ -25,35 +25,48 @@ export function CallbackClient({
 
 				if (cancelled) return;
 
-				const chrome =
-					typeof globalThis !== "undefined"
-						? (globalThis as Record<string, unknown>).chrome
+				const chromeRuntime =
+					typeof globalThis !== "undefined" &&
+					typeof (globalThis as Record<string, unknown>).chrome === "object" &&
+					(globalThis as Record<string, unknown>).chrome !== null
+						? (
+								(globalThis as Record<string, unknown>).chrome as Record<
+									string,
+									unknown
+								>
+							).runtime
 						: undefined;
-				const runtime =
-					chrome &&
-					typeof chrome === "object" &&
-					(chrome as Record<string, unknown>).runtime;
 
-				if (runtime && extensionId) {
-					const sendMessage = (
-						runtime as { sendMessage?: (...args: unknown[]) => void }
-					).sendMessage;
-					if (typeof sendMessage === "function") {
-						sendMessage.call(
-							runtime,
+				if (
+					chromeRuntime &&
+					typeof (chromeRuntime as Record<string, unknown>).sendMessage ===
+						"function" &&
+					extensionId
+				) {
+					await new Promise<void>((resolve) => {
+						(
+							chromeRuntime as {
+								sendMessage: (
+									extensionId: string,
+									message: Record<string, unknown>,
+									callback: (response: unknown) => void,
+								) => void;
+								lastError?: { message: string };
+							}
+						).sendMessage(
 							extensionId,
 							{
 								type: "CAP_EXTENSION_TOKEN",
 								token,
 								apiBaseUrl: window.location.origin,
 							},
-							(response: unknown) => {
-								void response;
+							(_response: unknown) => {
+								resolve();
 							},
 						);
-						setStatus({ kind: "success", email });
-						return;
-					}
+					});
+					setStatus({ kind: "success", email });
+					return;
 				}
 
 				setStatus({ kind: "success", email, fallbackToken: token });

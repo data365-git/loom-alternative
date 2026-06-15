@@ -714,7 +714,6 @@ Rules for the table:
 
 **One more time:** if no files were edited and no commands were executed in this reply, there is no table. The recap exists only to summarize concrete work — not to summarize a plan.
 
-
 ---
 
 ## Multi-Language / i18n Rule
@@ -805,40 +804,19 @@ If you can't name 3 failure modes, you don't understand the change. Ask first.
 
 **When the user states an explicit goal — execute that goal. Don't substitute "easier but different."**
 
-If the user says "build a fresh project from scratch" and you see an existing similar project, do NOT silently switch to "use the existing one." That's drift, not pragmatism.
-
-- Re-read the user's words before each major decision branch
-- If a shortcut seems compelling, surface it explicitly and ask — don't take it silently
-- "Full ownership" / "from scratch" / "rewrite cleanly" are explicit signals — respect them
+- Re-read the user's words before each major decision branch.
+- "From scratch" / "rewrite cleanly" / "full ownership" are explicit signals — respect them.
+- If a shortcut seems compelling, surface it explicitly and ask — don't take it silently.
 
 ### 6. Batch Side-Effect Operations
 
-**When N API calls each trigger an expensive side effect (deploy, rebuild, restart), use the batch API or a "skip side-effect" flag — not a for-loop.**
+**When N API calls each trigger an expensive side effect (deploy, rebuild, restart, notification, charge), use the batch API or a "skip side-effect" flag — not a for-loop.**
 
-Concrete pattern (Railway): setting 20 env vars one-by-one triggers 20 builds, all but the last get superseded and FAIL. Instead: `variableCollectionUpsert` with `skipDeploys: true`, then ONE manual deploy at the end.
+Concrete example: setting 20 env vars one-by-one triggers 20 builds, all but the last get superseded and FAIL. Instead, batch the writes with `skipDeploys: true` and trigger ONE deploy at the end.
 
-General rule: before writing a loop that calls a mutation, ask "does each call trigger a deploy / rebuild / notification / charge?" If yes, find the batch endpoint or a skip-side-effect flag.
+Before writing any loop that calls a mutation, ask: "does each call trigger a deploy, rebuild, notification, or charge?" If yes, find the batch endpoint or skip-side-effect flag.
 
-### 7. Read Failure Logs Before Iterating
-
-**One minute reading the actual error beats five minutes guessing.**
-
-When something fails:
-1. Get the real log output (build log, runtime log, deployment diagnosis)
-2. Quote the exact error in your next response
-3. THEN form a hypothesis
-
-Do NOT iterate on "let me try X" without seeing the error from the previous attempt. Each blind iteration wastes time AND user trust.
-
-### 8. Respect User Pause Signals
-
-**When the user says "stop," "wait," "you're slowing down," "let me check" — STOP all action and read carefully.**
-
-The user usually sees a pattern (deploy storm, drift from goal, wrong direction) before you do. Their pause is data, not friction.
-
-After a pause: summarize what happened, diagnose what went wrong, present a clean plan, ask for approval. Do not resume execution until they explicitly say go.
-
-### 9. Comment Discipline
+### 7. Comment Discipline
 
 **Default to no code comments.** Add a comment only after solving a bug or working through a complex issue, and only when it captures non-obvious context a future investigator genuinely needs.
 
@@ -852,33 +830,4 @@ When in doubt, prefer better naming/types over a comment. Applies to every langu
 
 ---
 
-**These guidelines are working when:** diffs are clean, rewrites are rare, questions come before implementation — not after, and the user never has to hit the brakes mid-task.
-
----
-
-## Railway-Specific Gotchas
-
-These are real lessons from production Railway deployments. Apply when working on any Railway project.
-
-### Deployment hygiene
-- **NEVER call `variableUpsert` in a loop.** Use `variableCollectionUpsert` with `skipDeploys: true` for all env vars, then trigger ONE deploy at the end. Each `variableUpsert` without `skipDeploys: true` triggers a fresh build — running it 20 times creates a deploy storm where all but the last build get superseded and fail.
-- **Always batch then deploy:** set ALL env vars / volumes / service config first, verify by reading back, THEN trigger deploy. Never the other way around.
-- **A "FAILED" deploy completed in under 30 seconds** is almost always either (a) superseded by a newer deploy, (b) `service config at '/railway.toml' not found`, or (c) missing GitHub App access. Read logs to disambiguate.
-
-### Image-based services (databases, MinIO, etc.)
-- **MySQL `MYSQL_ROOT_PASSWORD` is baked in at FIRST init.** Overriding it after the volume is populated does NOT change the actual MySQL user password. Fix: delete the volume, redeploy, MySQL re-initializes with the current env var. (Lose all data — don't do this on a production DB.)
-- **Same applies to Postgres, MongoDB, Redis** — first-init passwords are permanent unless you reset the data volume or run `ALTER USER` manually.
-- **`minio/minio` and `bitnami/minio` are NOT drop-in compatible.** Different env var conventions, different start commands, different default paths. Pick one and use its documented config — don't mix.
-
-### GitHub-sourced services
-- **`railwayConfigFile: /railway.toml` requires that file to actually exist on the deployed branch.** If `railway.toml` is on `data365-patches` but you deploy `main`, you get `service config at '/railway.toml' not found`. Either (a) put railway.toml on the deployed branch, or (b) clear the `railwayConfigFile` setting and configure via API (`dockerfilePath`, `healthcheckPath`, etc.).
-- **Setting `dockerfilePath` via API forces DOCKERFILE builder.** The `Builder` enum in GraphQL doesn't include `DOCKERFILE` — it's auto-detected from `dockerfilePath` being non-null.
-- **Don't try to build a Rust workspace member with `rootDirectory: apps/<crate>`.** Cargo workspace members reference sibling crates at the repo root — cutting off the workspace breaks the build. For services you don't customize (e.g. media-server), use a prebuilt image (`ghcr.io/...`) instead.
-
-### Networking
-- **Next.js in Docker on Railway listens on `$PORT=8080` by default**, not the `EXPOSE 3000` from your Dockerfile. The Railway PORT env var wins. Set your public domain's `targetPort` to 8080, or override `PORT=3000` in env vars.
-- **Internal service-to-service URLs use `${{<service-name>.RAILWAY_PRIVATE_DOMAIN}}`** in env vars. Use lowercase service names exactly as named in the dashboard. These resolve only inside Railway's private network.
-
-### Verification
-- **Always `curl -sL <url>` after deploy succeeds.** A SUCCESS status with HTTP 502 means the app crashed on startup — check runtime logs (not build logs) for the real error.
-- **Read runtime logs via `deploymentLogs`** (not `buildLogs`) for crashes after the build phase.
+**These guidelines are working when:** diffs are clean, rewrites are rare, and questions come before implementation — not after.
