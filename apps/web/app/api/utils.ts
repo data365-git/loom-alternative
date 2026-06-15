@@ -122,7 +122,18 @@ export const allowedOrigins = [
 ];
 
 export const corsMiddleware = cors({
-	origin: allowedOrigins,
+	origin: (origin) => {
+		if (allowedOrigins.includes(origin)) {
+			return origin;
+		}
+		if (origin?.startsWith("chrome-extension://")) {
+			return origin;
+		}
+		if (origin === process.env.CAP_BROWSER_EXTENSION_ORIGIN) {
+			return origin;
+		}
+		return "";
+	},
 	credentials: true,
 	allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
 	allowHeaders: ["Content-Type", "Authorization", "sentry-trace", "baggage"],

@@ -196,7 +196,9 @@ export const ShareVideo = forwardRef<
 		}, [chapters]);
 
 		const isMp4Source =
-			data.source.type === "desktopMP4" || data.source.type === "webMP4";
+			data.source.type === "desktopMP4" ||
+			data.source.type === "webMP4" ||
+			data.source.type === "extensionWeb";
 		const isSegmentsSource = data.source.type === "desktopSegments";
 		const isActivelyRecording =
 			isSegmentsSource &&
@@ -241,7 +243,7 @@ export const ShareVideo = forwardRef<
 		const vParam = editVersion ? `&v=${editVersion}` : "";
 		let videoSrc: string;
 		const rawFallbackSrc =
-			data.source.type === "webMP4"
+			data.source.type === "webMP4" || data.source.type === "extensionWeb"
 				? `/api/playlist?userId=${data.owner.id}&videoId=${data.id}&videoType=raw-preview${vParam}`
 				: undefined;
 		let enableCrossOrigin = false;

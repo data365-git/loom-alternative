@@ -34,6 +34,7 @@ export interface VideoMetadata {
 		| "ERROR"
 		| "SKIPPED";
 	enhancedAudioStatus?: "PROCESSING" | "COMPLETE" | "ERROR" | "SKIPPED";
+	isDemo?: boolean;
 }
 
 export type VideoEditRange = {

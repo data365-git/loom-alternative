@@ -25,6 +25,7 @@ import { updatePreferences } from "@/actions/notifications/update-preferences";
 import { SignedImageUrl } from "@/components/SignedImageUrl";
 import { useEffectMutation, useRpcClient } from "@/lib/EffectRuntime";
 import { useDashboardContext } from "../../Contexts";
+import { ApiKeysSection } from "./components/ApiKeysSection";
 import { ProfileImage } from "./components/ProfileImage";
 import { patchAccountSettings } from "./server";
 
@@ -451,6 +452,7 @@ export const Settings = () => {
 						preferences={userPreferences?.notifications ?? null}
 						className="md:col-span-2"
 					/>
+					<ApiKeysSection />
 				</div>
 				<Button
 					disabled={!firstName || updateNamePending || !hasChanges}

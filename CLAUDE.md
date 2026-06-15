@@ -2,6 +2,16 @@
 
 This file provides comprehensive guidance to Claude Code when working with code in this repository.
 
+## Project Requirements Bootstrap
+
+> Run this once after filling CLAUDE.md. Creates the source-of-truth requirements doc.
+
+```
+Read ~/secondbrain/TEMPLATES/Project Requirement Document Template.md, scan this repo, and create PROJECT_REQUIREMENTS.md at the root filled with what's actually here.
+```
+
+---
+
 ## Pre-Generation Invariants (read BEFORE writing any code)
 
 These rules are enforced by CI (`cargo clippy -D warnings`, Biome). Fixing violations after the fact is wasted effort — emit code in the correct shape the FIRST time. Every CI failure tied to a rule below means this section was not respected.
@@ -297,8 +307,8 @@ const updateMutation = useMutation({
 ### Server (selected)
 - Core: `DATABASE_URL`, `WEB_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
 - S3: `CAP_AWS_BUCKET`, `CAP_AWS_REGION`, `CAP_AWS_ACCESS_KEY`, `CAP_AWS_SECRET_KEY`, optional `CAP_AWS_ENDPOINT`, `CAP_AWS_BUCKET_URL`
-- AI: `GROQ_API_KEY`, `OPENAI_API_KEY`
-- Email/Analytics: `RESEND_API_KEY`, `RESEND_FROM_DOMAIN`, `POSTHOG_PERSONAL_API_KEY`, `DUB_API_KEY`, `DEEPGRAM_API_KEY`
+- AI: `GEMINI_API_KEY` (primary), `GROQ_API_KEY`, `OPENAI_API_KEY`, `DEEPGRAM_API_KEY` (deprecated)
+- Email/Analytics: `RESEND_API_KEY`, `RESEND_FROM_DOMAIN`, `POSTHOG_PERSONAL_API_KEY`, `DUB_API_KEY`
 - OAuth: `GOOGLE_CLIENT_ID/SECRET`, `WORKOS_CLIENT_ID`, `WORKOS_API_KEY`
 - Stripe: `STRIPE_SECRET_KEY_TEST`, `STRIPE_SECRET_KEY_LIVE`, `STRIPE_WEBHOOK_SECRET`
 - CDN signing: `CLOUDFRONT_KEYPAIR_ID`, `CLOUDFRONT_KEYPAIR_PRIVATE_KEY`
@@ -501,6 +511,27 @@ Before declaring any task complete, run the appropriate gate for every file type
 
 ---
 
+## Planning sessions
+
+Before any plan, Read the actual file(s) you'll change — current version, not memory.
+Cite `file:line` with the real code causing the issue; confirm the root cause, don't guess.
+Be surgical: change the minimum, and state what you're NOT touching so working code stays intact.
+
+### Always recommend execution model + reasoning level
+
+Every plan OPENS with one line so I can switch manually before coding:
+
+> 🤖 Build on: **<haiku | sonnet | opus>** · reasoning: **<low | medium | high>** — <one-line reason>
+
+Multi-batch plans tag each batch (e.g. "Batch 1 UI polish → sonnet · medium · Batch 2 migration → opus · high").
+
+- Default **sonnet**; **opus** only for money/auth/migrations/irreversible/novel-architecture; **haiku** for mechanical batches (renames, find/replace, config, i18n).
+- Reasoning **high** for tricky or dangerous logic (concurrency, data integrity, money/auth), **medium** for normal feature work, **low** for boilerplate. When in doubt on a risky task, recommend high.
+
+One line of reasoning. Never an essay.
+
+---
+
 ## Template Propagation
 
 This file (`~/secondbrain/CLAUDE-md template.md`) is the **master template**. After any edit to it:
@@ -585,6 +616,20 @@ npm run build   # or equivalent for this project
 
 ---
 
+## Deploy Safety (MANDATORY — runs on every deploy)
+
+Every `deploy` / `push` / `ship` command triggers this sequence after the sync check passes:
+
+1. **Validate migrations before pushing.** Open every new SQL/migration file and check for valid syntax, valid UUIDs, no truncated statements, no missing semicolons. Bad SQL crashes the boot, not the build.
+2. **Build locally before deploying.** A green CI is not a substitute for a successful local build.
+3. **Verify health endpoint post-deploy.** Hit the deployed URL / health endpoint and confirm 200 before declaring success. **"Build succeeded" ≠ "app works."** A green deploy badge with a 502 in production is still a failure.
+4. **Know the rollback path.** Before any irreversible deploy (migrations, schema changes, mass updates), state in one line how to roll back.
+5. **Migration numbering — check remote first.** If the project has numbered migrations, run `git fetch origin` and inspect the latest migration number on `origin/main` before creating a new one. Teammates may have taken your next number — renumber yours to follow.
+
+If any of these checks fails, **stop and report**, don't push through.
+
+---
+
 ## Model & Impact Routing
 
 Before executing, declare in **one line** at the top of your reply:
@@ -635,6 +680,40 @@ Every task has a domain. Before responding, identify it — then think and respo
 | **Strategy / Leadership** | Thinks in systems and second-order effects, not just immediate outputs. |
 
 For any domain not listed above: find the equivalent senior practitioner instinct and apply it.
+
+---
+
+## Recap Table at the End (when work was actually done)
+
+### 🚫 DO NOT show the recap table in these cases — this rule is absolute:
+
+1. **Plan mode** — when ExitPlanMode tool is being used, or any reply that is a proposal/plan to be approved before execution. NO TABLE.
+2. **Pure planning/discussion sessions** — when the reply is only describing what *would* be done, not what *was* done. NO TABLE.
+3. **Brainstorming, Q&A, "what is X", clarifying questions, advice** — NO TABLE.
+4. **Trivial single-turn replies** — greetings, acknowledgments, one-line answers. NO TABLE.
+
+**The test:** Did this reply actually change files, run commands, or produce output? 
+- **NO** → no table. Period. Even if the user asks "anything left?", answer in plain prose.
+- **YES** → use the table below.
+
+### ✅ When work WAS done, end the reply with this table:
+
+```
+| Status | Task | Notes |
+|--------|------|-------|
+| ✅ Done | [what was completed] | [file path / command / result] |
+| ⏳ Pending | [what's still to do] | [why — waiting on user input, blocked, deferred] |
+| ⚠️ Skipped | [what was not done] | [reason] |
+```
+
+Rules for the table:
+- Group related sub-steps into one row — don't bloat the table
+- Each "Notes" cell under 80 chars
+- Omit Pending/Skipped rows if there are none
+- Table goes at the very bottom of the reply, not the top
+
+**One more time:** if no files were edited and no commands were executed in this reply, there is no table. The recap exists only to summarize concrete work — not to summarize a plan.
+
 
 ---
 
@@ -710,7 +789,17 @@ For multi-step tasks, state a brief plan first:
 
 Run the check before saying "done." If you can't verify (e.g. needs a browser), say so explicitly and describe what the user should check.
 
-**"Build succeeded" ≠ "app works."** Always hit the actual URL / run the real flow before declaring success. A green CI badge with a 502 in production is still a failure.
+**"Build succeeded" ≠ "app works."** Always hit the actual URL or run the real flow before declaring success. A green CI badge with a 502 in production is still a failure.
+
+**For any change larger than ~5 lines, before writing production code:**
+1. Restate intent in one sentence.
+2. Name at least 3 specific failure modes (wrong format sent, error swallowed, view hidden, permission denied, locale overflow, expired token, etc.).
+3. Decide how each failure mode will be verified.
+4. Write the code.
+5. Run the verification.
+6. Hand the user a 5–8 item smoke checklist scoped strictly to what changed — never "test everything".
+
+If you can't name 3 failure modes, you don't understand the change. Ask first.
 
 ### 5. Don't Drift From the Stated Goal
 
@@ -748,6 +837,18 @@ Do NOT iterate on "let me try X" without seeing the error from the previous atte
 The user usually sees a pattern (deploy storm, drift from goal, wrong direction) before you do. Their pause is data, not friction.
 
 After a pause: summarize what happened, diagnose what went wrong, present a clean plan, ask for approval. Do not resume execution until they explicitly say go.
+
+### 9. Comment Discipline
+
+**Default to no code comments.** Add a comment only after solving a bug or working through a complex issue, and only when it captures non-obvious context a future investigator genuinely needs.
+
+**Good cases:** why a fix looks the way it does, the upstream/platform bug being worked around, a non-obvious invariant or trade-off chosen after investigation, a link to the PR/issue that explains the decision.
+
+**Banned:** narrating what the code does, restating types, JSDoc that paraphrases parameter names, "TODO: refactor" or "this should be cleaner" notes, comments explaining the change you are currently making.
+
+When in doubt, prefer better naming/types over a comment. Applies to every language.
+
+**Post-edit, run the project's real lint/format gates** (e.g. `pnpm lint && pnpm format`, `cargo clippy -D warnings && cargo fmt`, `ruff check && ruff format`). `tsc` or `cargo check` alone are NOT substitutes — they catch type errors, not the style rules CI will fail on.
 
 ---
 

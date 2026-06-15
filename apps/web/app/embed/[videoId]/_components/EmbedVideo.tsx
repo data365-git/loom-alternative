@@ -153,7 +153,9 @@ export const EmbedVideo = forwardRef<
 		}, [chapters, chaptersDisabled]);
 
 		const isMp4Source =
-			data.source.type === "desktopMP4" || data.source.type === "webMP4";
+			data.source.type === "desktopMP4" ||
+			data.source.type === "webMP4" ||
+			data.source.type === "extensionWeb";
 		const isSegmentsSource = data.source.type === "desktopSegments";
 		const isActivelyRecording =
 			isSegmentsSource &&
@@ -178,7 +180,7 @@ export const EmbedVideo = forwardRef<
 
 		let videoSrc: string;
 		const rawFallbackSrc =
-			data.source.type === "webMP4"
+			data.source.type === "webMP4" || data.source.type === "extensionWeb"
 				? `/api/playlist?userId=${data.ownerId}&videoId=${data.id}&videoType=raw-preview`
 				: undefined;
 		let enableCrossOrigin = false;

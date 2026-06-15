@@ -481,7 +481,11 @@ export class Videos extends Effect.Service<Videos>()("Videos", {
 				const [bucket] = yield* storage.getAccessForVideo(video);
 				const src = Video.Video.getSource(video);
 
-				if (src instanceof Video.Mp4Source && video.source.type === "webMP4") {
+				if (
+					src instanceof Video.Mp4Source &&
+					(video.source.type === "webMP4" ||
+						video.source.type === "extensionWeb")
+				) {
 					const mp4Head = yield* bucket
 						.headObject(src.getFileKey())
 						.pipe(Effect.option);

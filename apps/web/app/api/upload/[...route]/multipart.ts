@@ -521,7 +521,8 @@ app.post(
 					const mediaServerUrl = serverEnv().MEDIA_SERVER_URL;
 					if (
 						bucket.provider === "s3" &&
-						video.source.type === "webMP4" &&
+						(video.source.type === "webMP4" ||
+							video.source.type === "extensionWeb") &&
 						mediaServerUrl
 					) {
 						const webhookSecret = serverEnv().MEDIA_SERVER_WEBHOOK_SECRET;

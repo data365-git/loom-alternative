@@ -82,7 +82,14 @@ function createServerEnv() {
 				.describe("Comma-separated list of permitted signup domains"),
 
 			/// AI providers
-			DEEPGRAM_API_KEY: z.string().optional().describe("Audio transcription"),
+			GEMINI_API_KEY: z
+				.string()
+				.optional()
+				.describe("Google Gemini API for AI processing"),
+			DEEPGRAM_API_KEY: z
+				.string()
+				.optional()
+				.describe("Audio transcription (deprecated)"),
 			ANTHROPIC_API_KEY: z.string().optional().describe("AI chat"),
 			OPENAI_API_KEY: z.string().optional().describe("AI summaries"),
 			GROQ_API_KEY: z.string().optional().describe("AI summaries"),

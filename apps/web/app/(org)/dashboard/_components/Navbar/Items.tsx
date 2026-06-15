@@ -32,8 +32,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { cloneElement, type RefObject, useRef, useState } from "react";
 import { NewOrganization } from "@/components/forms/NewOrganization";
 import { SignedImageUrl } from "@/components/SignedImageUrl";
-import { Tooltip } from "@/components/Tooltip";
 import { StorageIndicator } from "@/components/StorageIndicator";
+import { Tooltip } from "@/components/Tooltip";
 import {
 	canViewOrganizationSettings,
 	getEffectiveOrganizationRole,
@@ -72,6 +72,13 @@ const AdminNavItems = ({ toggleMobileNav }: Props) => {
 			name: "My Caps",
 			href: `/dashboard/caps`,
 			extraText: userCapsCount,
+			icon: <CapIcon />,
+			subNav: [],
+		},
+		{
+			name: "Meeting Recordings",
+			href: `/dashboard/meetings`,
+			matchChildren: true,
 			icon: <CapIcon />,
 			subNav: [],
 		},

@@ -24,14 +24,22 @@ import { decodeStorageVideo } from "@/lib/video-storage";
 import { isAiGenerationEnabled } from "@/utils/flags";
 import { editVideoWorkflow } from "@/workflows/edit-video";
 
-const ACTIVE_PHASES = ["uploading", "processing", "generating_thumbnail"] as const;
+const ACTIVE_PHASES = [
+	"uploading",
+	"processing",
+	"generating_thumbnail",
+] as const;
 
 export type SaveVideoEditsResult =
 	| { ok: true; skipped?: boolean }
 	| { ok: false; error: string };
 
 function isMp4BackedVideo(source: typeof videos.$inferSelect.source) {
-	return source.type === "desktopMP4" || source.type === "webMP4";
+	return (
+		source.type === "desktopMP4" ||
+		source.type === "webMP4" ||
+		source.type === "extensionWeb"
+	);
 }
 
 function getResultKey(ownerId: string, videoId: string) {
@@ -132,7 +140,8 @@ export async function saveVideoEdits(
 	editSpec: VideoEditSpec,
 ): Promise<SaveVideoEditsResult> {
 	const user = await getCurrentUser();
-	if (!user) return { ok: false, error: "You're signed out. Please log in again." };
+	if (!user)
+		return { ok: false, error: "You're signed out. Please log in again." };
 	if (!userIsPro(user)) {
 		return {
 			ok: false,
@@ -146,12 +155,15 @@ export async function saveVideoEdits(
 		.where(eq(videos.id, videoId));
 
 	if (!video) return { ok: false, error: "Video not found." };
-	if (video.ownerId !== user.id) return { ok: false, error: "You don't own this video." };
-	if (video.isScreenshot) return { ok: false, error: "Screenshots can't be edited." };
+	if (video.ownerId !== user.id)
+		return { ok: false, error: "You don't own this video." };
+	if (video.isScreenshot)
+		return { ok: false, error: "Screenshots can't be edited." };
 	if (!isMp4BackedVideo(video.source)) {
 		return {
 			ok: false,
-			error: "Only processed MP4 videos can be edited. Try again once processing finishes.",
+			error:
+				"Only processed MP4 videos can be edited. Try again once processing finishes.",
 		};
 	}
 
@@ -194,7 +206,8 @@ export async function saveVideoEdits(
 	if (getEditSpecOutputDuration(currentOutputSpec) <= 0) {
 		return {
 			ok: false,
-			error: "Your edit doesn't keep any playable range. Add at least one segment.",
+			error:
+				"Your edit doesn't keep any playable range. Add at least one segment.",
 		};
 	}
 

@@ -107,7 +107,10 @@ const resolveRawPreviewKey = (video: Video.Video) =>
 			return uploadRecord.rawFileKey;
 		}
 
-		if (video.source.type !== "webMP4") {
+		if (
+			video.source.type !== "webMP4" &&
+			video.source.type !== "extensionWeb"
+		) {
 			return yield* Effect.fail(new HttpApiError.NotFound());
 		}
 
@@ -140,7 +143,9 @@ const getPlaylistResponse = (
 	Effect.gen(function* () {
 		const [bucket, customBucket] = yield* Storage.getAccessForVideo(video);
 		const isMp4Source =
-			video.source.type === "desktopMP4" || video.source.type === "webMP4";
+			video.source.type === "desktopMP4" ||
+			video.source.type === "webMP4" ||
+			video.source.type === "extensionWeb";
 
 		if (urlParams.videoType === "raw-preview") {
 			const rawFileKey = yield* resolveRawPreviewKey(video);
@@ -274,15 +279,11 @@ const getPlaylistResponse = (
 				redirect = `${video.ownerId}/${video.id}/output/video_recording_000.m3u8`;
 
 			if (urlParams.videoType === "mp4") {
-				const head = yield* bucket
-					.headObject(redirect)
-					.pipe(Effect.option);
+				const head = yield* bucket.headObject(redirect).pipe(Effect.option);
 				const hasResult =
 					Option.isSome(head) && (head.value.ContentLength ?? 0) > 0;
 				if (!hasResult) {
-					const rawKey = yield* resolveRawPreviewKey(video).pipe(
-						Effect.option,
-					);
+					const rawKey = yield* resolveRawPreviewKey(video).pipe(Effect.option);
 					if (Option.isSome(rawKey)) {
 						return HttpServerResponse.redirect(
 							yield* bucket.getSignedObjectUrl(rawKey.value),

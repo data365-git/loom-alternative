@@ -12,7 +12,8 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:coverage": "vitest run --coverage",
-		"test:ui": "vitest --ui"
+		"test:ui": "vitest --ui",
+		"seed:demo": "dotenv -e ../../.env -- ts-node --esm scripts/seed-demo-video.ts"
 	},
 	"dependencies": {
 		"@aws-sdk/client-cloudfront": "^3.565.0",

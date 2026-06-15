@@ -122,6 +122,7 @@ export const users = mysqlTable(
 		inviteQuota: int("inviteQuota").notNull().default(1),
 		defaultOrgId:
 			nanoIdNullable("defaultOrgId").$type<Organisation.OrganisationId>(),
+		geminiApiKey: encryptedTextNullable("geminiApiKey"),
 	},
 	(table) => ({
 		emailIndex: uniqueIndex("email_idx").on(table.email),
@@ -345,6 +346,12 @@ export const videos = mysqlTable(
 				| { type: "desktopMP4" }
 				| { type: "desktopSegments" }
 				| { type: "webMP4" }
+				| {
+						type: "extensionWeb";
+						context: "meeting" | "instruction";
+						meetingId?: string;
+						sourceUrl?: string;
+				  }
 			>()
 			.notNull()
 			.default({ type: "MediaConvert" }),

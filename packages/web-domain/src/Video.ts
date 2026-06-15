@@ -27,6 +27,7 @@ export class Video extends Schema.Class<Video>("Video")({
 			"desktopMP4",
 			"desktopSegments",
 			"webMP4",
+			"extensionWeb",
 		),
 	}),
 	metadata: Schema.OptionFromNullOr(
@@ -64,7 +65,11 @@ export class Video extends Schema.Class<Video>("Video")({
 		if (self.source.type === "desktopSegments")
 			return new SegmentsSource({ videoId: self.id, ownerId: self.ownerId });
 
-		if (self.source.type === "desktopMP4" || self.source.type === "webMP4")
+		if (
+			self.source.type === "desktopMP4" ||
+			self.source.type === "webMP4" ||
+			self.source.type === "extensionWeb"
+		)
 			return new Mp4Source({ videoId: self.id, ownerId: self.ownerId });
 	}
 }

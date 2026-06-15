@@ -1,5 +1,6 @@
 import { promises as fs } from "node:fs";
 import { db } from "@cap/database";
+import { decrypt } from "@cap/database/crypto";
 import {
 	organizations,
 	users,
@@ -11,7 +12,6 @@ import { serverEnv } from "@cap/env";
 import { userIsPro } from "@cap/utils";
 import { Storage } from "@cap/web-backend";
 import type { Video } from "@cap/web-domain";
-import { createClient } from "@deepgram/sdk";
 import { eq } from "drizzle-orm";
 import { FatalError } from "workflow";
 import {
@@ -20,6 +20,7 @@ import {
 	enhanceAudioFromUrl,
 } from "@/lib/audio-enhance";
 import { checkHasAudioTrack, extractAudioFromUrl } from "@/lib/audio-extract";
+import { transcribeWithGemini } from "@/lib/gemini-transcribe";
 import { startAiGeneration } from "@/lib/generate-ai";
 import {
 	checkHasAudioTrackViaMediaServer,
@@ -28,7 +29,6 @@ import {
 	probeVideoViaMediaServer,
 } from "@/lib/media-client";
 import { runPromise } from "@/lib/server";
-import { type DeepgramResult, formatToWebVTT } from "@/lib/transcribe-utils";
 import { decodeStorageVideo } from "@/lib/video-storage";
 
 interface TranscribeWorkflowPayload {
@@ -41,6 +41,7 @@ interface VideoData {
 	video: typeof videos.$inferSelect;
 	transcriptionDisabled: boolean;
 	isOwnerPro: boolean;
+	ownerEncryptedGeminiKey: string | null;
 }
 
 export async function transcribeVideoWorkflow(
@@ -67,7 +68,13 @@ export async function transcribeVideoWorkflow(
 		};
 	}
 
-	const [transcription] = await Promise.all([transcribeWithDeepgram(audioUrl)]);
+	const [transcription] = await Promise.all([
+		transcribeAudio(
+			audioUrl,
+			videoData.video.duration,
+			videoData.ownerEncryptedGeminiKey,
+		),
+	]);
 
 	await saveTranscription(videoId, userId, videoData.video, transcription);
 
@@ -82,10 +89,6 @@ export async function transcribeVideoWorkflow(
 
 async function validateVideo(videoId: string): Promise<VideoData> {
 	"use step";
-
-	if (!serverEnv().DEEPGRAM_API_KEY) {
-		throw new FatalError("Missing DEEPGRAM_API_KEY");
-	}
 
 	const query = await db()
 		.select({
@@ -128,6 +131,7 @@ async function validateVideo(videoId: string): Promise<VideoData> {
 		video: result.video,
 		transcriptionDisabled,
 		isOwnerPro,
+		ownerEncryptedGeminiKey: result.owner.geminiApiKey ?? null,
 	};
 }
 
@@ -274,36 +278,41 @@ async function resolveVideoSourceUrl(
 	throw new Error("Video file not accessible");
 }
 
-async function transcribeWithDeepgram(audioUrl: string): Promise<string> {
+async function transcribeAudio(
+	audioUrl: string,
+	videoDuration: number | null,
+	ownerEncryptedGeminiKey: string | null,
+): Promise<string> {
 	"use step";
 
-	const audioResponse = await fetch(audioUrl);
-	if (!audioResponse.ok) {
-		throw new Error(
-			`Audio URL not accessible: ${audioResponse.status} ${audioResponse.statusText}`,
+	let apiKey: string | undefined;
+
+	if (ownerEncryptedGeminiKey) {
+		try {
+			apiKey = await decrypt(ownerEncryptedGeminiKey);
+		} catch {
+			console.error(
+				"[transcribe] Failed to decrypt user Gemini key, falling back to server key",
+			);
+		}
+	}
+
+	if (!apiKey) {
+		apiKey = serverEnv().GEMINI_API_KEY;
+	}
+
+	if (!apiKey) {
+		throw new FatalError(
+			"No Gemini API key configured. Set one in Settings → Account → Transcription API Keys, or ask your admin to set GEMINI_API_KEY.",
 		);
 	}
 
-	const audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
+	const result = await transcribeWithGemini(audioUrl, {
+		apiKey,
+		audioDurationSec: videoDuration ?? undefined,
+	});
 
-	const deepgram = createClient(serverEnv().DEEPGRAM_API_KEY as string);
-
-	const { result, error } = await deepgram.listen.prerecorded.transcribeFile(
-		audioBuffer,
-		{
-			model: "nova-3",
-			smart_format: true,
-			detect_language: true,
-			utterances: true,
-			mime_type: "audio/mpeg",
-		},
-	);
-
-	if (error) {
-		throw new Error(`Deepgram transcription failed: ${error.message}`);
-	}
-
-	return formatToWebVTT(result as unknown as DeepgramResult);
+	return result.transcriptVtt;
 }
 
 async function saveTranscription(

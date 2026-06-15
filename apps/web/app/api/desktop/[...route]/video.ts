@@ -43,8 +43,13 @@ app.get(
 					z.literal("hls"),
 					z.literal("desktopMP4"),
 					z.literal("desktopSegments"),
+					z.literal("extensionWeb"),
 				])
 				.optional(),
+			extensionContext: z
+				.union([z.literal("meeting"), z.literal("instruction")])
+				.optional(),
+			meetingId: z.string().optional(),
 			isScreenshot: z.coerce.boolean().default(false),
 			videoId: z.string().optional(),
 			name: z.string().optional(),
@@ -64,6 +69,8 @@ app.get(
 		try {
 			const {
 				recordingMode,
+				extensionContext,
+				meetingId,
 				isScreenshot,
 				videoId,
 				name,
@@ -208,7 +215,13 @@ app.get(
 								? { type: "desktopMP4" as const }
 								: recordingMode === "desktopSegments"
 									? { type: "desktopSegments" as const }
-									: undefined,
+									: recordingMode === "extensionWeb"
+										? {
+												type: "extensionWeb" as const,
+												context: extensionContext ?? "instruction",
+												meetingId: meetingId ?? undefined,
+											}
+										: undefined,
 					isScreenshot,
 					bucket: Option.getOrNull(writable.bucketId),
 					storageIntegrationId: Option.getOrNull(writable.storageIntegrationId),
