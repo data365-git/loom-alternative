@@ -1,5 +1,5 @@
 import { db } from "@cap/database";
-import { organizations, videoUploads, videos } from "@cap/database/schema";
+import { organizations, videos, videoUploads } from "@cap/database/schema";
 import type { Organisation, User } from "@cap/web-domain";
 import { and, eq, sql } from "drizzle-orm";
 

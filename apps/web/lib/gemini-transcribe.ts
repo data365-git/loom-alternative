@@ -1,5 +1,7 @@
-interface GeminiTranscribeResult {
+export interface GeminiTranscribeResult {
 	transcriptVtt: string;
+	inputTokens: number;
+	outputTokens: number;
 	words?: Array<{
 		word: string;
 		start: number;
@@ -187,6 +189,10 @@ export async function transcribeWithGemini(
 		candidates?: Array<{
 			content: { parts: Array<{ text?: string }> };
 		}>;
+		usageMetadata?: {
+			promptTokenCount?: number;
+			candidatesTokenCount?: number;
+		};
 		error?: { message: string };
 	};
 
@@ -197,6 +203,8 @@ export async function transcribeWithGemini(
 	}
 
 	const rawText = genData.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+	const inputTokens = genData.usageMetadata?.promptTokenCount ?? 0;
+	const outputTokens = genData.usageMetadata?.candidatesTokenCount ?? 0;
 
 	fetch(
 		`https://generativelanguage.googleapis.com/v1beta/${fileName}?key=${apiKey}`,
@@ -207,5 +215,5 @@ export async function transcribeWithGemini(
 		? rawText.trimStart()
 		: plainTextToWebVTT(rawText, audioDurationSec);
 
-	return { transcriptVtt };
+	return { transcriptVtt, inputTokens, outputTokens };
 }

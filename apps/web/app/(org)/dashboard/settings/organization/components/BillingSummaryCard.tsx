@@ -2,8 +2,8 @@
 
 import { buildEnv } from "@cap/env";
 import { Button, Card, CardDescription, CardHeader, CardTitle } from "@cap/ui";
-import { useQuery } from "@tanstack/react-query";
 import { formatPlatformDate } from "@cap/utils";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";

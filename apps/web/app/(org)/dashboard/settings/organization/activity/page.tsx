@@ -1,10 +1,10 @@
 import { db } from "@cap/database";
-import { auditLog, users } from "@cap/database/schema";
 import { getCurrentUser } from "@cap/database/auth/session";
+import { auditLog, users } from "@cap/database/schema";
 import { formatPlatformDateTime } from "@cap/utils";
+import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { getOrganizationAccess } from "@/actions/organization/authorization";
 import { canViewOrganizationSettings } from "@/lib/permissions/roles";
 

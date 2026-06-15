@@ -1,7 +1,7 @@
 import * as esbuild from "esbuild";
-import { copyFileSync, mkdirSync, cpSync } from "fs";
-import { fileURLToPath } from "url";
+import { copyFileSync, cpSync, mkdirSync } from "fs";
 import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -20,11 +20,31 @@ const commonOptions = {
 };
 
 const entryPoints = [
-	{ path: join(srcDir, "background/sw.ts"), outfile: join(distDir, "background.js"), format: "esm" },
-	{ path: join(srcDir, "content/meet-detect.ts"), outfile: join(distDir, "content.js"), format: "iife" },
-	{ path: join(srcDir, "offscreen/recorder.ts"), outfile: join(distDir, "offscreen.js"), format: "esm" },
-	{ path: join(srcDir, "popup/popup.ts"), outfile: join(distDir, "popup.js"), format: "esm" },
-	{ path: join(srcDir, "options/options.ts"), outfile: join(distDir, "options.js"), format: "esm" },
+	{
+		path: join(srcDir, "background/sw.ts"),
+		outfile: join(distDir, "background.js"),
+		format: "esm",
+	},
+	{
+		path: join(srcDir, "content/meet-detect.ts"),
+		outfile: join(distDir, "content.js"),
+		format: "iife",
+	},
+	{
+		path: join(srcDir, "offscreen/recorder.ts"),
+		outfile: join(distDir, "offscreen.js"),
+		format: "esm",
+	},
+	{
+		path: join(srcDir, "popup/popup.ts"),
+		outfile: join(distDir, "popup.js"),
+		format: "esm",
+	},
+	{
+		path: join(srcDir, "options/options.ts"),
+		outfile: join(distDir, "options.js"),
+		format: "esm",
+	},
 ];
 
 async function build() {
@@ -35,8 +55,8 @@ async function build() {
 				entryPoints: [entry.path],
 				outfile: entry.outfile,
 				format: entry.format,
-			})
-		)
+			}),
+		),
 	);
 
 	if (isWatch) {
@@ -54,10 +74,7 @@ function copyAssets() {
 	mkdirSync(distDir, { recursive: true });
 
 	// Copy manifest
-	copyFileSync(
-		join(rootDir, "manifest.json"),
-		join(distDir, "manifest.json")
-	);
+	copyFileSync(join(rootDir, "manifest.json"), join(distDir, "manifest.json"));
 
 	// Copy public directory (icons, sounds)
 	try {

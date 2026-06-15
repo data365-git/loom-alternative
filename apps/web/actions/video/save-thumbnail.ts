@@ -32,9 +32,8 @@ function dataUrlToBuffer(dataUrl: string): {
 	buffer: Buffer;
 	contentType: string;
 } | null {
-	const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(
-		dataUrl,
-	);
+	const match =
+		/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
 	if (!match) return null;
 	const contentType = match[1];
 	const base64 = match[2];

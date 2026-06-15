@@ -1,6 +1,6 @@
+import { formatPlatformDate } from "@cap/utils";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { formatPlatformDate } from "@cap/utils";
 import {
 	getGitHubReleases,
 	hasDownloads,

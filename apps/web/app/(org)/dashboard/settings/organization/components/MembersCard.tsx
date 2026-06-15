@@ -16,10 +16,10 @@ import {
 	TableHeader,
 	TableRow,
 } from "@cap/ui";
+import { formatPlatformDate } from "@cap/utils";
 import { faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useMutation } from "@tanstack/react-query";
-import { formatPlatformDate } from "@cap/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -329,9 +329,7 @@ export const MembersCard = ({ setIsInviteDialogOpen }: MembersCardProps) => {
 											)}
 										</TableCell>
 									)}
-									<TableCell>
-										{formatPlatformDate(member.createdAt)}
-									</TableCell>
+									<TableCell>{formatPlatformDate(member.createdAt)}</TableCell>
 									<TableCell>Active</TableCell>
 									<TableCell>
 										{!memberIsOwner ? (

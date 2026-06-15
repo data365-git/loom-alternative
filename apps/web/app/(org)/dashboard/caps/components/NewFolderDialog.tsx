@@ -40,8 +40,9 @@ export const NewFolderDialog: React.FC<Props> = ({
 	onOpenChange,
 	spaceId,
 }) => {
-	const [selectedColor, setSelectedColor] =
-		useState<(typeof FolderOptions)[number]["value"] | null>(null);
+	const [selectedColor, setSelectedColor] = useState<
+		(typeof FolderOptions)[number]["value"] | null
+	>(null);
 	const [folderName, setFolderName] = useState<string>("");
 	const [publicEnabled, setPublicEnabled] = useState(false);
 	const { activeOrganization, setUpgradeModalOpen } = useDashboardContext();

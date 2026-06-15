@@ -2,6 +2,23 @@
  * Type definitions for JSON metadata fields
  */
 
+export interface AiSummary {
+	overview: string;
+	topics: { title: string; body: string }[];
+	nextSteps: string[];
+	tasks: {
+		title: string;
+		assignee: string;
+		priority: "high" | "medium" | "low";
+		deadline: string;
+		done: boolean;
+	}[];
+	chapters: { startSec: number; title: string; body: string }[];
+	refinedTranscript: {
+		chapters: { startSec: number; title: string; paragraphs: string[] }[];
+	};
+}
+
 /**
  * Video metadata structure
  */
@@ -36,6 +53,7 @@ export interface VideoMetadata {
 		| "SKIPPED";
 	enhancedAudioStatus?: "PROCESSING" | "COMPLETE" | "ERROR" | "SKIPPED";
 	isDemo?: boolean;
+	aiSummary?: AiSummary | null;
 }
 
 export type VideoEditRange = {

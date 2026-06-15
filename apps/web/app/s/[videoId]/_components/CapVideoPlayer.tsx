@@ -44,7 +44,6 @@ import {
 	MediaPlayerPiP,
 	MediaPlayerPlay,
 	MediaPlayerPlaybackSpeedDial,
-	MediaPlayerSeek,
 	MediaPlayerSeekBackward,
 	MediaPlayerSeekForward,
 	MediaPlayerSettings,
@@ -53,8 +52,8 @@ import {
 	MediaPlayerVolume,
 	MediaPlayerVolumeIndicator,
 } from "./video/media-player";
+import { SegmentedProgressBar } from "./video/SegmentedProgressBar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./video/tooltip";
-import { captureVideoFrameDataUrl } from "./video-frame-thumbnail";
 
 const { circumference } = getProgressCircleConfig();
 
@@ -115,6 +114,7 @@ interface Props {
 	showPlaybackStatusBadge?: boolean;
 	showFloatingVolumeControl?: boolean;
 	onUploadComplete?: () => void;
+	chapters?: { startSec: number; title: string }[];
 }
 
 export function CapVideoPlayer({
@@ -148,6 +148,7 @@ export function CapVideoPlayer({
 	showPlaybackStatusBadge = false,
 	showFloatingVolumeControl = false,
 	onUploadComplete,
+	chapters = [],
 }: Props) {
 	const [currentCue, setCurrentCue] = useState<string>("");
 	const [controlsVisible, setControlsVisible] = useState(false);
@@ -156,7 +157,6 @@ export function CapVideoPlayer({
 	const [showPlayButton, setShowPlayButton] = useState(false);
 	const [videoLoaded, setVideoLoaded] = useState(false);
 	const [hasPlayedOnce, setHasPlayedOnce] = useState(false);
-	const [isMobile, setIsMobile] = useState(false);
 	const [hasError, setHasError] = useState(false);
 	const [isRetryingProcessing, setIsRetryingProcessing] = useState(false);
 	const [playerDuration, setPlayerDuration] = useState(fallbackDuration ?? 0);
@@ -166,17 +166,6 @@ export function CapVideoPlayer({
 		null,
 	);
 	const queryClient = useQueryClient();
-
-	useEffect(() => {
-		const checkMobile = () => {
-			setIsMobile(window.innerWidth < 640);
-		};
-
-		checkMobile();
-		window.addEventListener("resize", checkMobile);
-
-		return () => window.removeEventListener("resize", checkMobile);
-	}, []);
 
 	const uploadProgressRaw = useUploadProgress(
 		videoId,
@@ -492,12 +481,6 @@ export function CapVideoPlayer({
 		resolvedSrc.isPending,
 		videoRef.current,
 	]);
-
-	const generateVideoFrameThumbnail = useCallback(
-		(_time: number): string | undefined =>
-			captureVideoFrameDataUrl({ video: videoRef.current }),
-		[videoRef.current],
-	);
 
 	const isUploadFailed = uploadProgress?.status === "failed";
 	const isUploadError = uploadProgress?.status === "error";
@@ -885,13 +868,10 @@ export function CapVideoPlayer({
 				isUploadingOrFailed={blockPlaybackControls}
 			>
 				<MediaPlayerControlsOverlay className="rounded-b-xl" />
-				<MediaPlayerSeek
-					fallbackDuration={playerDuration}
-					tooltipThumbnailSrc={
-						isMobile || !resolvedSrc.data?.supportsCrossOrigin
-							? undefined
-							: generateVideoFrameThumbnail
-					}
+				<SegmentedProgressBar
+					chapters={chapters}
+					duration={playerDuration}
+					videoRef={videoRef}
 				/>
 				<div className="flex gap-2 items-center w-full">
 					<div className="flex flex-1 gap-2 items-center">

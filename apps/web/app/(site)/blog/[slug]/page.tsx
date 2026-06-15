@@ -104,8 +104,9 @@ export default async function PostPage(props: PostProps) {
 						<p className="space-x-1 text-xs text-gray-12">
 							<span>
 								{formatPlatformDate(
-								(post.metadata as any).publishedAt ?? new Date().toISOString(),
-							)}
+									(post.metadata as any).publishedAt ??
+										new Date().toISOString(),
+								)}
 							</span>
 							<span>—</span>
 							<span>{readingTime} min read</span>

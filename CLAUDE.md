@@ -734,6 +734,19 @@ If unsure which languages the project supports, list the locale files first and 
 
 ---
 
+## AI Cost Guardrails
+
+Every Gemini API call MUST be routed through `withCostGuard()` from `apps/web/lib/ai-cost-guard.ts`. This middleware:
+
+- Checks the user's and org's monthly budget cap BEFORE making the API call
+- Logs usage to the `ai_usage_events` table with model, token counts, and cost in microdollars
+- Throws `BudgetExceededError` (HTTP 402) when the cap is reached
+- Budget caps stored in `users.preferences.aiBudget` and org equivalent
+
+Pricing: `packages/utils/src/ai-pricing.ts`. Operations: transcription, summary, embedding, chat.
+
+---
+
 ## Behavioral Guidelines
 
 These rules reduce common LLM coding mistakes. They bias toward caution — use judgment on trivial tasks.

@@ -6,8 +6,8 @@ import {
 	folders,
 	organizations,
 	users,
-	videoUploads,
 	videos,
+	videoUploads,
 } from "@cap/database/schema";
 import type { Organisation } from "@cap/web-domain";
 import { eq, sql } from "drizzle-orm";
@@ -91,7 +91,10 @@ export async function getStorageUsage(): Promise<StorageUsage> {
 				.where(eq(organizations.id, orgId));
 			return row ?? null;
 		},
-		null as { ownerId: string; settings: typeof organizations.$inferSelect.settings } | null,
+		null as {
+			ownerId: string;
+			settings: typeof organizations.$inferSelect.settings;
+		} | null,
 	);
 
 	const quotaBytes = Number(orgRow?.settings?.storageQuotaBytes ?? envQuota);
@@ -160,7 +163,9 @@ export async function getStorageUsage(): Promise<StorageUsage> {
 				name: u.name,
 				bytes,
 				overQuota:
-					userQuotaBytes != null && bytes > userQuotaBytes && userQuotaBytes > 0,
+					userQuotaBytes != null &&
+					bytes > userQuotaBytes &&
+					userQuotaBytes > 0,
 			};
 		});
 	}, []);

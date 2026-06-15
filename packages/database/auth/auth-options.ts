@@ -1,5 +1,6 @@
+import { createHash } from "node:crypto";
 import { serverEnv } from "@cap/env";
-import type { User } from "@cap/web-domain";
+import type { Organisation, User } from "@cap/web-domain";
 import { and, eq } from "drizzle-orm";
 import type { NextAuthOptions } from "next-auth";
 import { getServerSession as _getServerSession } from "next-auth";
@@ -11,7 +12,13 @@ import type { Provider } from "next-auth/providers/index";
 import WorkOSProvider from "next-auth/providers/workos";
 import { nanoId } from "../helpers.ts";
 import { db } from "../index.ts";
-import { organizationInvites, organizationMembers, users } from "../schema.ts";
+import {
+	organizationInvites,
+	organizationMembers,
+	organizations,
+	users,
+	verificationTokens,
+} from "../schema.ts";
 import { DrizzleAdapter } from "./drizzle-adapter.ts";
 
 export const maxDuration = 120;
@@ -121,6 +128,95 @@ export const authOptions = (): NextAuthOptions => {
 					},
 				}),
 				CredentialsProvider({
+					id: "email-otp",
+					name: "Email OTP",
+					credentials: {
+						email: { label: "Email", type: "email" },
+						code: { label: "Code", type: "text" },
+					},
+					async authorize(credentials) {
+						const rawEmail = credentials?.email;
+						const rawCode = credentials?.code;
+						if (!rawEmail || typeof rawEmail !== "string") return null;
+						if (!rawCode || typeof rawCode !== "string") return null;
+						const email = rawEmail.trim().toLowerCase();
+
+						const hashedCode = createHash("sha256")
+							.update(rawCode)
+							.digest("hex");
+
+						const [token] = await db()
+							.select()
+							.from(verificationTokens)
+							.where(
+								and(
+									eq(verificationTokens.identifier, email),
+									eq(verificationTokens.token, hashedCode),
+								),
+							)
+							.limit(1);
+
+						if (!token) return null;
+
+						if (token.expires < new Date()) {
+							await db()
+								.delete(verificationTokens)
+								.where(eq(verificationTokens.identifier, email));
+							return null;
+						}
+
+						await db()
+							.delete(verificationTokens)
+							.where(eq(verificationTokens.identifier, email));
+
+						let [user] = await db()
+							.select({
+								id: users.id,
+								email: users.email,
+								name: users.name,
+								image: users.image,
+							})
+							.from(users)
+							.where(eq(users.email, email))
+							.limit(1);
+
+						if (!user) {
+							const newId = nanoId() as User.UserId;
+							const orgId = nanoId() as Organisation.OrganisationId;
+							await db().transaction(async (tx) => {
+								await tx.insert(users).values({
+									id: newId,
+									email,
+									name: email.split("@")[0],
+									emailVerified: new Date(),
+									activeOrganizationId: orgId,
+									defaultOrgId: orgId,
+									inviteQuota: 1,
+								});
+								await tx.insert(organizations).values({
+									id: orgId,
+									ownerId: newId,
+									name: "My Organization",
+								});
+								await tx.insert(organizationMembers).values({
+									id: nanoId(),
+									organizationId: orgId,
+									userId: newId,
+									role: "owner",
+								});
+							});
+							user = {
+								id: newId,
+								email,
+								name: email.split("@")[0],
+								image: null,
+							};
+						}
+
+						return user;
+					},
+				}),
+				CredentialsProvider({
 					id: "invite-token",
 					name: "Invite Link",
 					credentials: { token: { type: "text" } },
@@ -219,6 +315,7 @@ export const authOptions = (): NextAuthOptions => {
 			async signIn({ user, account }) {
 				if (account?.provider === "workos") return true;
 				if (account?.provider === "invite-token") return true;
+				if (account?.provider === "email-otp") return true;
 
 				const email = user?.email?.toLowerCase();
 				if (!email) return false;

@@ -2,16 +2,12 @@
 
 import { buildEnv, NODE_ENV } from "@cap/env";
 import { Button, LogoBadge } from "@cap/ui";
+import { formatPlatformDateRelative } from "@cap/utils";
 import type { ViewerSettingKey } from "@cap/web-backend";
-import {
-	faChartSimple,
-	faChevronDown,
-	faLock,
-} from "@fortawesome/free-solid-svg-icons";
+import { faChartSimple, faLock } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Clock, Copy, Globe2, Pencil, Scissors, X } from "lucide-react";
-import { formatPlatformDateRelative } from "@cap/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -37,7 +33,6 @@ export const ShareHeader = ({
 	data,
 	customDomain,
 	domainVerified,
-	sharedOrganizations = [],
 	sharedSpaces = [],
 	spacesData = null,
 	branding,
@@ -248,9 +243,9 @@ export const ShareHeader = ({
 			setCapturedTime(currentTime);
 			setShowCopyOptions(true);
 		} else {
-			navigator.clipboard.writeText(getVideoLink());
+			navigator.clipboard.writeText(window.location.href);
 			setLinkCopied(true);
-			setTimeout(() => setLinkCopied(false), 2000);
+			setTimeout(() => setLinkCopied(false), 1200);
 		}
 	};
 
@@ -261,55 +256,11 @@ export const ShareHeader = ({
 		navigator.clipboard.writeText(link);
 		setShowCopyOptions(false);
 		setLinkCopied(true);
-		setTimeout(() => setLinkCopied(false), 2000);
+		setTimeout(() => setLinkCopied(false), 1200);
 	};
 
 	const handleSharingUpdated = () => {
 		refresh();
-	};
-
-	const renderSharedStatus = () => {
-		if (isOwner) {
-			const hasSpaceSharing =
-				sharedOrganizations?.length > 0 || effectiveSharedSpaces?.length > 0;
-			const isPublic = data.public;
-
-			if (!hasSpaceSharing && !isPublic) {
-				return (
-					<Button
-						className="px-3 w-fit"
-						size="xs"
-						variant="outline"
-						onClick={() => setIsSharingDialogOpen(true)}
-					>
-						Not shared{" "}
-						<FontAwesomeIcon className="ml-2 size-2.5" icon={faChevronDown} />
-					</Button>
-				);
-			} else {
-				return (
-					<Button
-						className="px-3 w-fit"
-						size="xs"
-						variant="outline"
-						onClick={() => setIsSharingDialogOpen(true)}
-					>
-						Shared{" "}
-						<FontAwesomeIcon className="ml-1 size-2.5" icon={faChevronDown} />
-					</Button>
-				);
-			}
-		} else {
-			return (
-				<Button
-					className="px-3 pointer-events-none w-fit"
-					size="xs"
-					variant="outline"
-				>
-					Shared with you
-				</Button>
-			);
-		}
 	};
 
 	const userIsOwnerAndNotPro = user?.id === data.owner.id && !data.owner.isPro;
@@ -452,9 +403,9 @@ export const ShareHeader = ({
 				onUpgradeRequest={setUpgradeModalOpen}
 			/>
 			<div className="mt-8">
-				<div className="flex flex-col gap-4">
-					<div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-						<div className="flex min-w-0 items-center gap-3 lg:min-w-[400px]">
+				<div className="flex flex-col gap-5">
+					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+						<div className="flex min-w-0 items-center gap-3">
 							{renderBranding()}
 							{branding && <div className="h-7 w-px shrink-0 bg-gray-6" />}
 							<div className="min-w-0 flex-1">
@@ -464,14 +415,14 @@ export const ShareHeader = ({
 										onChange={(e) => setEditValue(e.target.value)}
 										onBlur={handleBlur}
 										onKeyDown={handleKeyDown}
-										className="w-full min-w-0 text-xl sm:text-2xl"
+										className="w-full min-w-0 text-2xl sm:text-3xl font-semibold text-gray-12"
 									/>
 								) : (
 									<div className="relative inline-flex min-w-0 max-w-full align-middle">
 										<h1
 											role={isOwner ? "button" : undefined}
 											tabIndex={isOwner ? 0 : undefined}
-											className="truncate text-xl sm:text-2xl"
+											className="truncate text-2xl sm:text-3xl font-semibold text-gray-12"
 											onClick={() => {
 												if (isOwner) {
 													startEditing();
@@ -496,116 +447,115 @@ export const ShareHeader = ({
 								)}
 							</div>
 						</div>
-						{user !== null && (
-							<div>
-								<div className="flex gap-2 items-center">
-									{(data.hasPassword || data.hasInheritedPassword) && (
-										<FontAwesomeIcon
-											className="text-amber-600 size-4"
-											icon={faLock}
-										/>
+
+						<div className="flex items-center gap-2 shrink-0">
+							{(data.hasPassword || data.hasInheritedPassword) && (
+								<FontAwesomeIcon
+									className="text-amber-600 size-4"
+									icon={faLock}
+								/>
+							)}
+							<div className="relative" ref={copyOptionsRef}>
+								<button
+									type="button"
+									onClick={handleCopyClick}
+									className="inline-flex items-center gap-2 rounded-full border border-gray-6 bg-gray-3 px-3 py-1.5 text-sm text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12"
+								>
+									<span className="max-w-[50vw] truncate sm:max-w-72">
+										{getDisplayLink()}
+									</span>
+									{linkCopied ? (
+										<Check className="w-3.5 h-3.5 shrink-0 text-green-600 svgpathanimation" />
+									) : (
+										<Copy className="w-3.5 h-3.5 shrink-0" />
 									)}
-									<div className="relative" ref={copyOptionsRef}>
-										<Button
-											variant="white"
-											className="max-w-full px-3"
-											onClick={handleCopyClick}
+								</button>
+								{showCopyOptions && (
+									<div className="absolute right-0 top-full z-50 mt-1 min-w-full w-max overflow-hidden rounded-lg border border-gray-6 bg-white shadow-lg">
+										<button
+											type="button"
+											className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-12 transition-colors hover:bg-gray-3"
+											onClick={() => handleCopyLink(false)}
 										>
-											<span className="max-w-[70vw] truncate sm:max-w-96">
-												{getDisplayLink()}
-											</span>
-											{linkCopied ? (
-												<Check className="ml-2 w-4 h-4 svgpathanimation" />
-											) : (
-												<Copy className="ml-2 w-4 h-4" />
-											)}
-										</Button>
-										{showCopyOptions && (
-											<div className="absolute right-0 top-full z-50 mt-1 min-w-full w-max overflow-hidden rounded-lg border border-gray-6 bg-white shadow-lg">
-												<button
-													type="button"
-													className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-12 transition-colors hover:bg-gray-3"
-													onClick={() => handleCopyLink(false)}
-												>
-													<Copy className="w-3.5 h-3.5 shrink-0" />
-													Copy link
-												</button>
-												<button
-													type="button"
-													className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-12 transition-colors hover:bg-gray-3"
-													onClick={() => handleCopyLink(true)}
-												>
-													<Clock className="w-3.5 h-3.5 shrink-0" />
-													Copy link at {formatTimestamp(capturedTime)}
-												</button>
-											</div>
-										)}
+											<Copy className="w-3.5 h-3.5 shrink-0" />
+											Copy link
+										</button>
+										<button
+											type="button"
+											className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-12 transition-colors hover:bg-gray-3"
+											onClick={() => handleCopyLink(true)}
+										>
+											<Clock className="w-3.5 h-3.5 shrink-0" />
+											Copy link at {formatTimestamp(capturedTime)}
+										</button>
 									</div>
-								</div>
-								{userIsOwnerAndNotPro && (
-									<button
-										type="button"
-										className="flex items-center mt-2 mb-3 text-sm text-gray-400 duration-200 cursor-pointer hover:text-blue-500"
-										onClick={() => setUpgradeModalOpen(true)}
-									>
-										<Globe2 className="mr-1 w-4 h-4" />
-										Connect a custom domain
-									</button>
 								)}
 							</div>
-						)}
+						</div>
 					</div>
+
 					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-						<div className="flex flex-wrap gap-x-7 gap-y-2 items-center">
-							<div className="flex gap-2 items-center">
-								{data.name && (
+						<div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
+							<div className="flex gap-2.5 items-center">
+								{data.owner.name && (
 									<SignedImageUrl
-										name={data.name}
+										name={data.owner.name}
 										image={data.owner.image}
 										className="size-8"
 										letterClass="text-base"
 									/>
 								)}
 								<div className="flex flex-col text-left">
-									<p className="text-sm text-gray-12">{data.owner.name}</p>
+									<p className="text-sm font-medium text-gray-12">
+										{data.owner.name}
+									</p>
 									<p className="text-xs text-gray-10">
 										{formatPlatformDateRelative(data.createdAt)}
 									</p>
 								</div>
 							</div>
-							{user && renderSharedStatus()}
+							<span className="inline-flex items-center rounded-full border border-gray-6 bg-gray-3 px-2.5 py-0.5 text-xs text-gray-11">
+								Shared
+							</span>
+							{userIsOwnerAndNotPro && (
+								<button
+									type="button"
+									className="flex items-center text-sm text-gray-400 duration-200 cursor-pointer hover:text-blue-500"
+									onClick={() => setUpgradeModalOpen(true)}
+								>
+									<Globe2 className="mr-1 w-4 h-4" />
+									Connect a custom domain
+								</button>
+							)}
 						</div>
-						{user !== null && (
+
+						{isOwner && (
 							<div className="flex flex-wrap items-center gap-2 sm:justify-end">
-								{isOwner && (
-									<>
-										{canEditVideo && (
-											<Button
-												variant="gray"
-												size="xs"
-												className="h-8 gap-1.5 rounded-full px-2.5 text-xs"
-												onClick={handleEditVideo}
-											>
-												<Scissors className="size-3.5 text-gray-12" />
-												Edit video
-											</Button>
-										)}
-										<Button
-											variant="gray"
-											size="xs"
-											className="h-8 gap-1.5 rounded-full px-2.5 text-xs"
-											onClick={() => {
-												push(`/dashboard/analytics?capId=${data.id}`);
-											}}
-										>
-											<FontAwesomeIcon
-												className="size-3.5 text-gray-12"
-												icon={faChartSimple}
-											/>
-											View analytics
-										</Button>
-									</>
+								{canEditVideo && (
+									<Button
+										variant="gray"
+										size="xs"
+										className="h-8 gap-1.5 rounded-full px-2.5 text-xs"
+										onClick={handleEditVideo}
+									>
+										<Scissors className="size-3.5 text-gray-12" />
+										Edit video
+									</Button>
 								)}
+								<Button
+									variant="gray"
+									size="xs"
+									className="h-8 gap-1.5 rounded-full px-2.5 text-xs"
+									onClick={() => {
+										push(`/dashboard/analytics?capId=${data.id}`);
+									}}
+								>
+									<FontAwesomeIcon
+										className="size-3.5 text-gray-12"
+										icon={faChartSimple}
+									/>
+									View analytics
+								</Button>
 								<Button
 									size="xs"
 									className="h-8 rounded-full px-2.5 text-xs"

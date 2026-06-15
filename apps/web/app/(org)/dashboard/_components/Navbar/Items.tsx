@@ -44,6 +44,7 @@ import {
 	ChartLineIcon,
 	CodeIcon,
 	CogIcon,
+	DollarSignIcon,
 	ImportIcon,
 	RecordIcon,
 } from "../AnimatedIcons";
@@ -100,6 +101,14 @@ const AdminNavItems = ({ toggleMobileNav }: Props) => {
 			href: `/dashboard/import`,
 			matchChildren: true,
 			icon: <ImportIcon />,
+			subNav: [],
+		},
+		{
+			name: "AI Spend",
+			href: `/dashboard/billing/ai-spend`,
+			adminOnly: true,
+			matchChildren: true,
+			icon: <DollarSignIcon />,
 			subNav: [],
 		},
 		{

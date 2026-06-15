@@ -941,6 +941,7 @@ export const videosRelations = relations(videos, ({ one, many }) => ({
 		fields: [videos.storageIntegrationId],
 		references: [storageIntegrations.id],
 	}),
+	transcriptChunks: many(transcriptChunks),
 }));
 
 export const videoEditsRelations = relations(videoEdits, ({ one }) => ({
@@ -1474,6 +1475,98 @@ export const developerDailyStorageSnapshotsRelations = relations(
 		}),
 	}),
 );
+
+export const transcriptChunks = mysqlTable(
+	"transcript_chunks",
+	{
+		id: nanoId("id").notNull().primaryKey(),
+		videoId: nanoId("videoId")
+			.notNull()
+			.$type<Video.VideoId>()
+			.references(() => videos.id, { onDelete: "cascade" }),
+		chunkIndex: int("chunkIndex").notNull(),
+		startMs: int("startMs").notNull(),
+		endMs: int("endMs").notNull(),
+		speaker: varchar("speaker", { length: 64 }),
+		text: text("text").notNull(),
+		tokens: int("tokens").notNull(),
+		embedding: json("embedding").$type<number[]>(),
+		embeddingModel: varchar("embeddingModel", { length: 64 }).notNull(),
+		createdAt: timestamp("createdAt").notNull().defaultNow(),
+	},
+	(table) => [
+		index("video_id_idx").on(table.videoId),
+		unique("video_chunk_unique").on(table.videoId, table.chunkIndex),
+	],
+);
+
+export const transcriptChunksRelations = relations(
+	transcriptChunks,
+	({ one }) => ({
+		video: one(videos, {
+			fields: [transcriptChunks.videoId],
+			references: [videos.id],
+		}),
+	}),
+);
+
+export type AiOperation = "transcription" | "summary" | "embedding" | "chat";
+
+export const aiUsageEvents = mysqlTable(
+	"ai_usage_events",
+	{
+		id: nanoId("id").notNull().primaryKey(),
+		orgId: nanoId("orgId").notNull().$type<Organisation.OrganisationId>(),
+		userId: nanoId("userId").notNull().$type<User.UserId>(),
+		videoId: nanoIdNullable("videoId").$type<Video.VideoId>(),
+		operation: varchar("operation", { length: 32 })
+			.notNull()
+			.$type<AiOperation>(),
+		model: varchar("model", { length: 64 }).notNull(),
+		inputTokens: int("inputTokens").notNull().default(0),
+		outputTokens: int("outputTokens").notNull().default(0),
+		costUsdMicros: bigint("costUsdMicros", { mode: "number" })
+			.notNull()
+			.default(0),
+		billingMonth: varchar("billingMonth", { length: 7 }).notNull(),
+		createdAt: timestamp("createdAt").notNull().defaultNow(),
+	},
+	(table) => [
+		index("org_billing_month_idx").on(table.orgId, table.billingMonth),
+		index("user_billing_month_idx").on(table.userId, table.billingMonth),
+		index("video_id_idx").on(table.videoId),
+		foreignKey({
+			name: "ai_usage_events_org_fk",
+			columns: [table.orgId],
+			foreignColumns: [organizations.id],
+		}),
+		foreignKey({
+			name: "ai_usage_events_user_fk",
+			columns: [table.userId],
+			foreignColumns: [users.id],
+		}),
+		foreignKey({
+			name: "ai_usage_events_video_fk",
+			columns: [table.videoId],
+			foreignColumns: [videos.id],
+		}).onDelete("set null"),
+	],
+);
+
+export const aiUsageEventsRelations = relations(aiUsageEvents, ({ one }) => ({
+	org: one(organizations, {
+		fields: [aiUsageEvents.orgId],
+		references: [organizations.id],
+	}),
+	user: one(users, {
+		fields: [aiUsageEvents.userId],
+		references: [users.id],
+	}),
+	video: one(videos, {
+		fields: [aiUsageEvents.videoId],
+		references: [videos.id],
+	}),
+}));
 
 export const auditLog = mysqlTable("audit_log", {
 	id: varchar("id", { length: 36 }).primaryKey().default(sql`(UUID())`),

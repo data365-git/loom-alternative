@@ -8,7 +8,6 @@ import { motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
-import { editComment } from "@/actions/videos/edit-comment";
 import { useCurrentUser } from "@/app/Layout/AuthContext";
 import { LinkifiedText } from "@/components/LinkifiedText";
 import { SignedImageUrl } from "@/components/SignedImageUrl";

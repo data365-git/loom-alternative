@@ -27,6 +27,7 @@ import { updatePreferences } from "@/actions/notifications/update-preferences";
 import { SignedImageUrl } from "@/components/SignedImageUrl";
 import { useEffectMutation, useRpcClient } from "@/lib/EffectRuntime";
 import { useDashboardContext } from "../../Contexts";
+import { AiBudgetCard } from "./components/AiBudgetCard";
 import { ApiKeysSection } from "./components/ApiKeysSection";
 import { ProfileImage } from "./components/ProfileImage";
 import { patchAccountSettings, signOutAllDevices } from "./server";
@@ -468,6 +469,7 @@ export const Settings = () => {
 						className="md:col-span-2"
 					/>
 					<ApiKeysSection />
+					<AiBudgetCard />
 				</div>
 				<Button
 					disabled={!firstName || updateNamePending || !hasChanges}

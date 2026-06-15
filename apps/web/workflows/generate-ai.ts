@@ -1,18 +1,23 @@
 import { db } from "@cap/database";
-import { organizations, videos } from "@cap/database/schema";
-import type { VideoMetadata } from "@cap/database/types";
+import { nanoId } from "@cap/database/helpers";
+import { aiUsageEvents, organizations, videos } from "@cap/database/schema";
+import type { AiSummary, VideoMetadata } from "@cap/database/types";
 import { serverEnv } from "@cap/env";
+import { priceForMicros } from "@cap/utils";
 import { Storage } from "@cap/web-backend";
 import {
 	AI_GENERATION_LANGUAGE_AUTO,
 	type AiGenerationLanguage,
 	getAiGenerationLanguageName,
+	type Organisation,
 	parseAiGenerationLanguage,
+	type User,
 	type Video,
 } from "@cap/web-domain";
 import { and, eq } from "drizzle-orm";
 import { Effect, Option } from "effect";
 import { FatalError } from "workflow";
+import { z } from "zod";
 import { GROQ_MODEL, getGroqClient } from "@/lib/groq-client";
 import { runPromise } from "@/lib/server";
 import { decodeStorageVideo } from "@/lib/video-storage";
@@ -42,6 +47,55 @@ interface AiResult {
 	title?: string;
 	summary?: string;
 	chapters?: { title: string; start: number }[];
+	aiSummary?: AiSummary | null;
+	_usage?: { model: string; inputTokens: number; outputTokens: number };
+}
+
+const AiSummarySchema = z.object({
+	overview: z.string().default(""),
+	topics: z
+		.array(z.object({ title: z.string(), body: z.string() }))
+		.default([]),
+	nextSteps: z.array(z.string()).default([]),
+	tasks: z
+		.array(
+			z.object({
+				title: z.string(),
+				assignee: z.string().default(""),
+				priority: z.enum(["high", "medium", "low"]).default("medium"),
+				deadline: z.string().default(""),
+				done: z.boolean().default(false),
+			}),
+		)
+		.default([]),
+	chapters: z
+		.array(
+			z.object({
+				startSec: z.number(),
+				title: z.string(),
+				body: z.string(),
+			}),
+		)
+		.default([]),
+	refinedTranscript: z
+		.object({
+			chapters: z
+				.array(
+					z.object({
+						startSec: z.number(),
+						title: z.string(),
+						paragraphs: z.array(z.string()),
+					}),
+				)
+				.default([]),
+		})
+		.default({ chapters: [] }),
+});
+
+function parseAiSummary(raw: unknown): AiSummary | null {
+	const result = AiSummarySchema.safeParse(raw);
+	if (!result.success) return null;
+	return result.data;
 }
 
 const MAX_CHARS_PER_CHUNK = 24000;
@@ -93,6 +147,32 @@ export async function generateAiWorkflow(payload: GenerateAiWorkflowPayload) {
 		transcript,
 		videoData.aiGenerationLanguage,
 	);
+
+	if (result._usage) {
+		const billingMonth = (() => {
+			const now = new Date();
+			return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+		})();
+		const costUsdMicros = priceForMicros(
+			result._usage.model,
+			result._usage.inputTokens,
+			result._usage.outputTokens,
+		);
+		await db()
+			.insert(aiUsageEvents)
+			.values({
+				id: nanoId(),
+				orgId: videoData.video.orgId as Organisation.OrganisationId,
+				userId: userId as User.UserId,
+				videoId: videoId as Video.VideoId,
+				operation: "summary",
+				model: result._usage.model,
+				inputTokens: result._usage.inputTokens,
+				outputTokens: result._usage.outputTokens,
+				costUsdMicros,
+				billingMonth,
+			});
+	}
 
 	await saveResults(videoId, videoData, result);
 
@@ -292,6 +372,7 @@ async function saveResults(
 		aiTitle: generatedTitle || currentMetadata.aiTitle,
 		summary: result.summary || currentMetadata.summary,
 		chapters: result.chapters || currentMetadata.chapters,
+		aiSummary: result.aiSummary ?? currentMetadata.aiSummary,
 		aiGenerationStatus: "COMPLETE",
 	};
 
@@ -406,17 +487,29 @@ function chunkTranscriptWithTimestamps(
 	return chunks;
 }
 
+interface AiApiResult {
+	content: string;
+	model: string;
+	inputTokens: number;
+	outputTokens: number;
+}
+
 async function callAiApi(
 	prompt: string,
 	groqClient: ReturnType<typeof getGroqClient>,
-): Promise<string> {
+): Promise<AiApiResult> {
 	if (groqClient) {
 		try {
 			const completion = await groqClient.chat.completions.create({
 				messages: [{ role: "user", content: prompt }],
 				model: GROQ_MODEL,
 			});
-			return completion.choices?.[0]?.message?.content || "{}";
+			return {
+				content: completion.choices?.[0]?.message?.content || "{}",
+				model: GROQ_MODEL,
+				inputTokens: completion.usage?.prompt_tokens ?? 0,
+				outputTokens: completion.usage?.completion_tokens ?? 0,
+			};
 		} catch (groqError) {
 			if (serverEnv().OPENAI_API_KEY) {
 				return callOpenAi(prompt);
@@ -426,10 +519,10 @@ async function callAiApi(
 	} else if (serverEnv().OPENAI_API_KEY) {
 		return callOpenAi(prompt);
 	}
-	return "{}";
+	return { content: "{}", model: "unknown", inputTokens: 0, outputTokens: 0 };
 }
 
-async function callOpenAi(prompt: string): Promise<string> {
+async function callOpenAi(prompt: string): Promise<AiApiResult> {
 	const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
 		method: "POST",
 		headers: {
@@ -445,8 +538,16 @@ async function callOpenAi(prompt: string): Promise<string> {
 		const errorText = await aiRes.text();
 		throw new Error(`OpenAI API error: ${aiRes.status} ${errorText}`);
 	}
-	const aiJson = await aiRes.json();
-	return aiJson.choices?.[0]?.message?.content || "{}";
+	const aiJson = (await aiRes.json()) as {
+		choices?: Array<{ message?: { content?: string } }>;
+		usage?: { prompt_tokens?: number; completion_tokens?: number };
+	};
+	return {
+		content: aiJson.choices?.[0]?.message?.content || "{}",
+		model: "gpt-4o-mini",
+		inputTokens: aiJson.usage?.prompt_tokens ?? 0,
+		outputTokens: aiJson.usage?.completion_tokens ?? 0,
+	};
 }
 
 function cleanJsonResponse(content: string): string {
@@ -472,31 +573,49 @@ async function generateSingleChunk(
 		)
 		.join("\n");
 
-	const prompt = `You are Cap AI, an expert at analyzing video content and creating comprehensive summaries.
+	const schemaExample = `{
+  "title": "Weekly Team Sync",
+  "summary": "The team discussed Q3 roadmap priorities and resolved the deployment blocker.",
+  "chapters": [{"title": "Intro", "start": 0}],
+  "aiSummary": {
+    "overview": "A weekly sync covering roadmap and blockers.",
+    "topics": [{"title": "Q3 Roadmap", "body": "The team aligned on three key priorities."}],
+    "nextSteps": ["Share updated roadmap doc by Friday"],
+    "tasks": [{"title": "Update roadmap", "assignee": "Alice", "priority": "high", "deadline": "2024-07-05", "done": false}],
+    "chapters": [{"startSec": 0, "title": "Intro", "body": "Brief intro and agenda."}, {"startSec": 45, "title": "Q3 Roadmap", "body": "Discussion of top priorities."}],
+    "refinedTranscript": {
+      "chapters": [{"startSec": 0, "title": "Intro", "paragraphs": ["Welcome everyone.", "Today we cover roadmap and blockers."]}]
+    }
+  }
+}`;
 
-The video is ${videoDuration} seconds long (${Math.floor(videoDuration / 60)}:${String(Math.floor(videoDuration % 60)).padStart(2, "0")} total). Analyze this timestamped transcript and provide a detailed JSON response:
-{
-  "title": "string (concise but descriptive title that captures the main topic)",
-  "summary": "string (detailed summary that covers ALL key points discussed. For meetings: include decisions made, action items, and key discussion points. For tutorials: cover all steps and concepts explained. For presentations: summarize all main arguments and supporting points. Write from 1st person perspective if the speaker is teaching/presenting, e.g. 'In this video, I walk through...'. Make it comprehensive enough that someone could understand the full content without watching.)",
-  "chapters": [{"title": "string (descriptive chapter title)", "start": number (seconds from start)}]
-}
+	const prompt = `You are analyzing a meeting/video transcript. The content may be in Uzbek, Russian, or English. Respond in the same language as the content.
 
-Guidelines:
-- ${languageInstruction}
-- Keep JSON property names exactly as shown
-- The summary should be detailed and comprehensive, not a brief overview
-- Capture ALL important topics, not just the main theme
-- For longer content, organize the summary by topic or chronologically
-- Include specific details, names, numbers, and conclusions mentioned
-- Chapters should mark distinct topic changes or sections
-- IMPORTANT: All chapter "start" values MUST be between 0 and ${videoDuration} seconds. Use the timestamps from the transcript to determine accurate chapter start times.
+The video is ${videoDuration} seconds long. ${languageInstruction}
 
-Return ONLY valid JSON without any markdown formatting or code blocks.
+Extract structured data in JSON format. Return ONLY valid JSON with this exact structure:
+${schemaExample}
+
+Rules:
+- All chapter "start" / "startSec" values must be between 0 and ${videoDuration} seconds; derive them from the transcript timestamps
+- tasks[].priority must be "high", "medium", or "low"
+- tasks[].done is always false unless explicitly resolved in the transcript
+- refinedTranscript cleans filler words and restructures the speech into readable paragraphs
+- Keep ALL JSON property names exactly as shown
+
 Transcript:
 ${transcriptWithTimestamps}`;
 
-	const content = await callAiApi(prompt, groqClient);
-	return parseAiResponse(content);
+	const apiResult = await callAiApi(prompt, groqClient);
+	const parsed = parseAiResponse(apiResult.content);
+	return {
+		...parsed,
+		_usage: {
+			model: apiResult.model,
+			inputTokens: apiResult.inputTokens,
+			outputTokens: apiResult.outputTokens,
+		},
+	};
 }
 
 async function generateMultipleChunks(
@@ -512,6 +631,10 @@ async function generateMultipleChunks(
 		startTime: number;
 		endTime: number;
 	}[] = [];
+
+	let totalInputTokens = 0;
+	let totalOutputTokens = 0;
+	let usedModel = "unknown";
 
 	for (let i = 0; i < chunks.length; i++) {
 		const chunk = chunks[i];
@@ -534,9 +657,12 @@ Return ONLY valid JSON without any markdown formatting or code blocks.
 Transcript section:
 ${chunk.text}`;
 
-		const chunkContent = await callAiApi(chunkPrompt, groqClient);
+		const chunkResult = await callAiApi(chunkPrompt, groqClient);
+		totalInputTokens += chunkResult.inputTokens;
+		totalOutputTokens += chunkResult.outputTokens;
+		usedModel = chunkResult.model;
 		try {
-			const parsed = JSON.parse(cleanJsonResponse(chunkContent).trim());
+			const parsed = JSON.parse(cleanJsonResponse(chunkResult.content).trim());
 			chunkSummaries.push({
 				summary: parsed.summary || "",
 				keyPoints: parsed.keyPoints || [],
@@ -570,33 +696,71 @@ ${chunk.text}`;
 		})
 		.join("\n\n");
 
-	const finalPrompt = `You are Cap AI, an expert at synthesizing information into comprehensive, well-organized summaries.
+	const aiSummaryChaptersFromChunks = chunkSummaries.flatMap((c) =>
+		c.chapters.map((ch) => ({
+			startSec: ch.start,
+			title: ch.title,
+			body: "",
+		})),
+	);
 
-Based on these detailed section analyses of a video, create a thorough final summary that captures EVERYTHING important.
+	const schemaExample = `{
+  "title": "Weekly Team Sync",
+  "summary": "The team discussed Q3 roadmap priorities and resolved the deployment blocker.",
+  "aiSummary": {
+    "overview": "A weekly sync covering roadmap and blockers.",
+    "topics": [{"title": "Q3 Roadmap", "body": "The team aligned on three key priorities."}],
+    "nextSteps": ["Share updated roadmap doc by Friday"],
+    "tasks": [{"title": "Update roadmap", "assignee": "Alice", "priority": "high", "deadline": "2024-07-05", "done": false}],
+    "chapters": [{"startSec": 0, "title": "Intro", "body": "Brief intro and agenda."}, {"startSec": 45, "title": "Q3 Roadmap", "body": "Discussion of top priorities."}],
+    "refinedTranscript": {
+      "chapters": [{"startSec": 0, "title": "Intro", "paragraphs": ["Welcome everyone.", "Today we cover roadmap and blockers."]}]
+    }
+  }
+}`;
+
+	const finalPrompt = `You are analyzing a meeting/video transcript. The content may be in Uzbek, Russian, or English. Respond in the same language as the content.
+
+Based on these section analyses, produce a final JSON summary. ${languageInstruction}
 
 Section analyses:
 ${sectionDetails}
 
 ${allKeyPoints.length > 0 ? `All key points identified:\n${allKeyPoints.map((p, i) => `${i + 1}. ${p}`).join("\n")}\n` : ""}
 
-Provide JSON in the following format:
-{
-  "title": "string (concise but descriptive title that captures the main topic/purpose)",
-  "summary": "string (COMPREHENSIVE summary that covers the entire video thoroughly. This should be detailed enough that someone could understand all the important content without watching. Include: main topics covered, key decisions or conclusions, important details mentioned, action items if any. Organize it logically - for meetings use topics/agenda items, for tutorials use steps/concepts, for presentations use main arguments. Write from 1st person perspective if appropriate. This should be several paragraphs for longer content.)"
-}
+Return ONLY valid JSON with this exact structure:
+${schemaExample}
 
-The summary must be detailed and comprehensive - not a brief overview. Capture all the important information from every section.
-${languageInstruction}
-Keep JSON property names exactly as shown.
-Return ONLY valid JSON without any markdown formatting or code blocks.`;
+Rules:
+- aiSummary.chapters[].startSec must be between 0 and ${videoDuration}; use the section timestamps provided above
+- tasks[].priority must be "high", "medium", or "low"
+- refinedTranscript restructures speech into clean readable paragraphs
+- Keep ALL JSON property names exactly as shown`;
 
-	const finalContent = await callAiApi(finalPrompt, groqClient);
+	const finalResult = await callAiApi(finalPrompt, groqClient);
+	totalInputTokens += finalResult.inputTokens;
+	totalOutputTokens += finalResult.outputTokens;
+	usedModel = finalResult.model;
 	try {
-		const parsed = JSON.parse(cleanJsonResponse(finalContent).trim());
+		const parsed = JSON.parse(cleanJsonResponse(finalResult.content).trim());
+		const aiSummaryRaw = parsed.aiSummary ?? {
+			overview: parsed.summary ?? "",
+			topics: [],
+			nextSteps: [],
+			tasks: [],
+			chapters: aiSummaryChaptersFromChunks,
+			refinedTranscript: { chapters: [] },
+		};
 		return {
 			title: parsed.title,
 			summary: parsed.summary,
 			chapters: allChapters,
+			aiSummary: parseAiSummary(aiSummaryRaw),
+			_usage: {
+				model: usedModel,
+				inputTokens: totalInputTokens,
+				outputTokens: totalOutputTokens,
+			},
 		};
 	} catch {
 		const fallbackSummary = chunkSummaries
@@ -610,6 +774,19 @@ Return ONLY valid JSON without any markdown formatting or code blocks.`;
 			title: "Video Summary",
 			summary: fallbackSummary + keyPointsSummary,
 			chapters: allChapters,
+			aiSummary: parseAiSummary({
+				overview: fallbackSummary,
+				topics: [],
+				nextSteps: [],
+				tasks: [],
+				chapters: aiSummaryChaptersFromChunks,
+				refinedTranscript: { chapters: [] },
+			}),
+			_usage: {
+				model: usedModel,
+				inputTokens: totalInputTokens,
+				outputTokens: totalOutputTokens,
+			},
 		};
 	}
 }
@@ -633,6 +810,7 @@ function parseAiResponse(content: string): AiResult {
 			title: data.title,
 			summary: data.summary,
 			chapters,
+			aiSummary: parseAiSummary(data.aiSummary ?? null),
 		};
 	} catch {
 		return {
@@ -640,6 +818,7 @@ function parseAiResponse(content: string): AiResult {
 			summary:
 				"The AI was unable to generate a proper summary for this content.",
 			chapters: [],
+			aiSummary: null,
 		};
 	}
 }

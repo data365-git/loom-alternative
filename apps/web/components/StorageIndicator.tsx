@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { useEffect } from "react";
 import { getStorageUsage } from "@/actions/organization/get-storage-usage";
 
 function isStaleActionError(err: unknown): boolean {
@@ -69,7 +69,9 @@ export function StorageIndicator() {
 				className="block p-3 rounded-lg border border-red-300 bg-red-50 hover:bg-red-100"
 			>
 				<div className="text-sm font-medium text-red-700 mb-1">Storage</div>
-				<div className="text-xs text-red-600">Couldn't load — click to retry</div>
+				<div className="text-xs text-red-600">
+					Couldn't load — click to retry
+				</div>
 			</Link>
 		);
 	}

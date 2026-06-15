@@ -6,6 +6,7 @@ import ChatIcon from "./Chat";
 import ClapIcon from "./Clap";
 import CodeIcon from "./Code";
 import CogIcon from "./Cog";
+import DollarSignIcon from "./DollarSign";
 import DownloadIcon from "./Download";
 import HomeIcon from "./Home";
 import ImportIcon from "./Import";
@@ -21,6 +22,7 @@ export {
 	MessageCircleMoreIcon,
 	CodeIcon,
 	CogIcon,
+	DollarSignIcon,
 	DownloadIcon,
 	HomeIcon,
 	ImportIcon,

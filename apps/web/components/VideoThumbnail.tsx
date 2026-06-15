@@ -7,10 +7,7 @@ import type { CSSProperties } from "react";
 import { memo, useEffect, useRef, useState } from "react";
 import { useEffectQuery } from "@/lib/EffectRuntime";
 import { ThumbnailRequest } from "@/lib/Requests/ThumbnailRequest";
-import {
-	readThumbnailCache,
-	VideoFrameFallback,
-} from "./VideoFrameFallback";
+import { readThumbnailCache, VideoFrameFallback } from "./VideoFrameFallback";
 
 export type ImageLoadingStatus = "loading" | "success" | "error";
 

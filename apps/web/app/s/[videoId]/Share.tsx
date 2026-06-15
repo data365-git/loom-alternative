@@ -541,7 +541,6 @@ export const Share = ({
 								onOptimisticComment={handleOptimisticComment}
 								onCommentSuccess={handleCommentSuccess}
 								disableComments={areCommentStampsDisabled}
-								disableReactions={areReactionStampsDisabled}
 								data={data}
 							/>
 						</div>
@@ -566,6 +565,7 @@ export const Share = ({
 								videoId={data.id}
 								aiData={aiData}
 								aiGenerationEnabled={aiGenerationAvailable}
+								disableReactions={areReactionStampsDisabled}
 								ref={activityRef}
 							/>
 						</div>
@@ -578,7 +578,6 @@ export const Share = ({
 							onOptimisticComment={handleOptimisticComment}
 							onCommentSuccess={handleCommentSuccess}
 							disableComments={areCommentStampsDisabled}
-							disableReactions={areReactionStampsDisabled}
 							data={data}
 						/>
 					</div>

@@ -17,10 +17,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Suspense, useEffect, useId, useState } from "react";
 import { toast } from "sonner";
+import { requestOtp } from "@/actions/auth/request-otp";
 import { getOrganizationSSOData } from "@/actions/organization/get-organization-sso-data";
 import { trackEvent } from "@/app/utils/analytics";
 import { usePublicEnv } from "@/utils/public-env";
-import { getEmailCodeCooldownSeconds, requestEmailCode } from "../auth-email";
 
 const MotionInput = motion(Input);
 const MotionLogoBadge = motion(LogoBadge);
@@ -35,6 +35,8 @@ export function LoginForm() {
 	const [loading, setLoading] = useState(false);
 	const [oauthError, setOauthError] = useState(false);
 	const [showOrgInput, setShowOrgInput] = useState(false);
+	const [step, setStep] = useState<"email" | "code">("email");
+	const [code, setCode] = useState("");
 	const [organizationId, setOrganizationId] = useState("");
 	const [organizationName, setOrganizationName] = useState<string | null>(null);
 	const theme = Cookies.get("theme") || "light";
@@ -218,15 +220,32 @@ export function LoginForm() {
 										onSubmit={async (e) => {
 											e.preventDefault();
 
+											if (step === "email") {
+												setLoading(true);
+												const normalizedEmail = email.trim().toLowerCase();
+
+												try {
+													await requestOtp(normalizedEmail);
+													setStep("code");
+												} catch (err) {
+													toast.error(
+														err instanceof Error
+															? err.message
+															: "Failed to send code — try again.",
+													);
+												} finally {
+													setLoading(false);
+												}
+												return;
+											}
+
 											setLoading(true);
 											const normalizedEmail = email.trim().toLowerCase();
 
-											const res = await signIn("email", {
+											const res = await signIn("email-otp", {
 												email: normalizedEmail,
+												code,
 												redirect: false,
-												...(next && next.length > 0
-													? { callbackUrl: next }
-													: {}),
 											});
 
 											setLoading(false);
@@ -238,14 +257,7 @@ export function LoginForm() {
 												return;
 											}
 
-											if (res?.error === "CredentialsSignin") {
-												toast.error(
-													"This email isn't registered. Ask your admin to add you, then try again.",
-												);
-												return;
-											}
-
-											toast.error("Sign-in failed — try again.");
+											toast.error("Invalid or expired code.");
 										}}
 										className="flex flex-col space-y-3"
 									>
@@ -256,6 +268,10 @@ export function LoginForm() {
 											loading={loading}
 											oauthError={oauthError}
 											handleGoogleSignIn={handleGoogleSignIn}
+											step={step}
+											setStep={setStep}
+											code={code}
+											setCode={setCode}
 										/>
 									</motion.form>
 								)}
@@ -336,6 +352,10 @@ const NormalLogin = ({
 	loading,
 	oauthError,
 	handleGoogleSignIn,
+	step,
+	setStep,
+	code,
+	setCode,
 }: {
 	setShowOrgInput: (show: boolean) => void;
 	email: string;
@@ -343,63 +363,127 @@ const NormalLogin = ({
 	loading: boolean;
 	oauthError: boolean;
 	handleGoogleSignIn: () => void;
+	step: "email" | "code";
+	setStep: (step: "email" | "code") => void;
+	code: string;
+	setCode: (code: string) => void;
 }) => {
 	const publicEnv = usePublicEnv();
 	const emailInputId = useId();
+	const codeInputId = useId();
 
 	return (
 		<motion.div>
 			<motion.div layout className="flex flex-col space-y-3">
-				<MotionInput
-					id={emailInputId}
-					name="email"
-					autoFocus
-					type="email"
-					placeholder="tim@apple.com"
-					autoComplete="email"
-					required
-					value={email}
-					disabled={loading}
-					onChange={(e) => {
-						setEmail(e.target.value.toLowerCase());
-					}}
-				/>
-				<MotionButton
-					variant="dark"
-					type="submit"
-					disabled={loading}
-					spinner={loading}
-					icon={
-						loading ? undefined : (
-							<FontAwesomeIcon className="mr-1 size-4" icon={faEnvelope} />
-						)
-					}
-				>
-					{loading ? "Sending code..." : "Login with email"}
-				</MotionButton>
-				{/* {NODE_ENV === "development" && (
-                  <div className="flex justify-center items-center px-6 py-3 mt-3 bg-red-600 rounded-xl">
-                    <p className="text-lg text-white">
-                      <span className="font-medium text-white">
-                        Development mode:
-                      </span>{" "}
-                      Auth URL will be logged to your dev console.
-                    </p>
-                  </div>
-                )} */}
+				<AnimatePresence mode="wait" initial={false}>
+					{step === "email" ? (
+						<motion.div
+							key="email-input"
+							layout
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0, transition: { duration: 0.15 } }}
+							exit={{ opacity: 0, y: -10, transition: { duration: 0.1 } }}
+							className="flex flex-col space-y-3"
+						>
+							<MotionInput
+								id={emailInputId}
+								name="email"
+								autoFocus
+								type="email"
+								placeholder="tim@apple.com"
+								autoComplete="email"
+								required
+								value={email}
+								disabled={loading}
+								onChange={(e) => {
+									setEmail(e.target.value.toLowerCase());
+								}}
+							/>
+							<MotionButton
+								variant="dark"
+								type="submit"
+								disabled={loading}
+								spinner={loading}
+								icon={
+									loading ? undefined : (
+										<FontAwesomeIcon
+											className="mr-1 size-4"
+											icon={faEnvelope}
+										/>
+									)
+								}
+							>
+								{loading ? "Sending code..." : "Continue with email"}
+							</MotionButton>
+						</motion.div>
+					) : (
+						<motion.div
+							key="code-input"
+							layout
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0, transition: { duration: 0.15 } }}
+							exit={{ opacity: 0, y: -10, transition: { duration: 0.1 } }}
+							className="flex flex-col space-y-3"
+						>
+							<motion.p
+								layout="position"
+								className="text-sm text-center text-gray-10"
+							>
+								Enter the 6-digit code from your server logs
+							</motion.p>
+							<MotionInput
+								id={codeInputId}
+								name="code"
+								autoFocus
+								type="text"
+								inputMode="numeric"
+								maxLength={6}
+								pattern="[0-9]*"
+								placeholder="123456"
+								required
+								value={code}
+								disabled={loading}
+								onChange={(e) => {
+									setCode(e.target.value.replace(/\D/g, ""));
+								}}
+							/>
+							<MotionButton
+								variant="dark"
+								type="submit"
+								disabled={loading || code.length < 6}
+								spinner={loading}
+							>
+								{loading ? "Verifying..." : "Verify code"}
+							</MotionButton>
+							<motion.button
+								layout="position"
+								type="button"
+								onClick={() => {
+									setStep("email");
+									setCode("");
+								}}
+								className="text-xs text-center text-gray-9 hover:text-gray-12 transition-colors"
+							>
+								← Use a different email
+							</motion.button>
+						</motion.div>
+					)}
+				</AnimatePresence>
 			</motion.div>
-			<motion.p
-				layout="position"
-				className="mt-3 mb-2 text-xs text-center text-gray-9"
-			>
-				Don't have an account?{" "}
-				<Link
-					href="/signup"
-					className="text-xs font-semibold text-blue-9 hover:text-blue-8"
+			{step === "email" && (
+				<motion.p
+					layout="position"
+					className="mt-3 mb-2 text-xs text-center text-gray-9"
 				>
-					Sign up here
-				</Link>
-			</motion.p>
+					Don't have an account?{" "}
+					<Link
+						href="/signup"
+						className="text-xs font-semibold text-blue-9 hover:text-blue-8"
+					>
+						Sign up here
+					</Link>
+				</motion.p>
+			)}
 
 			{(publicEnv.googleAuthAvailable || publicEnv.workosAuthAvailable) && (
 				<>

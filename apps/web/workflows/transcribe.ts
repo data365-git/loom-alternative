@@ -1,8 +1,10 @@
 import { promises as fs } from "node:fs";
 import { db } from "@cap/database";
 import { decrypt } from "@cap/database/crypto";
+import { nanoId } from "@cap/database/helpers";
 import {
 	organizations,
+	transcriptChunks,
 	users,
 	videos,
 	videoUploads,
@@ -14,12 +16,14 @@ import { Storage } from "@cap/web-backend";
 import type { Video } from "@cap/web-domain";
 import { eq } from "drizzle-orm";
 import { FatalError } from "workflow";
+import { withCostGuard } from "@/lib/ai-cost-guard";
 import {
 	ENHANCED_AUDIO_CONTENT_TYPE,
 	ENHANCED_AUDIO_EXTENSION,
 	enhanceAudioFromUrl,
 } from "@/lib/audio-enhance";
 import { checkHasAudioTrack, extractAudioFromUrl } from "@/lib/audio-extract";
+import { EMBED_MODEL, embedChunksWithUsage } from "@/lib/gemini-embed";
 import { transcribeWithGemini } from "@/lib/gemini-transcribe";
 import { startAiGeneration } from "@/lib/generate-ai";
 import {
@@ -29,6 +33,7 @@ import {
 	probeVideoViaMediaServer,
 } from "@/lib/media-client";
 import { runPromise } from "@/lib/server";
+import { chunkTranscript } from "@/lib/transcript-chunk";
 import { decodeStorageVideo } from "@/lib/video-storage";
 
 interface TranscribeWorkflowPayload {
@@ -42,6 +47,7 @@ interface VideoData {
 	transcriptionDisabled: boolean;
 	isOwnerPro: boolean;
 	ownerEncryptedGeminiKey: string | null;
+	orgId: string;
 }
 
 export async function transcribeVideoWorkflow(
@@ -74,10 +80,18 @@ export async function transcribeVideoWorkflow(
 				audioUrl,
 				videoData.video.duration,
 				videoData.ownerEncryptedGeminiKey,
+				{ userId, orgId: videoData.orgId, videoId },
 			),
 		]);
 
 		await saveTranscription(videoId, userId, videoData.video, transcription);
+
+		await chunkEmbedAndStore(
+			videoId,
+			transcription,
+			videoData.ownerEncryptedGeminiKey,
+			{ userId, orgId: videoData.orgId },
+		);
 	} catch (error) {
 		await markError(videoId);
 		await cleanupTempAudio(videoId, userId, videoData.video);
@@ -138,6 +152,7 @@ async function validateVideo(videoId: string): Promise<VideoData> {
 		transcriptionDisabled,
 		isOwnerPro,
 		ownerEncryptedGeminiKey: result.owner.geminiApiKey ?? null,
+		orgId: result.video.orgId,
 	};
 }
 
@@ -297,6 +312,7 @@ async function transcribeAudio(
 	audioUrl: string,
 	videoDuration: number | null,
 	ownerEncryptedGeminiKey: string | null,
+	context: { userId: string; orgId: string; videoId: string },
 ): Promise<string> {
 	"use step";
 
@@ -322,9 +338,25 @@ async function transcribeAudio(
 		);
 	}
 
-	const result = await transcribeWithGemini(audioUrl, {
-		apiKey,
-		audioDurationSec: videoDuration ?? undefined,
+	const resolvedApiKey = apiKey;
+
+	const result = await withCostGuard({
+		orgId: context.orgId,
+		userId: context.userId,
+		videoId: context.videoId,
+		operation: "transcription",
+		model: "gemini-2.0-flash",
+		fn: async () => {
+			const res = await transcribeWithGemini(audioUrl, {
+				apiKey: resolvedApiKey,
+				audioDurationSec: videoDuration ?? undefined,
+			});
+			return {
+				transcriptVtt: res.transcriptVtt,
+				inputTokens: res.inputTokens,
+				outputTokens: res.outputTokens,
+			};
+		},
 	});
 
 	return result.transcriptVtt;
@@ -352,6 +384,90 @@ async function saveTranscription(
 		.update(videos)
 		.set({ transcriptionStatus: "COMPLETE" })
 		.where(eq(videos.id, videoId as Video.VideoId));
+}
+
+async function chunkEmbedAndStore(
+	videoId: string,
+	vttContent: string,
+	ownerEncryptedGeminiKey: string | null,
+	context: { userId: string; orgId: string },
+): Promise<void> {
+	"use step";
+
+	try {
+		let apiKey: string | undefined;
+
+		if (ownerEncryptedGeminiKey) {
+			try {
+				apiKey = await decrypt(ownerEncryptedGeminiKey);
+			} catch {
+				console.error(
+					"[transcribe] Failed to decrypt user Gemini key for embeddings, falling back to server key",
+				);
+			}
+		}
+
+		if (!apiKey) {
+			apiKey = serverEnv().GEMINI_API_KEY;
+		}
+
+		if (!apiKey) {
+			console.warn(
+				"[transcribe] No Gemini API key available for embeddings, skipping RAG indexing",
+			);
+			return;
+		}
+
+		const chunks = chunkTranscript(vttContent);
+		if (chunks.length === 0) {
+			console.log(`[transcribe] No chunks produced for video ${videoId}`);
+			return;
+		}
+
+		const resolvedApiKey = apiKey;
+
+		const { embeddings, totalTokens } = await embedChunksWithUsage(
+			chunks,
+			resolvedApiKey,
+		);
+
+		await withCostGuard({
+			orgId: context.orgId,
+			userId: context.userId,
+			videoId,
+			operation: "embedding",
+			model: EMBED_MODEL,
+			fn: async () => ({
+				embeddings,
+				inputTokens: totalTokens,
+				outputTokens: 0,
+			}),
+		});
+
+		const rows = chunks.map((chunk, i) => ({
+			id: nanoId(),
+			videoId: videoId as Video.VideoId,
+			chunkIndex: i,
+			startMs: chunk.startMs,
+			endMs: chunk.endMs,
+			speaker: chunk.speaker,
+			text: chunk.text,
+			tokens: chunk.tokens,
+			embedding: embeddings[i] ?? null,
+			embeddingModel: EMBED_MODEL,
+		}));
+
+		await db().insert(transcriptChunks).values(rows);
+
+		console.log(
+			`[transcribe] Stored ${rows.length} transcript chunks for video ${videoId}`,
+		);
+	} catch (error) {
+		console.error(
+			`[transcribe] RAG indexing failed for video ${videoId}, transcription still COMPLETE:`,
+			error,
+		);
+	}
 }
 
 async function cleanupTempAudio(

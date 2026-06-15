@@ -23,13 +23,19 @@ export async function updateStorageSettings(input: {
 	const orgId = me.activeOrganizationId as Organisation.OrganisationId;
 
 	const [org] = await db()
-		.select({ ownerId: organizations.ownerId, settings: organizations.settings })
+		.select({
+			ownerId: organizations.ownerId,
+			settings: organizations.settings,
+		})
 		.from(organizations)
 		.where(eq(organizations.id, orgId));
 
 	if (!org) return { ok: false, error: "Organization not found" };
 	if (org.ownerId !== me.id) {
-		return { ok: false, error: "Only the organization owner can change quotas" };
+		return {
+			ok: false,
+			error: "Only the organization owner can change quotas",
+		};
 	}
 
 	const validateQuota = (label: string, v: number | null | undefined) => {

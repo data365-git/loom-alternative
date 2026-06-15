@@ -5,7 +5,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { db } from "@cap/database";
 import { getCurrentUser } from "@cap/database/auth/session";
-import { videoUploads, videos } from "@cap/database/schema";
+import { videos, videoUploads } from "@cap/database/schema";
 import { serverEnv } from "@cap/env";
 import { eq } from "drizzle-orm";
 import type { NextRequest } from "next/server";

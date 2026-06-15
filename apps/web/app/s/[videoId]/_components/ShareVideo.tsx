@@ -19,6 +19,9 @@ import { Tooltip } from "@/components/Tooltip";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { isRetryableDesktopSegmentsFinalizationError } from "@/lib/desktop-segments-retryable-errors";
 import type { VideoData } from "../types";
+import { AIChatPopup } from "./AIChatPopup";
+import { AIFab } from "./AIFab";
+import { BelowVideoTabs } from "./BelowVideoTabs";
 import { type CaptionLanguage, useCaptionContext } from "./CaptionContext";
 import { CapVideoPlayer } from "./CapVideoPlayer";
 import { HLSVideoPlayer } from "./HLSVideoPlayer";
@@ -27,10 +30,16 @@ import {
 	shouldReloadPlaybackAfterUploadCompletes,
 	useUploadProgress,
 } from "./ProgressCircle";
+import { MeetingCostPanel } from "./panels/MeetingCostPanel";
+import { RefinedTranscriptPanel } from "./panels/RefinedTranscriptPanel";
+import { SummaryPanel } from "./panels/SummaryPanel";
+import { TasksPanel } from "./panels/TasksPanel";
+import { TranscriptPanel } from "./panels/TranscriptPanel";
 import {
 	PreparingVideoOverlay,
 	RecordingInProgressOverlay,
 } from "./RecordingInProgress";
+import { TweaksPanel } from "./TweaksPanel";
 import { formatChaptersAsVTT } from "./utils/transcript-utils";
 
 type CommentWithAuthor = typeof commentsSchema.$inferSelect & {
@@ -107,6 +116,8 @@ export const ShareVideo = forwardRef<
 		const [confirmStoppedError, setConfirmStoppedError] = useState<
 			string | null
 		>(null);
+		const [aiChatOpen, setAiChatOpen] = useState(false);
+		const [currentTime, setCurrentTime] = useState(0);
 		const autoFinalizeAttemptedRef = useRef(false);
 		const segmentUploadProgress = useUploadProgress(
 			data.id,
@@ -135,12 +146,20 @@ export const ShareVideo = forwardRef<
 			}
 		}, [recordingStopped]);
 
-		// Handle seek functionality
 		const handleSeek = (time: number) => {
 			if (videoRef.current) {
 				videoRef.current.currentTime = time;
+				setCurrentTime(time);
 			}
 		};
+
+		useEffect(() => {
+			const video = videoRef.current;
+			if (!video) return;
+			const onTimeUpdate = () => setCurrentTime(video.currentTime);
+			video.addEventListener("timeupdate", onTimeUpdate);
+			return () => video.removeEventListener("timeupdate", onTimeUpdate);
+		}, []);
 
 		useEffect(() => {
 			if (transcriptContent) {
@@ -423,6 +442,14 @@ export const ShareVideo = forwardRef<
 							isCaptionLoading={captionContext.isTranslating}
 							hasCaptions={data.transcriptionStatus === "COMPLETE"}
 							canRetryProcessing={canRetryProcessing}
+							chapters={
+								areChaptersDisabled
+									? []
+									: chapters.map((ch) => ({
+											startSec: ch.start,
+											title: ch.title,
+										}))
+							}
 						/>
 					) : (
 						<HLSVideoPlayer
@@ -446,6 +473,14 @@ export const ShareVideo = forwardRef<
 							isCaptionLoading={captionContext.isTranslating}
 							hasCaptions={data.transcriptionStatus === "COMPLETE"}
 							canRetryProcessing={canRetryProcessing}
+							chapters={
+								areChaptersDisabled
+									? []
+									: chapters.map((ch) => ({
+											startSec: ch.start,
+											title: ch.title,
+										}))
+							}
 						/>
 					)}
 					{showFinalizeRecordingControl && (
@@ -519,6 +554,53 @@ export const ShareVideo = forwardRef<
 					open={upgradeModalOpen}
 					onOpenChange={setUpgradeModalOpen}
 				/>
+
+				<div className="mt-4">
+					<BelowVideoTabs
+						summary={
+							<SummaryPanel
+								data={{
+									duration: data.duration ?? undefined,
+									aiSummary: data.metadata?.aiSummary ?? undefined,
+									speakerCount: undefined,
+								}}
+								onVideoJump={handleSeek}
+							/>
+						}
+						tasks={
+							<TasksPanel
+								videoId={data.id}
+								tasks={data.metadata?.aiSummary?.tasks ?? []}
+							/>
+						}
+						transcript={
+							<TranscriptPanel
+								transcriptContent={transcriptContent ?? undefined}
+								currentTime={currentTime}
+								onVideoJump={handleSeek}
+							/>
+						}
+						refined={
+							<RefinedTranscriptPanel
+								refinedTranscript={
+									data.metadata?.aiSummary?.refinedTranscript ?? undefined
+								}
+								onVideoJump={handleSeek}
+							/>
+						}
+						cost={<MeetingCostPanel videoId={data.id} />}
+					/>
+				</div>
+
+				{aiChatOpen && (
+					<AIChatPopup
+						videoId={data.id}
+						onVideoJump={handleSeek}
+						onClose={() => setAiChatOpen(false)}
+					/>
+				)}
+				<AIFab onClick={() => setAiChatOpen((v) => !v)} />
+				<TweaksPanel />
 			</>
 		);
 	},

@@ -1,9 +1,9 @@
+import { formatPlatformDateRelative } from "@cap/utils";
 import type { Notification as APINotification } from "@cap/web-api-contract";
 import type { ImageUpload } from "@cap/web-domain";
 import { faComment, faEye, faReply } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import clsx from "clsx";
-import { formatPlatformDateRelative } from "@cap/utils";
 import Link from "next/link";
 import { markAsRead } from "@/actions/notifications/mark-as-read";
 import { AnimalAvatar } from "@/components/AnimalAvatar";

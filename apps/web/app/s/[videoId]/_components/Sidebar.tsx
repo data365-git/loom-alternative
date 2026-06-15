@@ -1,23 +1,27 @@
-import type { comments as commentsSchema } from "@cap/database/schema";
-import { classNames } from "@cap/utils";
-import type { ImageUpload, Video } from "@cap/web-domain";
-import clsx from "clsx";
-import { AnimatePresence, motion } from "framer-motion";
-import { forwardRef, Suspense, useState } from "react";
+"use client";
+
+import type { Video } from "@cap/web-domain";
+import { Comment } from "@cap/web-domain";
+import { faComment, faEye, faSmile } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import Link from "next/link";
+import {
+	forwardRef,
+	Suspense,
+	startTransition,
+	use,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
+import { getVideoAnalytics } from "@/actions/videos/get-analytics";
+import { newComment } from "@/actions/videos/new-comment";
 import type { OrganizationSettings } from "@/app/(org)/dashboard/dashboard-data";
 import { useCurrentUser } from "@/app/Layout/AuthContext";
+import type { CommentType } from "../Share";
 import type { VideoData } from "../types";
-import { Activity } from "./tabs/Activity";
-import { Settings } from "./tabs/Settings";
-import { Summary } from "./tabs/Summary";
-import { Transcript } from "./tabs/Transcript";
-
-type TabType = "activity" | "transcript" | "summary" | "settings";
-
-type CommentType = typeof commentsSchema.$inferSelect & {
-	authorName?: string | null;
-	authorImage?: ImageUpload.ImageUrl | null;
-};
+import { AuthOverlay } from "./AuthOverlay";
+import { Comments } from "./tabs/Activity/Comments";
 
 type AiGenerationStatus =
 	| "QUEUED"
@@ -44,37 +48,109 @@ interface SidebarProps {
 		aiGenerationStatus?: AiGenerationStatus | null;
 	} | null;
 	aiGenerationEnabled?: boolean;
+	disableReactions?: boolean;
 }
 
-const TabContent = motion.div;
+const REACTIONS = [
+	{ emoji: "😂", label: "joy" },
+	{ emoji: "😍", label: "love" },
+	{ emoji: "😮", label: "wow" },
+	{ emoji: "🙌", label: "yay" },
+	{ emoji: "👍", label: "up" },
+	{ emoji: "👎", label: "down" },
+];
 
-const tabVariants = {
-	enter: (direction: number) => ({
-		x: direction > 0 ? 1000 : -1000,
-		opacity: 0,
-	}),
-	center: {
-		zIndex: 1,
-		x: 0,
-		opacity: 1,
-	},
-	exit: (direction: number) => ({
-		zIndex: 0,
-		x: direction < 0 ? 1000 : -1000,
-		opacity: 0,
-	}),
+const SidebarAnalytics = ({
+	videoId,
+	views,
+	comments,
+	isOwner,
+}: {
+	videoId: string;
+	views: MaybePromise<number>;
+	comments: CommentType[];
+	isOwner: boolean;
+}) => {
+	const [viewCount, setViewCount] = useState(
+		views instanceof Promise ? use(views) : views,
+	);
+
+	useEffect(() => {
+		getVideoAnalytics(videoId)
+			.then((r) => setViewCount(r.count))
+			.catch(console.error);
+	}, [videoId]);
+
+	const totalComments = useMemo(
+		() => comments.filter((c) => c.type === "text").length,
+		[comments],
+	);
+	const totalReactions = useMemo(
+		() => comments.filter((c) => c.type === "emoji").length,
+		[comments],
+	);
+
+	return (
+		<div className="flex flex-wrap gap-4 items-center justify-between px-4 py-3 border-b border-gray-5">
+			<div className="flex gap-4 items-center">
+				<div className="flex gap-2 items-center">
+					<FontAwesomeIcon className="text-gray-8 size-4" icon={faEye} />
+					<span className="text-sm text-gray-12">{viewCount}</span>
+				</div>
+				<div className="flex gap-2 items-center">
+					<FontAwesomeIcon className="text-gray-8 size-4" icon={faComment} />
+					<span className="text-sm text-gray-12">{totalComments}</span>
+				</div>
+				<div className="flex gap-2 items-center">
+					<FontAwesomeIcon className="text-gray-8 size-4" icon={faSmile} />
+					<span className="text-sm text-gray-12">{totalReactions}</span>
+				</div>
+			</div>
+			{isOwner && (
+				<Link
+					href={`/dashboard/analytics?capId=${videoId}`}
+					className="text-xs text-blue-600 hover:underline"
+				>
+					View analytics
+				</Link>
+			)}
+		</div>
+	);
 };
 
-const tabTransition = {
-	x: { type: "spring", stiffness: 300, damping: 30 },
-	opacity: { duration: 0.2 },
-};
+const ReactionsBlock = ({
+	reactions,
+	onReact,
+}: {
+	reactions: Record<string, number>;
+	onReact: (emoji: string) => void;
+}) => (
+	<div className="flex flex-wrap gap-2 p-4 border-t border-gray-5">
+		{REACTIONS.map(({ emoji, label }) => (
+			<button
+				key={emoji}
+				type="button"
+				aria-label={label}
+				onClick={() => onReact(emoji)}
+				className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-5 bg-gray-1 hover:bg-gray-3 transition-colors text-sm font-emoji"
+			>
+				<span role="img" aria-label={label}>
+					{emoji}
+				</span>
+				{reactions[emoji] != null && reactions[emoji] > 0 && (
+					<span className="text-xs text-gray-9 font-sans">
+						{reactions[emoji]}
+					</span>
+				)}
+			</button>
+		))}
+	</div>
+);
 
 export const Sidebar = forwardRef<{ scrollToBottom: () => void }, SidebarProps>(
 	(
 		{
 			data,
-			commentsData,
 			setCommentsData,
 			optimisticComments,
 			handleCommentSuccess,
@@ -82,179 +158,125 @@ export const Sidebar = forwardRef<{ scrollToBottom: () => void }, SidebarProps>(
 			views,
 			videoSettings,
 			onSeek,
-			aiData,
-			aiGenerationEnabled = false,
+			videoId,
+			disableReactions,
 		},
 		ref,
 	) => {
 		const user = useCurrentUser();
+		const [showAuthOverlay, setShowAuthOverlay] = useState(false);
 
 		const isOwner = Boolean(user?.id === data.owner.id);
 		const isOwnerOrMember = Boolean(
 			isOwner || (user && data.organizationMembers?.includes(user.id)),
 		);
 
-		const defaultTab = !(
-			videoSettings?.disableComments ?? data.orgSettings?.disableComments
-		)
-			? "activity"
-			: !(videoSettings?.disableSummary ?? data.orgSettings?.disableSummary)
-				? "summary"
-				: !(
-							videoSettings?.disableTranscript ??
-							data.orgSettings?.disableTranscript
-						)
-					? "transcript"
-					: "activity";
+		const commentsDisabled =
+			videoSettings?.disableComments ??
+			data.orgSettings?.disableComments ??
+			false;
+		const canReact = !(disableReactions ?? false);
 
-		const [activeTab, setActiveTab] = useState<TabType>(defaultTab);
-		const [[page, direction], setPage] = useState([0, 0]);
+		const reactionsByEmoji = useMemo(() => {
+			const map: Record<string, number> = {};
+			for (const c of optimisticComments) {
+				if (c.type !== "emoji") continue;
+				map[c.content] = (map[c.content] ?? 0) + 1;
+			}
+			return map;
+		}, [optimisticComments]);
 
-		const tabs = [
-			{
-				id: "activity",
-				label: "Comments",
-				disabled:
-					videoSettings?.disableComments ?? data.orgSettings?.disableComments,
-			},
-			{
-				id: "summary",
-				label: "Summary",
-				disabled:
-					videoSettings?.disableSummary ?? data.orgSettings?.disableSummary,
-			},
-			{
-				id: "transcript",
-				label: "Transcript",
-				disabled:
-					videoSettings?.disableTranscript ??
-					data.orgSettings?.disableTranscript,
-			},
-		];
+		const handleEmojiReact = async (emoji: string) => {
+			if (!canReact) return;
+			if (!user) {
+				setShowAuthOverlay(true);
+				return;
+			}
+			const videoElement = document.querySelector("video") as HTMLVideoElement;
+			const currentTime = videoElement?.currentTime ?? 0;
 
-		const paginate = (tabId: TabType) => {
-			const currentIndex = tabs.findIndex((tab) => tab.id === activeTab);
-			const newIndex = tabs.findIndex((tab) => tab.id === tabId);
-			const direction = newIndex > currentIndex ? 1 : -1;
+			const optimisticComment: CommentType = {
+				id: Comment.CommentId.make(`temp-emoji-${Date.now()}`),
+				authorId: user.id,
+				authorName: user.name,
+				authorImage: user.imageUrl,
+				content: emoji,
+				createdAt: new Date(),
+				videoId: data.id,
+				parentCommentId: Comment.CommentId.make(""),
+				type: "emoji",
+				timestamp: currentTime,
+				updatedAt: new Date(),
+				sending: true,
+			};
 
-			setPage([page + direction, direction]);
-			setActiveTab(tabId);
-		};
+			startTransition(() => {
+				setOptimisticComments(optimisticComment);
+			});
 
-		const renderTabContent = () => {
-			switch (activeTab) {
-				case "activity":
-					return (
-						<Suspense
-							fallback={<Activity.Skeleton isOwnerOrMember={isOwnerOrMember} />}
-						>
-							<Activity
-								ref={ref}
-								views={views}
-								comments={commentsData}
-								commentsDisabled={
-									videoSettings?.disableComments ??
-									data.orgSettings?.disableComments ??
-									false
-								}
-								setComments={setCommentsData}
-								optimisticComments={optimisticComments}
-								setOptimisticComments={setOptimisticComments}
-								handleCommentSuccess={handleCommentSuccess}
-								isOwnerOrMember={isOwnerOrMember}
-								isOwner={isOwner}
-								onSeek={onSeek}
-								videoId={data.id}
-								videoOwnerId={data.owner.id}
-							/>
-						</Suspense>
-					);
-				case "summary":
-					return (
-						<Summary
-							videoId={data.id}
-							ownerIsPro={data.owner.isPro}
-							onSeek={onSeek}
-							isSummaryDisabled={videoSettings?.disableSummary}
-							initialAiData={aiData || undefined}
-							aiGenerationEnabled={aiGenerationEnabled}
-						/>
-					);
-				case "transcript":
-					return <Transcript data={data} onSeek={onSeek} />;
-				case "settings":
-					return <Settings />;
-				default:
-					return null;
+			try {
+				const result = await newComment({
+					content: emoji,
+					videoId: data.id,
+					authorImage: user.imageUrl,
+					parentCommentId: Comment.CommentId.make(""),
+					type: "emoji",
+					timestamp: currentTime,
+				});
+				startTransition(() => {
+					handleCommentSuccess(result);
+				});
+			} catch (error) {
+				console.error("Error posting reaction:", error);
 			}
 		};
 
-		const allTabsDisabled = tabs.every((tab) => tab.disabled);
-
 		return (
-			<div className="bg-white rounded-2xl border border-gray-5 overflow-hidden h-[calc(100vh-16rem)] lg:h-full flex flex-col lg:aspect-video">
-				<div className="flex-none">
-					<div
-						className={clsx(
-							"flex border-b border-gray-5",
-							allTabsDisabled && "hidden",
-						)}
-					>
-						{tabs
-							.filter((tab) => !tab.disabled)
-							.map((tab) => (
-								<button
-									type="button"
-									key={tab.id}
-									onClick={() => paginate(tab.id as TabType)}
-									className={classNames(
-										"flex-1 px-5 py-3 text-sm font-medium relative transition-colors duration-200",
-										"hover:bg-gray-1",
-										activeTab === tab.id ? "bg-gray-3" : "",
-									)}
-								>
-									<span
-										className={classNames(
-											"relative z-10 text-sm",
-											activeTab === tab.id ? "text-gray-12" : "text-gray-9",
-										)}
-									>
-										{tab.label}
-									</span>
-									{activeTab === tab.id && (
-										<motion.div
-											layoutId="activeTab"
-											className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"
-											initial={false}
-											transition={{
-												type: "spring",
-												stiffness: 500,
-												damping: 30,
-											}}
-										/>
-									)}
-								</button>
-							))}
-					</div>
+			<div
+				className="bg-white rounded-2xl border border-gray-5 overflow-hidden flex flex-col"
+				style={{ width: "320px", position: "sticky", top: "1rem" }}
+			>
+				<div className="flex items-center px-4 py-3 border-b border-gray-5">
+					<span className="text-sm font-semibold text-gray-12">Comments</span>
 				</div>
-				<div className="flex-1 min-h-0">
-					<div className="overflow-hidden relative h-full">
-						<AnimatePresence initial={false} custom={direction}>
-							<TabContent
-								key={activeTab}
-								custom={direction}
-								variants={tabVariants}
-								initial="enter"
-								animate="center"
-								exit="exit"
-								transition={tabTransition}
-								className="overflow-auto absolute inset-0"
-							>
-								<div className="h-full">{renderTabContent()}</div>
-							</TabContent>
-						</AnimatePresence>
-					</div>
+
+				{user && isOwnerOrMember && (
+					<Suspense fallback={null}>
+						<SidebarAnalytics
+							videoId={data.id}
+							views={views}
+							comments={optimisticComments}
+							isOwner={isOwner}
+						/>
+					</Suspense>
+				)}
+
+				<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+					<Comments
+						ref={ref}
+						handleCommentSuccess={handleCommentSuccess}
+						optimisticComments={optimisticComments}
+						setOptimisticComments={setOptimisticComments}
+						setComments={setCommentsData}
+						videoId={videoId}
+						setShowAuthOverlay={setShowAuthOverlay}
+						onSeek={onSeek}
+						commentsDisabled={commentsDisabled}
+						videoOwnerId={data.owner.id}
+					/>
 				</div>
+
+				{canReact && (
+					<ReactionsBlock
+						reactions={reactionsByEmoji}
+						onReact={handleEmojiReact}
+					/>
+				)}
+
+				<AuthOverlay
+					isOpen={showAuthOverlay}
+					onClose={() => setShowAuthOverlay(false)}
+				/>
 			</div>
 		);
 	},

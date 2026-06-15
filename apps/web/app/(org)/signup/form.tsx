@@ -17,10 +17,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Suspense, useEffect, useId, useState } from "react";
 import { toast } from "sonner";
+import { requestOtp } from "@/actions/auth/request-otp";
 import { getOrganizationSSOData } from "@/actions/organization/get-organization-sso-data";
 import { trackEvent } from "@/app/utils/analytics";
 import { usePublicEnv } from "@/utils/public-env";
-import { getEmailCodeCooldownSeconds, requestEmailCode } from "../auth-email";
 
 const MotionInput = motion(Input);
 const MotionLogoBadge = motion(LogoBadge);
@@ -33,14 +33,12 @@ export function SignupForm() {
 	const next = searchParams?.get("next");
 	const [email, setEmail] = useState("");
 	const [loading, setLoading] = useState(false);
-	const [emailSent, setEmailSent] = useState(false);
 	const [oauthError, setOauthError] = useState(false);
 	const [showOrgInput, setShowOrgInput] = useState(false);
 	const [organizationId, setOrganizationId] = useState("");
 	const [organizationName, setOrganizationName] = useState<string | null>(null);
-	const [lastEmailSentTime, setLastEmailSentTime] = useState<number | null>(
-		null,
-	);
+	const [step, setStep] = useState<"email" | "code">("email");
+	const [code, setCode] = useState("");
 	const theme = Cookies.get("theme") || "light";
 
 	useEffect(() => {
@@ -74,34 +72,6 @@ export function SignupForm() {
 		handleErrors();
 	}, [searchParams]);
 
-	useEffect(() => {
-		const pendingPriceId = localStorage.getItem("pendingPriceId");
-		const pendingQuantity = localStorage.getItem("pendingQuantity") ?? "1";
-		if (emailSent && pendingPriceId) {
-			localStorage.removeItem("pendingPriceId");
-			localStorage.removeItem("pendingQuantity");
-
-			// Wait a bit to ensure the user is created
-			setTimeout(async () => {
-				const response = await fetch(`/api/settings/billing/subscribe`, {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						priceId: pendingPriceId,
-						quantity: parseInt(pendingQuantity, 10),
-					}),
-				});
-				const data = await response.json();
-
-				if (data.url) {
-					window.location.href = data.url;
-				}
-			}, 2000);
-		}
-	}, [emailSent]);
-
 	const handleGoogleSignIn = () => {
 		trackEvent("auth_started", {
 			method: "google",
@@ -133,6 +103,65 @@ export function SignupForm() {
 		} catch (error) {
 			console.error("Lookup Error:", error);
 			toast.error("Organization not found or SSO not configured");
+		}
+	};
+
+	const handleEmailSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		setLoading(true);
+		try {
+			await requestOtp(email.trim().toLowerCase());
+			setStep("code");
+		} catch {
+			toast.error("Failed to send code. Try again.");
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const handleCodeSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		setLoading(true);
+		try {
+			const result = await signIn("email-otp", {
+				email: email.trim().toLowerCase(),
+				code,
+				redirect: false,
+			});
+			if (result?.error) {
+				toast.error("Invalid or expired code");
+			} else {
+				const pendingPriceId = localStorage.getItem("pendingPriceId");
+				const pendingQuantity = localStorage.getItem("pendingQuantity") ?? "1";
+				if (pendingPriceId) {
+					localStorage.removeItem("pendingPriceId");
+					localStorage.removeItem("pendingQuantity");
+					setTimeout(async () => {
+						const response = await fetch(`/api/settings/billing/subscribe`, {
+							method: "POST",
+							headers: {
+								"Content-Type": "application/json",
+							},
+							body: JSON.stringify({
+								priceId: pendingPriceId,
+								quantity: parseInt(pendingQuantity, 10),
+							}),
+						});
+						const data = await response.json();
+						if (data.url) {
+							window.location.href = data.url;
+						} else {
+							router.push(next || "/dashboard");
+						}
+					}, 2000);
+				} else {
+					router.push(next || "/dashboard");
+				}
+			}
+		} catch {
+			toast.error("Invalid or expired code");
+		} finally {
+			setLoading(false);
 		}
 	};
 
@@ -226,6 +255,40 @@ export function SignupForm() {
 											organizationName={organizationName}
 										/>
 									</motion.div>
+								) : step === "code" ? (
+									<motion.form
+										key="code"
+										layout
+										initial={{ opacity: 0, y: 10 }}
+										animate={{
+											opacity: 1,
+											y: 0,
+											transition: { duration: 0.1 },
+										}}
+										exit={{
+											opacity: 0,
+											y: -10,
+											transition: { duration: 0.15 },
+										}}
+										transition={{
+											duration: 0.2,
+											ease: "easeInOut",
+											opacity: { delay: 0.05 },
+										}}
+										noValidate
+										onSubmit={handleCodeSubmit}
+										className="flex flex-col space-y-3"
+									>
+										<OtpCodeStep
+											code={code}
+											setCode={setCode}
+											loading={loading}
+											onBack={() => {
+												setStep("email");
+												setCode("");
+											}}
+										/>
+									</motion.form>
 								) : (
 									<motion.form
 										key="email"
@@ -247,52 +310,12 @@ export function SignupForm() {
 											opacity: { delay: 0.05 },
 										}}
 										noValidate
-										onSubmit={async (e) => {
-											e.preventDefault();
-
-											const remainingSeconds =
-												getEmailCodeCooldownSeconds(lastEmailSentTime);
-											if (remainingSeconds > 0) {
-												toast.error(
-													`Please wait ${remainingSeconds} seconds before requesting a new code.`,
-												);
-												return;
-											}
-
-											setLoading(true);
-											try {
-												const normalizedEmail = await requestEmailCode({
-													email,
-													next,
-													isSignup: true,
-													authSurface: "signup",
-												});
-												if (!normalizedEmail) return;
-
-												const sentAt = Date.now();
-												setEmailSent(true);
-												setLastEmailSentTime(sentAt);
-												const params = new URLSearchParams({
-													email: normalizedEmail,
-													...(next && { next }),
-													lastSent: sentAt.toString(),
-												});
-												router.push(`/verify-otp?${params.toString()}`);
-											} catch {
-												setEmailSent(false);
-												toast.error(
-													"Sign up is taking longer than expected. Check your connection or browser extensions, then try again.",
-												);
-											} finally {
-												setLoading(false);
-											}
-										}}
+										onSubmit={handleEmailSubmit}
 										className="flex flex-col space-y-3"
 									>
 										<NormalSignup
 											setShowOrgInput={setShowOrgInput}
 											email={email}
-											emailSent={emailSent}
 											setEmail={setEmail}
 											loading={loading}
 											oauthError={oauthError}
@@ -384,10 +407,62 @@ const SignupWithSSO = ({
 	);
 };
 
+const OtpCodeStep = ({
+	code,
+	setCode,
+	loading,
+	onBack,
+}: {
+	code: string;
+	setCode: (code: string) => void;
+	loading: boolean;
+	onBack: () => void;
+}) => {
+	const codeInputId = useId();
+
+	return (
+		<motion.div>
+			<motion.div layout className="flex flex-col space-y-3">
+				<p className="text-sm text-center text-gray-10">
+					Enter the 6-digit code from your server logs
+				</p>
+				<MotionInput
+					id={codeInputId}
+					name="code"
+					autoFocus
+					type="text"
+					inputMode="numeric"
+					maxLength={6}
+					pattern="[0-9]*"
+					placeholder="000000"
+					required
+					value={code}
+					disabled={loading}
+					onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+				/>
+				<MotionButton
+					variant="dark"
+					type="submit"
+					disabled={loading || code.length !== 6}
+					spinner={loading}
+				>
+					{loading ? "Verifying..." : "Verify code"}
+				</MotionButton>
+				<button
+					type="button"
+					onClick={onBack}
+					className="text-xs text-center text-gray-10 hover:text-gray-12 transition-colors"
+				>
+					← Use a different email
+				</button>
+			</motion.div>
+		</motion.div>
+	);
+};
+
 const NormalSignup = ({
 	setShowOrgInput,
 	email,
-	emailSent,
 	setEmail,
 	loading,
 	oauthError,
@@ -395,7 +470,6 @@ const NormalSignup = ({
 }: {
 	setShowOrgInput: (show: boolean) => void;
 	email: string;
-	emailSent: boolean;
 	setEmail: (email: string) => void;
 	loading: boolean;
 	oauthError: boolean;
@@ -412,11 +486,11 @@ const NormalSignup = ({
 					name="email"
 					autoFocus
 					type="email"
-					placeholder={emailSent ? "" : "tim@apple.com"}
+					placeholder="tim@apple.com"
 					autoComplete="email"
 					required
 					value={email}
-					disabled={emailSent || loading}
+					disabled={loading}
 					onChange={(e) => {
 						setEmail(e.target.value.toLowerCase());
 					}}
@@ -424,7 +498,7 @@ const NormalSignup = ({
 				<MotionButton
 					variant="dark"
 					type="submit"
-					disabled={loading || emailSent}
+					disabled={loading}
 					spinner={loading}
 					icon={
 						loading ? undefined : (

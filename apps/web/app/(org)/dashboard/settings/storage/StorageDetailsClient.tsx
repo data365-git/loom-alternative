@@ -122,9 +122,7 @@ export function StorageDetailsClient({ data }: { data: Data }) {
 											)}
 										</div>
 										{u.overQuota && (
-											<div className="text-[11px] text-red-600">
-												Over quota
-											</div>
+											<div className="text-[11px] text-red-600">Over quota</div>
 										)}
 									</div>
 								</div>

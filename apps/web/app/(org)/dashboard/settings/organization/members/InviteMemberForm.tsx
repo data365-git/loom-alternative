@@ -64,7 +64,9 @@ export function InviteMemberForm() {
 								role,
 							});
 							setGeneratedLink(url);
-							toast.success(`Link valid until ${formatPlatformDateTime(expiresAt)}`);
+							toast.success(
+								`Link valid until ${formatPlatformDateTime(expiresAt)}`,
+							);
 						}
 					} catch (err) {
 						toast.error((err as Error).message);

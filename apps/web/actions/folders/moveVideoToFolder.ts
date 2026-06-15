@@ -28,7 +28,11 @@ export async function moveVideoToFolder({
 
 	// Get the current video to know its original folder and verify ownership
 	const [currentVideo] = await db()
-		.select({ folderId: videos.folderId, id: videos.id, ownerId: videos.ownerId })
+		.select({
+			folderId: videos.folderId,
+			id: videos.id,
+			ownerId: videos.ownerId,
+		})
 		.from(videos)
 		.where(eq(videos.id, videoId));
 

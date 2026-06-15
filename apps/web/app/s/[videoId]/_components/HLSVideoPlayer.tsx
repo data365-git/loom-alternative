@@ -34,7 +34,6 @@ import {
 	MediaPlayerPiP,
 	MediaPlayerPlay,
 	MediaPlayerPlaybackSpeedDial,
-	MediaPlayerSeek,
 	MediaPlayerSeekBackward,
 	MediaPlayerSeekForward,
 	MediaPlayerSettings,
@@ -43,6 +42,7 @@ import {
 	MediaPlayerVolume,
 	MediaPlayerVolumeIndicator,
 } from "./video/media-player";
+import { SegmentedProgressBar } from "./video/SegmentedProgressBar";
 
 const { circumference } = getProgressCircleConfig();
 
@@ -103,6 +103,7 @@ interface Props {
 	duration?: number | null;
 	defaultPlaybackSpeed?: number;
 	previewMode?: "background";
+	chapters?: { startSec: number; title: string }[];
 }
 
 export function HLSVideoPlayer({
@@ -128,6 +129,7 @@ export function HLSVideoPlayer({
 	duration: fallbackDuration,
 	defaultPlaybackSpeed,
 	previewMode,
+	chapters = [],
 }: Props) {
 	const hlsInstance = useRef<Hls | null>(null);
 	const [currentCue, setCurrentCue] = useState<string>("");
@@ -803,7 +805,11 @@ export function HLSVideoPlayer({
 				}
 			>
 				<MediaPlayerControlsOverlay />
-				<MediaPlayerSeek fallbackDuration={playerDuration} />
+				<SegmentedProgressBar
+					chapters={chapters}
+					duration={playerDuration}
+					videoRef={videoRef}
+				/>
 				<div className="flex gap-2 items-center w-full">
 					<div className="flex flex-1 gap-2 items-center">
 						<MediaPlayerPlay />
