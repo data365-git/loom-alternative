@@ -1,3 +1,5 @@
+import { promises as fs } from "node:fs";
+import { resolve } from "node:path";
 import { db } from "@cap/database";
 import { nanoId } from "@cap/database/helpers";
 import {
@@ -6,8 +8,12 @@ import {
 	users,
 	videos,
 } from "@cap/database/schema";
+import { serverEnv } from "@cap/env";
 import { type Organisation, type User, Video } from "@cap/web-domain";
+import { Storage } from "@cap/web-backend";
 import { and, eq, or, sql } from "drizzle-orm";
+import { runPromise } from "@/lib/server";
+import { decodeStorageVideo } from "@/lib/video-storage";
 
 async function main() {
 	const emailArgIndex = process.argv.indexOf("--user");
@@ -51,6 +57,16 @@ async function main() {
 		process.exit(1);
 	}
 
+	const oldDemoVideos = await db()
+		.select({ id: videos.id })
+		.from(videos)
+		.where(
+			and(
+				eq(videos.ownerId, user.id as User.UserId),
+				sql`JSON_EXTRACT(${videos.metadata}, '$.isDemo') = true`,
+			),
+		);
+
 	await db()
 		.delete(videos)
 		.where(
@@ -59,6 +75,33 @@ async function main() {
 				sql`JSON_EXTRACT(${videos.metadata}, '$.isDemo') = true`,
 			),
 		);
+
+	if (oldDemoVideos.length > 0 && serverEnv().CAP_AWS_ACCESS_KEY) {
+		for (const oldVideo of oldDemoVideos) {
+			try {
+				const dummyVideoRecord = {
+					id: oldVideo.id as Video.VideoId,
+					ownerId: user.id,
+					orgId: orgId as Organisation.OrganisationId,
+				};
+				const [bucket] = await Storage.getAccessForVideo(
+					decodeStorageVideo(dummyVideoRecord as any),
+				).pipe(runPromise);
+
+				await bucket
+					.deleteObject(`${user.id}/${oldVideo.id}/transcription.vtt`)
+					.pipe(runPromise);
+				console.log(
+					`Deleted old demo transcript: ${user.id}/${oldVideo.id}/transcription.vtt`,
+				);
+			} catch (error) {
+				console.warn(
+					`Failed to delete old demo transcript for ${oldVideo.id}:`,
+					error,
+				);
+			}
+		}
+	}
 
 	const videoId = Video.VideoId.make(nanoId());
 
@@ -82,6 +125,46 @@ async function main() {
 			public: true,
 			skipProcessing: true,
 		});
+
+	if (serverEnv().CAP_AWS_ACCESS_KEY) {
+		try {
+			const transcriptPath = resolve(
+				__dirname,
+				"../public/demo/cap-demo-transcript.vtt",
+			);
+			const transcriptContent = await fs.readFile(transcriptPath, "utf-8");
+
+			const dummyVideoRecord = {
+				id: videoId,
+				ownerId: user.id,
+				orgId: orgId as Organisation.OrganisationId,
+			};
+			const [bucket] = await Storage.getAccessForVideo(
+				decodeStorageVideo(dummyVideoRecord as any),
+			).pipe(runPromise);
+
+			await bucket
+				.putObject(
+					`${user.id}/${videoId}/transcription.vtt`,
+					transcriptContent,
+					{
+						contentType: "text/vtt",
+					},
+				)
+				.pipe(runPromise);
+
+			console.log(
+				`Demo transcript uploaded: ${user.id}/${videoId}/transcription.vtt`,
+			);
+		} catch (error) {
+			console.error("Failed to upload demo transcript to S3:", error);
+			process.exit(1);
+		}
+	} else {
+		console.warn(
+			"S3 not configured — skipping demo transcript upload; Transcript tab will be empty",
+		);
+	}
 
 	console.log(`Demo video seeded: ${videoId} for user ${email}`);
 }

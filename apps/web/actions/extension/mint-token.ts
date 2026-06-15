@@ -14,9 +14,9 @@ export async function mintExtensionToken() {
 		.from(authApiKeys)
 		.where(eq(authApiKeys.userId, user.id));
 
-	if (row && row.count >= 25) {
+	if (row && row.count >= 5) {
 		throw new Error(
-			"Maximum API keys reached. Revoke unused keys in Settings before creating more.",
+			"You've reached the limit of 5 extension keys. Revoke one from Settings → API Keys to mint a new one.",
 		);
 	}
 

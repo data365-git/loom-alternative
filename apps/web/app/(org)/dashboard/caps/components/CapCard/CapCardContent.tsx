@@ -34,7 +34,7 @@ export const CapCardContent: React.FC<CapContentProps> = ({
 		: cap.createdAt;
 
 	const [dateValue, setDateValue] = useState(
-		moment(effectiveDate).format("YYYY-MM-DD HH:mm:ss"),
+		moment(effectiveDate).format("YYYY-MM-DD HH:mm"),
 	);
 	const [isDateEditing, setIsDateEditing] = useState(false);
 	const [showFullDate, setShowFullDate] = useState(false);
@@ -85,8 +85,8 @@ export const CapCardContent: React.FC<CapContentProps> = ({
 		const isValidDate = moment(dateValue).isValid();
 
 		if (!isValidDate) {
-			toast.error("Invalid date format. Please use YYYY-MM-DD HH:mm:ss");
-			setDateValue(moment(effectiveDate).format("YYYY-MM-DD HH:mm:ss"));
+			toast.error("Invalid date format. Please use YYYY-MM-DD HH:mm");
+			setDateValue(moment(effectiveDate).format("YYYY-MM-DD HH:mm"));
 			setIsDateEditing(false);
 			return;
 		}
@@ -96,7 +96,7 @@ export const CapCardContent: React.FC<CapContentProps> = ({
 
 		if (selectedDate.isAfter(currentDate)) {
 			toast.error("Cannot set a date in the future");
-			setDateValue(moment(effectiveDate).format("YYYY-MM-DD HH:mm:ss"));
+			setDateValue(moment(effectiveDate).format("YYYY-MM-DD HH:mm"));
 			setIsDateEditing(false);
 			return;
 		}
@@ -125,7 +125,7 @@ export const CapCardContent: React.FC<CapContentProps> = ({
 			e.preventDefault();
 			handleDateBlur();
 		} else if (e.key === "Escape") {
-			setDateValue(moment(effectiveDate).format("YYYY-MM-DD HH:mm:ss"));
+			setDateValue(moment(effectiveDate).format("YYYY-MM-DD HH:mm"));
 			setIsDateEditing(false);
 		}
 	};
@@ -210,7 +210,7 @@ export const CapCardContent: React.FC<CapContentProps> = ({
 							onBlur={handleDateBlur}
 							onKeyDown={handleDateKeyDown}
 							className="text-sm w-full truncate text-gray-10 bg-transparent focus:outline-none h-full leading-[1.5rem]"
-							placeholder="YYYY-MM-DD HH:mm:ss"
+							placeholder="YYYY-MM-DD HH:mm"
 						/>
 					</div>
 				) : (

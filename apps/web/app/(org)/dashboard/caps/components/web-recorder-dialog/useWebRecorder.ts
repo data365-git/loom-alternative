@@ -1,5 +1,6 @@
 "use client";
 
+import { formatPlatformDateTime } from "@cap/utils";
 import { Folder, Organisation } from "@cap/web-domain";
 import { useQueryClient } from "@tanstack/react-query";
 import { Cause, Exit, Option } from "effect";
@@ -364,7 +365,7 @@ export const useWebRecorder = ({
 					toast.info("Recovered an unfinished recording", {
 						id: recoveredToastId(download.id),
 						duration: Infinity,
-						description: new Date(download.createdAt).toLocaleString(),
+						description: formatPlatformDateTime(download.createdAt),
 						action: {
 							label: "Download",
 							onClick: () => {
