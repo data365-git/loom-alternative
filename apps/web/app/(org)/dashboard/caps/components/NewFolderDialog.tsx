@@ -16,7 +16,7 @@ import clsx from "clsx";
 import { Option } from "effect";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useEffectMutation, useRpcClient } from "@/lib/EffectRuntime";
 import { PublicCollectionField } from "../../_components/PublicCollectionField";
@@ -45,6 +45,7 @@ export const NewFolderDialog: React.FC<Props> = ({
 	>(null);
 	const [folderName, setFolderName] = useState<string>("");
 	const [publicEnabled, setPublicEnabled] = useState(false);
+	const inputRef = useRef<HTMLInputElement>(null);
 	const { activeOrganization, setUpgradeModalOpen } = useDashboardContext();
 	const router = useRouter();
 

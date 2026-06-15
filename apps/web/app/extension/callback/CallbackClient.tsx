@@ -6,7 +6,7 @@ import { mintExtensionToken } from "@/actions/extension/mint-token";
 type Status =
 	| { kind: "loading" }
 	| { kind: "success"; email: string; fallbackToken?: string }
-	| { kind: "error"; message: string };
+	| { kind: "error"; message: string; token: string };
 
 export function CallbackClient({
 	extensionId,
@@ -43,30 +43,51 @@ export function CallbackClient({
 						"function" &&
 					extensionId
 				) {
-					await new Promise<void>((resolve) => {
-						(
-							chromeRuntime as {
-								sendMessage: (
-									extensionId: string,
-									message: Record<string, unknown>,
-									callback: (response: unknown) => void,
-								) => void;
-								lastError?: { message: string };
-							}
-						).sendMessage(
-							extensionId,
-							{
-								type: "CAP_EXTENSION_TOKEN",
-								token,
-								apiBaseUrl: window.location.origin,
-							},
-							(_response: unknown) => {
-								resolve();
-							},
-						);
-					});
-					setStatus({ kind: "success", email });
-					return;
+					try {
+						await new Promise<void>((resolve, reject) => {
+							(
+								chromeRuntime as {
+									sendMessage: (
+										extensionId: string,
+										message: Record<string, unknown>,
+										callback: (response: unknown) => void,
+									) => void;
+									lastError?: { message: string };
+								}
+							).sendMessage(
+								extensionId,
+								{
+									type: "CAP_EXTENSION_TOKEN",
+									token,
+									apiBaseUrl: window.location.origin,
+								},
+								(_response: unknown) => {
+									const rt = chromeRuntime as {
+										lastError?: { message: string };
+									};
+									if (rt.lastError) {
+										reject(new Error(rt.lastError.message));
+									} else {
+										resolve();
+									}
+								},
+							);
+						});
+						setStatus({ kind: "success", email });
+						setTimeout(() => {
+							window.close();
+						}, 2000);
+						return;
+					} catch (err) {
+						if (cancelled) return;
+						const errorMsg = err instanceof Error ? err.message : "Failed to connect to extension";
+						setStatus({
+							kind: "error",
+							message: errorMsg,
+							token,
+						});
+						return;
+					}
 				}
 
 				setStatus({ kind: "success", email, fallbackToken: token });
@@ -75,6 +96,7 @@ export function CallbackClient({
 				setStatus({
 					kind: "error",
 					message: err instanceof Error ? err.message : "Something went wrong",
+					token: "",
 				});
 			}
 		}
@@ -88,8 +110,11 @@ export function CallbackClient({
 	if (status.kind === "loading") {
 		return (
 			<div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg text-center">
+				<div className="flex justify-center mb-4">
+					<div className="w-8 h-8 border-4 border-gray-3 border-t-blue-600 rounded-full animate-spin" />
+				</div>
 				<h1 className="text-xl font-semibold text-gray-12 mb-2">
-					Signing in to Cap extension...
+					Connecting Cap to your browser extension...
 				</h1>
 				<p className="text-gray-11 text-sm">Please wait</p>
 			</div>
@@ -98,45 +123,58 @@ export function CallbackClient({
 
 	if (status.kind === "error") {
 		return (
-			<div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg text-center">
+			<div className="w-full max-w-md rounded-2xl bg-red-50 border border-red-200 p-8 shadow-lg text-center">
+				<div className="flex justify-center mb-4">
+					<div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+						<span className="text-red-600 font-bold">!</span>
+					</div>
+				</div>
 				<h1 className="text-xl font-semibold text-red-600 mb-2">
-					Sign-in failed
+					Couldn't reach the extension
 				</h1>
-				<p className="text-gray-11 text-sm mb-4">{status.message}</p>
-				<button
-					type="button"
-					onClick={() => {
-						setStatus({ kind: "loading" });
-						mintExtensionToken()
-							.then(({ token, email }) => {
-								setStatus({ kind: "success", email, fallbackToken: token });
-							})
-							.catch((err) => {
-								setStatus({
-									kind: "error",
-									message:
-										err instanceof Error ? err.message : "Something went wrong",
-								});
+				<p className="text-red-700 text-sm mb-6">{status.message}</p>
+
+				<div className="mb-6 text-left">
+					<p className="text-gray-11 text-sm mb-3">Copy this API key and paste it into your extension settings:</p>
+					<code className="block bg-white border border-gray-3 rounded-lg px-4 py-3 text-sm font-mono text-gray-12 break-all select-all mb-3 border-red-200">
+						{status.token}
+					</code>
+					<button
+						type="button"
+						onClick={() => {
+							navigator.clipboard.writeText(status.token).then(() => {
+								setCopied(true);
+								setTimeout(() => setCopied(false), 2000);
 							});
-					}}
-					className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-				>
-					Retry
-				</button>
+						}}
+						className="w-full inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+					>
+						{copied ? "Copied!" : "Copy key"}
+					</button>
+				</div>
 			</div>
 		);
 	}
 
 	return (
 		<div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg text-center">
+			<div className="flex justify-center mb-4">
+				<div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+					<span className="text-green-600 text-lg">✓</span>
+				</div>
+			</div>
 			<h1 className="text-xl font-semibold text-gray-12 mb-2">
-				{status.fallbackToken ? "API key created" : "Signed in"}
+				{status.fallbackToken ? "API key created" : "Extension connected"}
 			</h1>
 			<p className="text-gray-11 text-sm mb-4">
 				{status.fallbackToken
 					? `Copy the key below and paste it into the Cap extension options page.`
-					: `Cap extension signed in as ${status.email}. You can close this tab.`}
+					: `Extension connected for ${status.email}`}
 			</p>
+
+			{!status.fallbackToken && (
+				<p className="text-gray-10 text-xs mb-4">You can close this tab</p>
+			)}
 
 			{status.fallbackToken && (
 				<div className="mb-4">
@@ -153,22 +191,24 @@ export function CallbackClient({
 								setTimeout(() => setCopied(false), 2000);
 							});
 						}}
-						className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+						className="w-full inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
 					>
 						{copied ? "Copied!" : "Copy key"}
 					</button>
 				</div>
 			)}
 
-			<p className="text-gray-10 text-xs">
-				This key has the same permissions as your account.{" "}
-				<a
-					href="/dashboard/settings"
-					className="underline hover:text-gray-12 transition-colors"
-				>
-					Manage keys in Settings
-				</a>
-			</p>
+			{status.fallbackToken && (
+				<p className="text-gray-10 text-xs">
+					This key has the same permissions as your account.{" "}
+					<a
+						href="/dashboard/settings"
+						className="underline hover:text-gray-12 transition-colors"
+					>
+						Manage keys in Settings
+					</a>
+				</p>
+			)}
 		</div>
 	);
 }
