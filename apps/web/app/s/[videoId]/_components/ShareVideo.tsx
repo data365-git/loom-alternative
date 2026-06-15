@@ -347,11 +347,10 @@ export const ShareVideo = forwardRef<
 			userConfirmedStopped,
 		]);
 
-		const vParam = editVersion ? `&v=${editVersion}` : "";
 		let videoSrc: string;
 		const rawFallbackSrc =
 			data.source.type === "webMP4" || data.source.type === "extensionWeb"
-				? `/api/playlist?userId=${data.owner.id}&videoId=${data.id}&videoType=raw-preview${vParam}`
+				? `/api/playlist?userId=${data.owner.id}&videoId=${data.id}&videoType=raw-preview`
 				: undefined;
 		let enableCrossOrigin = false;
 
@@ -359,7 +358,7 @@ export const ShareVideo = forwardRef<
 			const requireComplete = userConfirmedStopped ? "&requireComplete=1" : "";
 			videoSrc = `/api/playlist?userId=${data.owner.id}&videoId=${data.id}&videoType=segments-master${requireComplete}`;
 		} else if (isMp4Source) {
-			videoSrc = `/api/playlist?userId=${data.owner.id}&videoId=${data.id}&videoType=mp4${vParam}`;
+			videoSrc = `/api/playlist?userId=${data.owner.id}&videoId=${data.id}&videoType=mp4`;
 			enableCrossOrigin = true;
 		} else if (
 			NODE_ENV === "development" ||
