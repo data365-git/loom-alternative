@@ -1,8 +1,8 @@
 import { getCurrentUser } from "@cap/database/auth/session";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getOrganizationAccess } from "@/actions/organization/authorization";
 import { getOrgAiSpend } from "@/actions/billing/get-org-ai-spend";
+import { getOrganizationAccess } from "@/actions/organization/authorization";
 import { canViewOrganizationSettings } from "@/lib/permissions/roles";
 import { AiSpend } from "./AiSpend";
 

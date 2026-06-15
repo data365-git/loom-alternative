@@ -149,29 +149,12 @@ export async function generateAiWorkflow(payload: GenerateAiWorkflowPayload) {
 	);
 
 	if (result._usage) {
-		const billingMonth = (() => {
-			const now = new Date();
-			return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
-		})();
-		const costUsdMicros = priceForMicros(
-			result._usage.model,
-			result._usage.inputTokens,
-			result._usage.outputTokens,
+		await recordSummaryUsage(
+			videoData.video.orgId,
+			userId,
+			videoId,
+			result._usage,
 		);
-		await db()
-			.insert(aiUsageEvents)
-			.values({
-				id: nanoId(),
-				orgId: videoData.video.orgId as Organisation.OrganisationId,
-				userId: userId as User.UserId,
-				videoId: videoId as Video.VideoId,
-				operation: "summary",
-				model: result._usage.model,
-				inputTokens: result._usage.inputTokens,
-				outputTokens: result._usage.outputTokens,
-				costUsdMicros,
-				billingMonth,
-			});
 	}
 
 	await saveResults(videoId, videoData, result);
@@ -789,6 +772,39 @@ Rules:
 			},
 		};
 	}
+}
+
+async function recordSummaryUsage(
+	orgId: string,
+	userId: string,
+	videoId: string,
+	usage: { model: string; inputTokens: number; outputTokens: number },
+): Promise<void> {
+	"use step";
+
+	const billingMonth = (() => {
+		const now = new Date();
+		return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+	})();
+	const costUsdMicros = priceForMicros(
+		usage.model,
+		usage.inputTokens,
+		usage.outputTokens,
+	);
+	await db()
+		.insert(aiUsageEvents)
+		.values({
+			id: nanoId(),
+			orgId: orgId as Organisation.OrganisationId,
+			userId: userId as User.UserId,
+			videoId: videoId as Video.VideoId,
+			operation: "summary",
+			model: usage.model,
+			inputTokens: usage.inputTokens,
+			outputTokens: usage.outputTokens,
+			costUsdMicros,
+			billingMonth,
+		});
 }
 
 function parseAiResponse(content: string): AiResult {

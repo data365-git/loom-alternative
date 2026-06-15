@@ -30,12 +30,17 @@ function parseMmSsToSeconds(mmss: string): number {
 }
 
 function splitByLineBreak(text: string, keyOffset: number): React.ReactNode[] {
-	return text.split("\n").flatMap((line, idx) =>
-		idx === 0 ? [line] : [<br key={`br-${keyOffset}-${idx}`} />, line],
-	);
+	return text
+		.split("\n")
+		.flatMap((line, idx) =>
+			idx === 0 ? [line] : [<br key={`br-${keyOffset}-${idx}`} />, line],
+		);
 }
 
-function renderBoldAndBreaks(text: string, keyOffset: number): React.ReactNode[] {
+function renderBoldAndBreaks(
+	text: string,
+	keyOffset: number,
+): React.ReactNode[] {
 	const boldRegex = /\*\*(.+?)\*\*/g;
 	const segments: React.ReactNode[] = [];
 	let last = 0;
@@ -97,7 +102,11 @@ function renderMessageContent(
 	return parts;
 }
 
-export function AIChatPopup({ videoId, onVideoJump, onClose }: AIChatPopupProps) {
+export function AIChatPopup({
+	videoId,
+	onVideoJump,
+	onClose,
+}: AIChatPopupProps) {
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [input, setInput] = useState("");
 	const [isStreaming, setIsStreaming] = useState(false);
@@ -156,7 +165,10 @@ export function AIChatPopup({ videoId, onVideoJump, onClose }: AIChatPopupProps)
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
 						videoId,
-						messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
+						messages: nextMessages.map((m) => ({
+							role: m.role,
+							content: m.content,
+						})),
 					}),
 					signal: controller.signal,
 				});
@@ -278,7 +290,14 @@ export function AIChatPopup({ videoId, onVideoJump, onClose }: AIChatPopupProps)
 						aria-hidden="true"
 					>
 						<defs>
-							<linearGradient id="hdrGrad" x1="3" y1="2" x2="21" y2="22" gradientUnits="userSpaceOnUse">
+							<linearGradient
+								id="hdrGrad"
+								x1="3"
+								y1="2"
+								x2="21"
+								y2="22"
+								gradientUnits="userSpaceOnUse"
+							>
 								<stop stopColor="#c4b5fd" />
 								<stop offset="1" stopColor="#93c5fd" />
 							</linearGradient>
@@ -296,8 +315,19 @@ export function AIChatPopup({ videoId, onVideoJump, onClose }: AIChatPopupProps)
 					onClick={onClose}
 					aria-label="Close AI assistant"
 				>
-					<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-						<path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+					<svg
+						width="12"
+						height="12"
+						viewBox="0 0 12 12"
+						fill="none"
+						aria-hidden="true"
+					>
+						<path
+							d="M1 1l10 10M11 1L1 11"
+							stroke="currentColor"
+							strokeWidth="1.5"
+							strokeLinecap="round"
+						/>
 					</svg>
 				</button>
 			</div>
@@ -305,7 +335,9 @@ export function AIChatPopup({ videoId, onVideoJump, onClose }: AIChatPopupProps)
 			<div className="ai-messages">
 				{!hasMessages && (
 					<div className="ai-welcome">
-						<p className="ai-welcome-heading">Ask anything about this meeting</p>
+						<p className="ai-welcome-heading">
+							Ask anything about this meeting
+						</p>
 						<div className="ai-chips">
 							{QUICK_ACTIONS.map((action) => (
 								<button
@@ -363,7 +395,14 @@ export function AIChatPopup({ videoId, onVideoJump, onClose }: AIChatPopupProps)
 					disabled={!input.trim() || isStreaming}
 					aria-label="Send message"
 				>
-					<svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+					<svg
+						width="15"
+						height="15"
+						viewBox="0 0 15 15"
+						fill="none"
+						xmlns="http://www.w3.org/2000/svg"
+						aria-hidden="true"
+					>
 						<path d="M1 7.5L14 1L7.5 14L6.5 8.5L1 7.5Z" fill="white" />
 					</svg>
 				</button>
