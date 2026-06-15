@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { removeOrganizationInvite } from "@/actions/organization/remove-invite";
 import { removeOrganizationMember } from "@/actions/organization/remove-member";
 import { resendOrganizationInvite } from "@/actions/organization/resend-invite";
+import { updateOrganizationMemberRole } from "@/actions/organization/update-member-role";
 
 type Member = {
 	memberId: string;
@@ -83,6 +84,22 @@ export function MembersTable({
 		},
 	});
 
+	const updateRoleMutation = useMutation({
+		mutationFn: ({ memberId, role }: { memberId: string; role: string }) => {
+			setActionInFlight(`role-${memberId}`);
+			return updateOrganizationMemberRole(memberId, organizationId, role);
+		},
+		onSuccess: () => {
+			toast.success("Role updated");
+			setActionInFlight(null);
+			router.refresh();
+		},
+		onError: (err) => {
+			toast.error(err instanceof Error ? err.message : "Failed to update role");
+			setActionInFlight(null);
+		},
+	});
+
 	const resendInviteMutation = useMutation({
 		mutationFn: (inviteId: string) => {
 			setActionInFlight(`resend-${inviteId}`);
@@ -119,9 +136,26 @@ export function MembersTable({
 									<div className="text-sm text-gray-500">{m.email}</div>
 								</div>
 								<div className="flex items-center gap-4">
-									<span className="text-sm text-gray-500 capitalize">
-										{isOwner ? "Owner" : m.role}
-									</span>
+									{isOwner || isMe ? (
+										<span className="text-sm text-gray-500 capitalize">
+											{isOwner ? "Owner" : m.role}
+										</span>
+									) : (
+										<select
+											className="text-sm text-gray-500 capitalize bg-transparent border rounded px-2 py-1"
+											value={m.role}
+											disabled={actionInFlight === `role-${m.memberId}`}
+											onChange={(e) =>
+												updateRoleMutation.mutate({
+													memberId: m.memberId,
+													role: e.target.value,
+												})
+											}
+										>
+											<option value="admin">Admin</option>
+											<option value="member">Member</option>
+										</select>
+									)}
 									<span className="text-xs text-gray-400">
 										{formatPlatformDate(m.joinedAt)}
 									</span>

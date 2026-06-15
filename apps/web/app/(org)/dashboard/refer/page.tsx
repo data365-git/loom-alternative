@@ -40,9 +40,15 @@ async function generateEmbedToken(
 }
 
 export default async function ReferPage() {
-	// Check if Dub Partners is available
 	if (!serverEnv().DUB_API_KEY) {
-		redirect("/dashboard/caps");
+		return (
+			<div className="flex flex-col items-center justify-center py-20 text-center">
+				<h1 className="text-2xl font-medium mb-2">Referral Program</h1>
+				<p className="text-gray-500">
+					The referral program is not available in this deployment.
+				</p>
+			</div>
+		);
 	}
 
 	const user = await getCurrentUser();
