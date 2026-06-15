@@ -5,7 +5,6 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Link from "next/link";
-import { SettingsDropdown } from "./SettingsDropdown";
 
 export const NotificationFooter = ({ onClose }: { onClose?: () => void }) => {
 	return (
@@ -32,7 +31,6 @@ export const NotificationFooter = ({ onClose }: { onClose?: () => void }) => {
 						/>
 					</div>
 				</div>
-				<SettingsDropdown />
 			</div>
 			<Link
 				href="/dashboard/settings/notifications"
