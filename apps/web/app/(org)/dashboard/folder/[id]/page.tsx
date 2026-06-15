@@ -125,7 +125,16 @@ const FolderPage = async (props: PageProps<"/dashboard/folder/[id]">) => {
 				/>
 			</div>
 		);
-	}).pipe(Effect.provide(makeCurrentUserLayer(user)), runPromise);
+	}).pipe(
+		Effect.catchAllDefect((defect) => {
+			if (defect instanceof Error && defect.message === "Folder not found") {
+				return Effect.sync(() => notFound());
+			}
+			return Effect.die(defect);
+		}),
+		Effect.provide(makeCurrentUserLayer(user)),
+		runPromise,
+	);
 };
 
 export default FolderPage;
