@@ -11,7 +11,16 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Clock, Copy, Globe2, Pencil, Scissors, X } from "lucide-react";
+import {
+	ArrowLeft,
+	Check,
+	Clock,
+	Copy,
+	Globe2,
+	Pencil,
+	Scissors,
+	X,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -68,7 +77,8 @@ export const ShareHeader = ({
 	canManageSharePageBranding?: boolean;
 }) => {
 	const user = useCurrentUser();
-	const { push, refresh } = useRouter();
+	const router = useRouter();
+	const { push, refresh } = router;
 	const queryClient = useQueryClient();
 	const { data: videoStatus } = useQuery<VideoStatusResult>({
 		queryKey: ["videoStatus", data.id],
@@ -350,6 +360,14 @@ export const ShareHeader = ({
 		);
 	};
 
+	const handleBackClick = () => {
+		if (typeof window !== "undefined" && window.history.length > 1) {
+			router.back();
+		} else {
+			push("/dashboard/caps");
+		}
+	};
+
 	const renderBranding = () => {
 		if (!branding) return null;
 
@@ -397,7 +415,7 @@ export const ShareHeader = ({
 				) : (
 					<Link
 						href={user ? "/dashboard/caps" : "/"}
-						className="inline-flex h-11 items-center gap-2"
+						className="inline-flex h-11 items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
 					>
 						<LogoBadge className="h-7 w-7" />
 						<span className="text-base font-semibold text-gray-12 tracking-tight">
@@ -445,6 +463,17 @@ export const ShareHeader = ({
 				<div className="flex flex-col gap-5">
 					<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 						<div className="flex min-w-0 items-center gap-3">
+							{user && (
+								<button
+									type="button"
+									onClick={handleBackClick}
+									className="inline-flex items-center gap-1.5 rounded-full border border-gray-6 bg-gray-3 px-2.5 py-0.5 text-xs text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12"
+									aria-label="Go back"
+								>
+									<ArrowLeft className="size-3" />
+									Back
+								</button>
+							)}
 							{renderBranding()}
 							{branding && <div className="h-7 w-px shrink-0 bg-gray-6" />}
 							<div className="min-w-0 flex-1">
