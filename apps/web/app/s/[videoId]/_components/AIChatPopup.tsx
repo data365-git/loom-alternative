@@ -428,7 +428,7 @@ export function AIChatPopup({
 
 	const hasMessages = messages.length > 0;
 
-	return (
+	const popup = (
 		<div
 			ref={popupRef}
 			className={`ai-popup${isOpen ? " open" : ""}`}
@@ -599,13 +599,21 @@ export function AIChatPopup({
 					AI javoblari tekshirilishi kerak bo&apos;lishi mumkin
 				</div>
 			</div>
-			{showGlassLab && canUseGlassLab && (
+		</div>
+	);
+
+	if (showGlassLab && canUseGlassLab) {
+		return (
+			<>
+				{popup}
 				<GlassLab
 					initial={glassSettings}
 					onApply={handleGlassSettingsChange}
 					onClose={() => setShowGlassLab(false)}
 				/>
-			)}
-		</div>
-	);
+			</>
+		);
+	}
+
+	return popup;
 }
