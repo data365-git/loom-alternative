@@ -192,8 +192,41 @@ function buildAccountSection(
 		}
 	});
 
+	const saveConnectBtn = document.createElement("button");
+	saveConnectBtn.type = "button";
+	saveConnectBtn.className = "btn btn--primary";
+	saveConnectBtn.textContent = "Save & Connect";
+	saveConnectBtn.addEventListener("click", async () => {
+		const key = apiKeyInput.value.trim();
+		if (!key) {
+			showToast("Paste a key first");
+			return;
+		}
+		saveConnectBtn.disabled = true;
+		const baseUrl = apiBaseUrlInput.value.trim() || DEFAULT_API_BASE_URL;
+		await saveSettings({
+			apiKey: key,
+			apiBaseUrl: baseUrl,
+		});
+		try {
+			const res = await fetch(`${baseUrl}/api/status`, {
+				headers: { Authorization: `Bearer ${key}` },
+			});
+			if (res.ok) {
+				showToast("Connected ✓");
+			} else {
+				showToast("Key saved, but couldn't verify — check the key");
+			}
+		} catch {
+			showToast("Key saved, but couldn't verify — check the key");
+		} finally {
+			saveConnectBtn.disabled = false;
+		}
+	});
+
 	apiKeyWrapper.appendChild(apiKeyInput);
 	apiKeyWrapper.appendChild(showHideBtn);
+	apiKeyWrapper.appendChild(saveConnectBtn);
 
 	const apiKeyGroup = document.createElement("div");
 	apiKeyGroup.className = "field-group";
@@ -225,7 +258,7 @@ function buildAccountSection(
 		const key = apiKeyInput.value.trim();
 
 		try {
-			const res = await fetch(`${baseUrl}/api/health`, {
+			const res = await fetch(`${baseUrl}/api/status`, {
 				headers: key ? { Authorization: `Bearer ${key}` } : {},
 			});
 			if (res.ok) {
