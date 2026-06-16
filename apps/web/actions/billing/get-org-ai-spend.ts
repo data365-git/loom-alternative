@@ -3,6 +3,7 @@
 import { db } from "@cap/database";
 import { getCurrentUser } from "@cap/database/auth/session";
 import { aiUsageEvents, users, videos } from "@cap/database/schema";
+import { Organisation } from "@cap/web-domain";
 import { and, desc, eq, gte, lt, sql } from "drizzle-orm";
 import { getOrganizationAccess } from "@/actions/organization/authorization";
 import { canViewOrganizationSettings } from "@/lib/permissions/roles";
@@ -98,7 +99,10 @@ export async function getOrgAiSpend(
 	const user = await getCurrentUser();
 	if (!user) throw new Error("Unauthorized");
 
-	const access = await getOrganizationAccess(user.id, orgId);
+	const access = await getOrganizationAccess(
+		user.id,
+		Organisation.OrganisationId.make(orgId),
+	);
 	if (!access || !canViewOrganizationSettings(access.role)) {
 		throw new Error("Forbidden");
 	}
