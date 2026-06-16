@@ -57,16 +57,16 @@ declare global {
 }
 
 const APPLE_DEFAULTS: GlassSettings = {
-	edgeIntensity: 0.018,
-	rimIntensity: 0.08,
-	baseIntensity: 0.012,
-	edgeDistance: 0.15,
-	rimDistance: 0.8,
-	baseDistance: 0.1,
-	cornerBoost: 0.03,
-	rippleEffect: 0.12,
-	blurRadius: 7.0,
-	tintOpacity: 0.25,
+	edgeIntensity: 0.061,
+	rimIntensity: 0.05,
+	baseIntensity: 0.024,
+	edgeDistance: 0.12,
+	rimDistance: 0.59,
+	baseDistance: 0,
+	cornerBoost: 0,
+	rippleEffect: 0.01,
+	blurRadius: 3.0,
+	tintOpacity: 0.07,
 };
 
 const MOBILE_MAX_BLUR = 4;
@@ -124,7 +124,7 @@ export const LiquidGlassContainer = forwardRef<
 			if (!host || !window.Container) return;
 
 			const glass = new window.Container({
-				borderRadius: 26,
+				borderRadius: 20,
 				type: "rounded",
 				tintOpacity: settings.tintOpacity,
 			});
@@ -156,16 +156,29 @@ export const LiquidGlassContainer = forwardRef<
 			}
 		}
 
-		const scriptId = "liquid-glass-container-js";
-		if (!document.getElementById(scriptId)) {
+		const h2cId = "liquid-glass-html2canvas";
+		const containerScriptId = "liquid-glass-container-js";
+
+		function loadContainerScript() {
+			if (document.getElementById(containerScriptId)) return;
 			const script = document.createElement("script");
-			script.id = scriptId;
+			script.id = containerScriptId;
 			script.src = "/lib/liquid-glass/container.js";
 			script.onload = () => {
 				scriptLoadedRef.current = true;
 				initGlass();
 			};
 			document.head.appendChild(script);
+		}
+
+		if (!document.getElementById(h2cId)) {
+			const h2c = document.createElement("script");
+			h2c.id = h2cId;
+			h2c.src = "/lib/liquid-glass/html2canvas.min.js";
+			h2c.onload = loadContainerScript;
+			document.head.appendChild(h2c);
+		} else {
+			loadContainerScript();
 		}
 
 		return () => {

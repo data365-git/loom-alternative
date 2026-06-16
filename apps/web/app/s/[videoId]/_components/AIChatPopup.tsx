@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	LiquidGlassContainer,
 	type LiquidGlassHandle,
@@ -424,6 +424,7 @@ export function AIChatPopup({
 		>
 			<div ref={glassHostRef} className="ai-glass-host" />
 			<LiquidGlassContainer ref={glassRef} hostRef={glassHostRef} />
+			<div className="ai-tint-overlay" />
 			<div className="ai-noise" />
 			{/* biome-ignore lint/a11y/noStaticElementInteractions: resize handle is mouse-only by design */}
 			<div className="ai-resize" onMouseDown={onResizeMouseDown} />

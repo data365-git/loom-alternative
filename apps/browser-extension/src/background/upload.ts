@@ -140,29 +140,13 @@ export async function initializeUpload(
 
 	inMemoryBuffer = new Uint8Array(0);
 
-	const state = await getState();
-	if (state.kind !== "recording") {
-		throw new Error(
-			"[upload] initializeUpload called but state is not 'recording'",
-		);
-	}
-
-	await setState({
-		...state,
-		videoId,
-		uploadId,
-		parts: [],
-		nextPartNumber: 1,
-		totalBytes: 0,
-	});
-
 	return { videoId, uploadId };
 }
 
 export async function handleChunk(
 	chunk: number[],
-	index: number,
-	mime: string,
+	_index: number,
+	_mime: string,
 ): Promise<void> {
 	const state = await getState();
 	if (state.kind !== "recording") return;
@@ -198,12 +182,9 @@ export async function handleChunk(
 			await addToRetryQueue({
 				kind: "part",
 				payload: {
-					partData: Array.from(partData),
 					partNumber: state.nextPartNumber,
 					videoId: state.videoId,
 					uploadId: state.uploadId,
-					index,
-					mime,
 				},
 			});
 
@@ -219,23 +200,26 @@ export async function handleChunk(
 
 export async function finalizeUpload(): Promise<void> {
 	const state = await getState();
-	if (state.kind !== "recording") return;
+	if (state.kind !== "recording" && state.kind !== "uploading") return;
 
 	const settings = await requireSettings();
 	const api = createCapApi(settings.apiBaseUrl, settings.apiKey);
 
 	let parts = [...state.parts];
-	let nextPartNumber = state.nextPartNumber;
+	let nextPartNumber =
+		state.kind === "recording" ? state.nextPartNumber : state.parts.length + 1;
 	const totalBytes = state.totalBytes;
 	const { videoId, uploadId } = state;
 
-	await setState({
-		kind: "uploading",
-		videoId,
-		uploadId,
-		parts,
-		totalBytes,
-	});
+	if (state.kind === "recording") {
+		await setState({
+			kind: "uploading",
+			videoId,
+			uploadId,
+			parts,
+			totalBytes,
+		});
+	}
 
 	const remaining = drainBuffer();
 	if (remaining.length > 0) {
@@ -253,7 +237,6 @@ export async function finalizeUpload(): Promise<void> {
 			await addToRetryQueue({
 				kind: "part",
 				payload: {
-					partData: Array.from(remaining),
 					partNumber: nextPartNumber,
 					videoId,
 					uploadId,
@@ -322,48 +305,7 @@ export async function retryPendingUploads(): Promise<void> {
 
 		try {
 			if (item.kind === "part") {
-				const { partData, partNumber, videoId, uploadId } = item.payload as {
-					partData: number[];
-					partNumber: number;
-					videoId: string;
-					uploadId: string;
-				};
-				const data = new Uint8Array(partData);
-				const { presignedUrl } = await api.presignPart({
-					uploadId,
-					partNumber,
-					videoId,
-					subpath: "result.mp4",
-				});
-				const putRes = await fetch(presignedUrl, {
-					method: "PUT",
-					headers: { "Content-Type": "application/octet-stream" },
-					body: data,
-				});
-				if (!putRes.ok) throw new Error(`PUT failed ${putRes.status}`);
-
-				const etag = putRes.headers.get("ETag");
-				if (!etag) throw new Error("No ETag");
-
-				const state = await getState();
-				if (state.kind === "recording" && state.videoId === videoId) {
-					await setState({
-						...state,
-						parts: [
-							...state.parts,
-							{ ETag: etag.replace(/"/g, ""), PartNumber: partNumber },
-						],
-						nextPartNumber: Math.max(state.nextPartNumber, partNumber + 1),
-					});
-				} else if (state.kind === "uploading" && state.videoId === videoId) {
-					await setState({
-						...state,
-						parts: [
-							...state.parts,
-							{ ETag: etag.replace(/"/g, ""), PartNumber: partNumber },
-						],
-					});
-				}
+				await moveToDeadLetter(item);
 			} else if (item.kind === "complete") {
 				const { uploadId, videoId, parts } = item.payload as {
 					uploadId: string;

@@ -76,7 +76,8 @@ export const ApiKeysSection = () => {
 			<div className="space-y-1">
 				<CardTitle>Gemini API Key (Transcription)</CardTitle>
 				<CardDescription>
-					Paste your own Gemini key to use your quota for transcription & AI chat.
+					Paste your own Gemini key to use your quota for transcription & AI
+					chat.
 				</CardDescription>
 				<a
 					href="https://aistudio.google.com/apikey"

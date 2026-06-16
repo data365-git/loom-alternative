@@ -327,6 +327,16 @@ async function handleMessage(
 			return { ok: true };
 		}
 
+		// ── Popup: retry after error ──────────────────────────────────────
+		case "RETRY": {
+			const state = await getState();
+			if (state.kind !== "error")
+				return { ok: false, error: "not in error state" };
+			await setState({ kind: "idle" });
+			updateBadge({ kind: "idle" });
+			return { ok: true };
+		}
+
 		// ── Options: save settings ────────────────────────────────────────
 		case "SAVE_SETTINGS": {
 			const settings = msg.settings as Partial<ExtensionSettings> | undefined;

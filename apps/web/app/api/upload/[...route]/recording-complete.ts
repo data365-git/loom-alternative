@@ -31,7 +31,11 @@ export const app = new Hono().post(
 			return c.json({ error: "Video not found" }, 404);
 		}
 
-		if (video.source?.type === "desktopMP4") {
+		if (
+			video.source?.type === "desktopMP4" ||
+			video.source?.type === "extensionWeb" ||
+			video.source?.type === "webMP4"
+		) {
 			return c.json({ success: true, status: "already-complete" });
 		}
 

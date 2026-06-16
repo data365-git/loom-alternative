@@ -1,5 +1,5 @@
 const KEEPALIVE_ALARM = "cap-keepalive";
-const KEEPALIVE_INTERVAL_MINUTES = 0.4;
+const KEEPALIVE_INTERVAL_MINUTES = 1;
 
 export function startKeepAlive(): void {
 	chrome.alarms.create(KEEPALIVE_ALARM, {
