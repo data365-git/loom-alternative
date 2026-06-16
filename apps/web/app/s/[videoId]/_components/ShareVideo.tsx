@@ -30,7 +30,6 @@ import {
 	shouldReloadPlaybackAfterUploadCompletes,
 	useUploadProgress,
 } from "./ProgressCircle";
-import { MeetingCostPanel } from "./panels/MeetingCostPanel";
 import { RefinedTranscriptPanel } from "./panels/RefinedTranscriptPanel";
 import { SummaryPanel } from "./panels/SummaryPanel";
 import { TasksPanel } from "./panels/TasksPanel";
@@ -39,7 +38,6 @@ import {
 	PreparingVideoOverlay,
 	RecordingInProgressOverlay,
 } from "./RecordingInProgress";
-import { TweaksPanel } from "./TweaksPanel";
 import { formatChaptersAsVTT } from "./utils/transcript-utils";
 
 type CommentWithAuthor = typeof commentsSchema.$inferSelect & {
@@ -587,10 +585,10 @@ export const ShareVideo = forwardRef<
 								onVideoJump={handleSeek}
 							/>
 						}
-						cost={<MeetingCostPanel videoId={data.id} />}
 					/>
 				</div>
 
+				<div className={`ai-aura${aiChatOpen ? " show" : ""}`} />
 				{aiChatOpen && (
 					<AIChatPopup
 						videoId={data.id}
@@ -598,8 +596,7 @@ export const ShareVideo = forwardRef<
 						onClose={() => setAiChatOpen(false)}
 					/>
 				)}
-				<AIFab onClick={() => setAiChatOpen((v) => !v)} />
-				<TweaksPanel />
+				<AIFab onClick={() => setAiChatOpen((v) => !v)} isOpen={aiChatOpen} />
 			</>
 		);
 	},

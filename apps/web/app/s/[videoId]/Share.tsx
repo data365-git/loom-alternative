@@ -24,7 +24,6 @@ import { CaptionProvider } from "./_components/CaptionContext";
 import { ShareVideo } from "./_components/ShareVideo";
 import { Sidebar } from "./_components/Sidebar";
 import SummaryChapters from "./_components/SummaryChapters";
-import { Toolbar } from "./_components/Toolbar";
 import type { VideoData } from "./types";
 
 type CommentWithAuthor = typeof commentsSchema.$inferSelect & {
@@ -486,17 +485,34 @@ export const Share = ({
 		};
 	}, [searchParams, handleSeek]);
 
-	const handleOptimisticComment = useCallback(
-		(comment: CommentType) => {
-			startTransition(() => {
-				setOptimisticComments(comment);
-			});
-			setTimeout(() => {
-				activityRef.current?.scrollToBottom();
-			}, 100);
-		},
-		[setOptimisticComments],
-	);
+	useEffect(() => {
+		if (areCommentStampsDisabled) return;
+
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (
+				e.key.toLowerCase() !== "c" ||
+				e.metaKey ||
+				e.ctrlKey ||
+				e.altKey ||
+				e.shiftKey ||
+				e.target instanceof HTMLInputElement ||
+				e.target instanceof HTMLTextAreaElement
+			)
+				return;
+			const input = document.querySelector<HTMLTextAreaElement>(
+				"[data-comment-input]",
+			);
+			if (input) {
+				e.preventDefault();
+				input.focus();
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+		};
+	}, [areCommentStampsDisabled]);
 
 	const handleCommentSuccess = useCallback((realComment: CommentType) => {
 		startTransition(() => {
@@ -536,14 +552,6 @@ export const Share = ({
 								/>
 							</div>
 						</div>
-						<div className="mt-4 lg:hidden">
-							<Toolbar
-								onOptimisticComment={handleOptimisticComment}
-								onCommentSuccess={handleCommentSuccess}
-								disableComments={areCommentStampsDisabled}
-								data={data}
-							/>
-						</div>
 					</div>
 
 					{!allSettingsDisabled && (
@@ -570,17 +578,6 @@ export const Share = ({
 							/>
 						</div>
 					)}
-				</div>
-
-				<div className="hidden mt-4 lg:block">
-					<div>
-						<Toolbar
-							onOptimisticComment={handleOptimisticComment}
-							onCommentSuccess={handleCommentSuccess}
-							disableComments={areCommentStampsDisabled}
-							data={data}
-						/>
-					</div>
 				</div>
 
 				<div className="hidden mt-4 lg:block">

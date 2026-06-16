@@ -21,6 +21,7 @@ import { useCurrentUser } from "@/app/Layout/AuthContext";
 import type { CommentType } from "../Share";
 import type { VideoData } from "../types";
 import { AuthOverlay } from "./AuthOverlay";
+import { MeetingCostPanel } from "./panels/MeetingCostPanel";
 import { Comments } from "./tabs/Activity/Comments";
 
 type AiGenerationStatus =
@@ -236,7 +237,26 @@ export const Sidebar = forwardRef<{ scrollToBottom: () => void }, SidebarProps>(
 				className="bg-white rounded-2xl border border-gray-5 overflow-hidden flex flex-col"
 				style={{ width: "320px", position: "sticky", top: "1rem" }}
 			>
-				<div className="flex items-center px-4 py-3 border-b border-gray-5">
+				<div
+					style={{
+						margin: "12px 12px 0",
+						borderRadius: "14px",
+						background: "linear-gradient(135deg, #eef4ff 0%, #f7f9fc 100%)",
+						border: "1px solid rgba(37, 99, 235, .15)",
+						boxShadow:
+							"0 1px 2px rgba(15,23,42,.06), 0 2px 6px rgba(15,23,42,.07)",
+						backdropFilter: "blur(8px)",
+						WebkitBackdropFilter: "blur(8px)",
+						overflow: "hidden",
+					}}
+				>
+					<MeetingCostPanel videoId={data.id} />
+				</div>
+
+				<div
+					className="flex items-center px-4 py-3 border-b border-gray-5"
+					style={{ marginTop: "12px" }}
+				>
 					<span className="text-sm font-semibold text-gray-12">Comments</span>
 				</div>
 

@@ -432,6 +432,7 @@ export const Settings = () => {
 							disabled
 						/>
 					</Card>
+					<ApiKeysSection />
 					<Card className="flex flex-col gap-4">
 						<div className="space-y-1">
 							<CardTitle>Default organization</CardTitle>
@@ -468,7 +469,6 @@ export const Settings = () => {
 						preferences={userPreferences?.notifications ?? null}
 						className="md:col-span-2"
 					/>
-					<ApiKeysSection />
 					<AiBudgetCard />
 				</div>
 				<Button

@@ -74,10 +74,9 @@ export const ApiKeysSection = () => {
 	return (
 		<Card className="flex flex-col gap-4">
 			<div className="space-y-1">
-				<CardTitle>Transcription API Keys</CardTitle>
+				<CardTitle>Gemini API Key (Transcription)</CardTitle>
 				<CardDescription>
-					Use your own Gemini key for transcription. If left blank, the
-					platform-wide key is used.
+					Paste your own Gemini key to use your quota for transcription & AI chat.
 				</CardDescription>
 				<a
 					href="https://aistudio.google.com/apikey"

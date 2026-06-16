@@ -53,6 +53,7 @@ const CommentInput: React.FC<CommentInputProps> = ({
 				<div className="p-2 rounded-lg border bg-gray-1 border-gray-5">
 					<textarea
 						ref={inputRef}
+						data-comment-input
 						value={content}
 						disabled={disabled}
 						onChange={(e) => setContent(e.target.value)}

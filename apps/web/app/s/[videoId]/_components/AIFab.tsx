@@ -4,30 +4,34 @@ import "./ai-chat.css";
 
 interface AIFabProps {
 	onClick: () => void;
+	isOpen?: boolean;
 }
 
-export function AIFab({ onClick }: AIFabProps) {
+export function AIFab({ onClick, isOpen }: AIFabProps) {
 	return (
 		<button
 			type="button"
-			className="ai-fab"
+			className={`ai-fab${isOpen ? " is-open" : ""}`}
 			onClick={onClick}
-			aria-label="Open AI assistant"
+			aria-label="Ask AI about this meeting"
 		>
-			<span className="ai-fab-aura" />
 			<svg
-				width="22"
-				height="22"
+				className="orb"
 				viewBox="0 0 24 24"
 				fill="none"
-				xmlns="http://www.w3.org/2000/svg"
+				stroke="currentColor"
+				strokeWidth="2"
+				strokeLinecap="round"
+				strokeLinejoin="round"
 				aria-hidden="true"
 			>
+				<path d="M12 3v2M12 19v2M5 12H3M21 12h-2" />
 				<path
-					d="M12 2L13.09 8.26L19 6L14.74 10.91L21 12L14.74 13.09L19 18L13.09 15.74L12 22L10.91 15.74L5 18L9.26 13.09L3 12L9.26 10.91L5 6L10.91 8.26L12 2Z"
-					fill="white"
-					fillOpacity="0.95"
+					d="M12 7.5 13.2 11l3.3 1-3.3 1L12 16.5 10.8 13l-3.3-1 3.3-1z"
+					fill="currentColor"
+					stroke="none"
 				/>
+				<circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
 			</svg>
 		</button>
 	);

@@ -4,8 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import "./ai-chat.css";
 
 interface Message {
+	id: string;
 	role: "user" | "assistant";
 	content: string;
+}
+
+let msgIdCounter = 0;
+function nextMsgId() {
+	return `msg-${++msgIdCounter}`;
 }
 
 interface AIChatPopupProps {
@@ -15,10 +21,22 @@ interface AIChatPopupProps {
 }
 
 const QUICK_ACTIONS = [
-	"What were the key decisions?",
-	"Summarize the main points",
-	"What are the action items?",
-	"Who said what about...?",
+	{
+		label: "Qisqacha xulosa",
+		query: "Uchrashuvni qisqacha xulosalab bering",
+	},
+	{
+		label: "Vazifalar ro'yxati",
+		query: "Asosiy vazifalar va mas'ullar kimlar?",
+	},
+	{
+		label: "Follow-up xat",
+		query: "Keyingi qadamlar bo'yicha follow-up xat tayyorlab bering",
+	},
+	{
+		label: "Asosiy qarorlar",
+		query: "Qanaqa asosiy qarorlar qabul qilindi?",
+	},
 ];
 
 function parseMmSsToSeconds(mmss: string): number {
@@ -30,11 +48,13 @@ function parseMmSsToSeconds(mmss: string): number {
 }
 
 function splitByLineBreak(text: string, keyOffset: number): React.ReactNode[] {
-	return text
-		.split("\n")
-		.flatMap((line, idx) =>
-			idx === 0 ? [line] : [<br key={`br-${keyOffset}-${idx}`} />, line],
-		);
+	const lines = text.split("\n");
+	const result: React.ReactNode[] = [];
+	for (let n = 0; n < lines.length; n++) {
+		if (n > 0) result.push(<br key={`br-${keyOffset}-${String(n)}`} />);
+		result.push(lines[n]);
+	}
+	return result;
 }
 
 function renderBoldAndBreaks(
@@ -47,7 +67,9 @@ function renderBoldAndBreaks(
 	let match: RegExpExecArray | null;
 	let i = keyOffset;
 
-	while ((match = boldRegex.exec(text)) !== null) {
+	while (true) {
+		match = boldRegex.exec(text);
+		if (match === null) break;
 		const before = text.slice(last, match.index);
 		if (before) {
 			segments.push(...splitByLineBreak(before, i));
@@ -74,7 +96,9 @@ function renderMessageContent(
 	let last = 0;
 	let match: RegExpExecArray | null;
 
-	while ((match = citationRegex.exec(content)) !== null) {
+	while (true) {
+		match = citationRegex.exec(content);
+		if (match === null) break;
 		const before = content.slice(last, match.index);
 		if (before) {
 			parts.push(...renderBoldAndBreaks(before, parts.length));
@@ -101,6 +125,102 @@ function renderMessageContent(
 
 	return parts;
 }
+
+function OrbIcon() {
+	return (
+		<svg
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="2"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden="true"
+		>
+			<path
+				d="M12 7.5 13.4 11.2 17 12l-3.6 1L12 16.5 10.6 13 7 12l3.6-.8z"
+				fill="currentColor"
+				stroke="none"
+			/>
+			<circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none" />
+		</svg>
+	);
+}
+
+function ChipSummaryIcon() {
+	return (
+		<svg
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.8"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden="true"
+		>
+			<path d="M4 6h16M4 11h16M4 16h10" />
+		</svg>
+	);
+}
+
+function ChipTasksIcon() {
+	return (
+		<svg
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.8"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden="true"
+		>
+			<path d="m3 7 1.6 1.6L8 5" />
+			<path d="m3 17 1.6 1.6L8 15" />
+			<path d="M11 7h10M11 17h10" />
+		</svg>
+	);
+}
+
+function ChipEmailIcon() {
+	return (
+		<svg
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.8"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden="true"
+		>
+			<rect x="3" y="5" width="18" height="14" rx="2.5" />
+			<path d="m3.5 7 8.5 6 8.5-6" />
+		</svg>
+	);
+}
+
+function ChipDecisionsIcon() {
+	return (
+		<svg
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="1.8"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden="true"
+		>
+			<path d="M12 2.6l2.5 1.85 3.1.05.05 3.1L19.4 10l-1.85 2.5.05 3.1-3.1.05L12 17.4l-2.5-1.85-3.1-.05-.05-3.1L4.6 10l1.85-2.5-.05-3.1 3.1-.05z" />
+			<path d="m9.2 10.2 2 2 3.6-3.6" />
+		</svg>
+	);
+}
+
+const CHIP_ICONS = [
+	<ChipSummaryIcon key="summary" />,
+	<ChipTasksIcon key="tasks" />,
+	<ChipEmailIcon key="email" />,
+	<ChipDecisionsIcon key="decisions" />,
+];
 
 export function AIChatPopup({
 	videoId,
@@ -130,15 +250,17 @@ export function AIChatPopup({
 		return () => window.removeEventListener("keydown", handleKey);
 	}, [onClose]);
 
+	const messageCount = messages.length;
+	// biome-ignore lint/correctness/useExhaustiveDependencies: intentional scroll trigger on message count and streaming state changes
 	useEffect(() => {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-	}, [messages, isStreaming]);
+	}, [messageCount, isStreaming]);
 
 	const adjustTextarea = () => {
 		const el = textareaRef.current;
 		if (!el) return;
 		el.style.height = "auto";
-		el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+		el.style.height = `${Math.min(el.scrollHeight, 90)}px`;
 	};
 
 	const sendMessage = useCallback(
@@ -146,7 +268,11 @@ export function AIChatPopup({
 			const trimmed = text.trim();
 			if (!trimmed || isStreaming) return;
 
-			const userMsg: Message = { role: "user", content: trimmed };
+			const userMsg: Message = {
+				id: nextMsgId(),
+				role: "user",
+				content: trimmed,
+			};
 			const nextMessages = [...messages, userMsg];
 			setMessages(nextMessages);
 			setInput("");
@@ -177,7 +303,11 @@ export function AIChatPopup({
 					throw new Error(`Request failed: ${response.status}`);
 				}
 
-				setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+				const assistantId = nextMsgId();
+				setMessages((prev) => [
+					...prev,
+					{ id: assistantId, role: "assistant", content: "" },
+				]);
 
 				const reader = response.body.getReader();
 				const decoder = new TextDecoder();
@@ -221,6 +351,7 @@ export function AIChatPopup({
 					setMessages((prev) => [
 						...prev,
 						{
+							id: nextMsgId(),
 							role: "assistant",
 							content: "Something went wrong. Please try again.",
 						},
@@ -276,86 +407,85 @@ export function AIChatPopup({
 	const hasMessages = messages.length > 0;
 
 	return (
-		<div ref={popupRef} className="ai-popup">
-			<div className="ai-resize-handle" onMouseDown={onResizeMouseDown} />
+		<div
+			ref={popupRef}
+			className="ai-popup open"
+			role="dialog"
+			aria-label="AI assistant"
+		>
+			<div className="ai-noise" />
+			{/* biome-ignore lint/a11y/noStaticElementInteractions: resize handle is mouse-only by design */}
+			<div className="ai-resize" onMouseDown={onResizeMouseDown} />
 
-			<div className="ai-popup-header">
-				<span className="ai-popup-title">
+			<div className="ai-hd">
+				<div className="orb-sm">
+					<OrbIcon />
+				</div>
+				<div className="htxt">
+					<div className="t">Meeting AI</div>
+					<div className="s">
+						<span className="live" />
+						Ushbu uchrashuv konteksti yuklandi
+					</div>
+				</div>
+				<button
+					type="button"
+					className="ai-x"
+					onClick={onClose}
+					aria-label="Close"
+				>
 					<svg
 						width="16"
 						height="16"
 						viewBox="0 0 24 24"
 						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
+						stroke="currentColor"
+						strokeWidth="2.2"
 						aria-hidden="true"
 					>
-						<defs>
-							<linearGradient
-								id="hdrGrad"
-								x1="3"
-								y1="2"
-								x2="21"
-								y2="22"
-								gradientUnits="userSpaceOnUse"
-							>
-								<stop stopColor="#c4b5fd" />
-								<stop offset="1" stopColor="#93c5fd" />
-							</linearGradient>
-						</defs>
-						<path
-							d="M12 2L13.09 8.26L19 6L14.74 10.91L21 12L14.74 13.09L19 18L13.09 15.74L12 22L10.91 15.74L5 18L9.26 13.09L3 12L9.26 10.91L5 6L10.91 8.26L12 2Z"
-							fill="url(#hdrGrad)"
-						/>
-					</svg>
-					AI Assistant
-				</span>
-				<button
-					type="button"
-					className="ai-popup-close"
-					onClick={onClose}
-					aria-label="Close AI assistant"
-				>
-					<svg
-						width="12"
-						height="12"
-						viewBox="0 0 12 12"
-						fill="none"
-						aria-hidden="true"
-					>
-						<path
-							d="M1 1l10 10M11 1L1 11"
-							stroke="currentColor"
-							strokeWidth="1.5"
-							strokeLinecap="round"
-						/>
+						<path d="M18 6 6 18M6 6l12 12" />
 					</svg>
 				</button>
 			</div>
 
-			<div className="ai-messages">
+			<div className="ai-body">
 				{!hasMessages && (
-					<div className="ai-welcome">
-						<p className="ai-welcome-heading">
-							Ask anything about this meeting
-						</p>
+					<>
+						<div className="ai-welcome">
+							<div className="wt">
+								Salom! Men bu uchrashuv haqida{" "}
+								<span className="grad">hamma narsani</span> bilaman.
+							</div>
+							<div className="ws">
+								Transkript, vazifalar va qarorlar bo&apos;yicha savol bering —
+								yoki quyidagilardan birini tanlang.
+							</div>
+						</div>
 						<div className="ai-chips">
-							{QUICK_ACTIONS.map((action) => (
+							{QUICK_ACTIONS.map((action, idx) => (
 								<button
-									key={action}
+									key={action.query}
 									type="button"
 									className="ai-chip"
-									onClick={() => sendMessage(action)}
+									onClick={() => sendMessage(action.query)}
 								>
-									{action}
+									{CHIP_ICONS[idx]}
+									{action.label}
 								</button>
 							))}
 						</div>
-					</div>
+					</>
 				)}
 
-				{messages.map((msg, idx) => (
-					<div key={idx} className={`ai-message ${msg.role}`}>
-						<div className="ai-bubble">
+				{messages.map((msg) => (
+					<div
+						key={msg.id}
+						className={`ai-msg${msg.role === "user" ? " user" : " ai"}`}
+					>
+						<div className="av">
+							{msg.role === "assistant" ? <OrbIcon /> : "U"}
+						</div>
+						<div className="bubble">
 							{msg.role === "assistant"
 								? renderMessageContent(msg.content, onVideoJump)
 								: msg.content}
@@ -364,48 +494,59 @@ export function AIChatPopup({
 				))}
 
 				{isStreaming && messages[messages.length - 1]?.role !== "assistant" && (
-					<div className="ai-typing">
-						<span className="ai-typing-dot" />
-						<span className="ai-typing-dot" />
-						<span className="ai-typing-dot" />
+					<div className="ai-msg ai">
+						<div className="av">
+							<OrbIcon />
+						</div>
+						<div className="ai-typing">
+							<span />
+							<span />
+							<span />
+						</div>
 					</div>
 				)}
 
 				<div ref={messagesEndRef} />
 			</div>
 
-			<div className="ai-input-bar">
-				<textarea
-					ref={textareaRef}
-					className="ai-textarea"
-					placeholder="Ask a question..."
-					value={input}
-					rows={1}
-					onChange={(e) => {
-						setInput(e.target.value);
-						adjustTextarea();
-					}}
-					onKeyDown={handleKeyDown}
-					disabled={isStreaming}
-				/>
-				<button
-					type="button"
-					className="ai-send-btn"
-					onClick={() => sendMessage(input)}
-					disabled={!input.trim() || isStreaming}
-					aria-label="Send message"
-				>
-					<svg
-						width="15"
-						height="15"
-						viewBox="0 0 15 15"
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-						aria-hidden="true"
+			<div className="ai-foot">
+				<div className="ai-inputbar">
+					<textarea
+						ref={textareaRef}
+						rows={1}
+						placeholder="Uchrashuv haqida so'rang..."
+						value={input}
+						onChange={(e) => {
+							setInput(e.target.value);
+							adjustTextarea();
+						}}
+						onKeyDown={handleKeyDown}
+						disabled={isStreaming}
+					/>
+					<button
+						type="button"
+						className="ai-send"
+						onClick={() => sendMessage(input)}
+						disabled={!input.trim() || isStreaming}
+						aria-label="Send"
 					>
-						<path d="M1 7.5L14 1L7.5 14L6.5 8.5L1 7.5Z" fill="white" />
-					</svg>
-				</button>
+						<svg
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							strokeWidth="2.4"
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M12 20V5" />
+							<path d="m6 11 6-6 6 6" />
+						</svg>
+					</button>
+				</div>
+				<div className="ai-disclaimer">
+					AI javoblari tekshirilishi kerak bo&apos;lishi mumkin
+				</div>
 			</div>
 		</div>
 	);
