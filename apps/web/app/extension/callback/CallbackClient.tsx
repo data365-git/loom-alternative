@@ -73,14 +73,18 @@ export function CallbackClient({
 								},
 							);
 						});
-						setStatus({ kind: "success", email });
-						setTimeout(() => {
-							window.close();
-						}, 2000);
+						setStatus({ kind: "success", email, fallbackToken: token });
 						return;
 					} catch (err) {
 						if (cancelled) return;
-						const errorMsg = err instanceof Error ? err.message : "Failed to connect to extension";
+						const raw =
+							err instanceof Error
+								? err.message
+								: "Failed to connect to extension";
+						const errorMsg =
+							raw.includes("not included") || raw.includes("origin")
+								? `This page's origin (${window.location.origin}) is not allowed to message the extension. Copy the key below and paste it into the extension's Options page instead.`
+								: raw;
 						setStatus({
 							kind: "error",
 							message: errorMsg,
@@ -135,7 +139,9 @@ export function CallbackClient({
 				<p className="text-red-700 text-sm mb-6">{status.message}</p>
 
 				<div className="mb-6 text-left">
-					<p className="text-gray-11 text-sm mb-3">Copy this API key and paste it into your extension settings:</p>
+					<p className="text-gray-11 text-sm mb-3">
+						Copy this API key and paste it into your extension settings:
+					</p>
 					<code className="block bg-white border border-gray-3 rounded-lg px-4 py-3 text-sm font-mono text-gray-12 break-all select-all mb-3 border-red-200">
 						{status.token}
 					</code>
@@ -164,17 +170,13 @@ export function CallbackClient({
 				</div>
 			</div>
 			<h1 className="text-xl font-semibold text-gray-12 mb-2">
-				{status.fallbackToken ? "API key created" : "Extension connected"}
+				Extension connected
 			</h1>
 			<p className="text-gray-11 text-sm mb-4">
-				{status.fallbackToken
-					? `Copy the key below and paste it into the Cap extension options page.`
-					: `Extension connected for ${status.email}`}
+				Connected for {status.email}. If the extension didn&apos;t pick up the
+				key automatically, copy it below and paste into the extension&apos;s
+				Options page.
 			</p>
-
-			{!status.fallbackToken && (
-				<p className="text-gray-10 text-xs mb-4">You can close this tab</p>
-			)}
 
 			{status.fallbackToken && (
 				<div className="mb-4">
@@ -196,18 +198,6 @@ export function CallbackClient({
 						{copied ? "Copied!" : "Copy key"}
 					</button>
 				</div>
-			)}
-
-			{status.fallbackToken && (
-				<p className="text-gray-10 text-xs">
-					This key has the same permissions as your account.{" "}
-					<a
-						href="/dashboard/settings"
-						className="underline hover:text-gray-12 transition-colors"
-					>
-						Manage keys in Settings
-					</a>
-				</p>
 			)}
 		</div>
 	);
