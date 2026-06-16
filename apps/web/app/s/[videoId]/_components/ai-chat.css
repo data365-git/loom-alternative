@@ -31,7 +31,7 @@
 	position: fixed;
 	right: 26px;
 	bottom: 26px;
-	z-index: 2147483000;
+	z-index: 2147483002;
 	width: 62px;
 	height: 62px;
 	border-radius: 50%;
@@ -85,13 +85,15 @@
 	animation-delay: 1.3s;
 }
 .ai-fab.is-open {
-	transform: scale(0.9);
-	opacity: 0;
-	pointer-events: none;
+	transform: none;
+	opacity: 1;
+	pointer-events: auto;
+	background: #111;
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 .ai-fab.is-open::before,
 .ai-fab.is-open::after {
-	animation-play-state: paused;
+	animation: none;
 	opacity: 0;
 }
 
@@ -195,11 +197,14 @@
 	isolation: isolate;
 	background: linear-gradient(
 		160deg,
-		rgba(14, 15, 19, 0.2),
-		rgba(6, 7, 10, 0.34) 52%,
-		rgba(0, 0, 0, 0.46)
+		rgba(14, 15, 19, 0.86),
+		rgba(8, 10, 14, 0.88) 52%,
+		rgba(0, 0, 0, 0.9)
 	);
 	border: none;
+	-webkit-backdrop-filter: blur(44px) saturate(140%) brightness(0.5)
+		contrast(1.06);
+	backdrop-filter: blur(44px) saturate(140%) brightness(0.5) contrast(1.06);
 	box-shadow:
 		0 48px 96px -12px rgba(0, 0, 0, 0.32),
 		0 24px 48px -8px rgba(0, 0, 0, 0.2),
