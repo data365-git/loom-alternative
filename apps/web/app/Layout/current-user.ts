@@ -10,6 +10,9 @@ export const resolveCurrentUser = Effect.gen(function* () {
 		Effect.flatMap(
 			Effect.fn(function* (u) {
 				if (!u) return null;
+				const prefs = (u.preferences ?? null) as {
+					devModeEnabled?: boolean;
+				} | null;
 				return {
 					id: u.id,
 					name: u.name,
@@ -20,6 +23,7 @@ export const resolveCurrentUser = Effect.gen(function* () {
 						? yield* imageUploads.resolveImageUrl(u.image)
 						: null,
 					isPro: userIsPro(u),
+					devModeEnabled: Boolean(prefs?.devModeEnabled),
 				};
 			}),
 		),

@@ -1,9 +1,7 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useCurrentUser } from "@/app/Layout/AuthContext";
-import { isAdminEmail } from "@/lib/dev-mode";
 import type { GlassSettings } from "@/lib/liquid-glass/types";
 import { DEFAULT_SETTINGS } from "@/lib/liquid-glass/types";
 import { GlassLab } from "./GlassLab";
@@ -251,9 +249,7 @@ export function AIChatPopup({
 	const abortRef = useRef<AbortController | null>(null);
 
 	const user = useCurrentUser();
-	const searchParams = useSearchParams();
-	const canUseGlassLab =
-		isAdminEmail(user?.email) && searchParams.get("glass-lab") === "1";
+	const canUseGlassLab = Boolean(user?.devModeEnabled);
 
 	const resizeState = useRef<{
 		startX: number;

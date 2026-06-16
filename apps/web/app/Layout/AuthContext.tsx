@@ -11,6 +11,7 @@ export type CurrentUser = {
 	imageUrl: ImageUpload.ImageUrl | null;
 	defaultOrgId: Organisation.OrganisationId | null;
 	isPro: boolean;
+	devModeEnabled: boolean;
 };
 
 const AuthContext = createContext<
