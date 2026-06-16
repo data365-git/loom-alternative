@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { mintExtensionToken } from "@/actions/extension/mint-token";
 
 type Status =
 	| { kind: "loading" }
@@ -21,7 +20,20 @@ export function CallbackClient({
 
 		async function run() {
 			try {
-				const { token, email } = await mintExtensionToken();
+				const res = await fetch("/api/extension/mint-key", {
+					method: "POST",
+					credentials: "include",
+				});
+				if (!res.ok) {
+					const body = await res.json().catch(() => ({}));
+					throw new Error(
+						(body as { error?: string }).error ?? "Failed to mint key",
+					);
+				}
+				const { token, email } = (await res.json()) as {
+					token: string;
+					email: string;
+				};
 
 				if (cancelled) return;
 
