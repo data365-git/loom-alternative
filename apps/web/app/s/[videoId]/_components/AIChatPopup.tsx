@@ -494,9 +494,11 @@ export function AIChatPopup({
 						key={msg.id}
 						className={`ai-msg${msg.role === "user" ? " user" : " ai"}`}
 					>
-						<div className="av">
-							{msg.role === "assistant" ? <OrbIcon /> : "U"}
-						</div>
+						{msg.role === "assistant" && (
+							<div className="av">
+								<OrbIcon />
+							</div>
+						)}
 						<div className="bubble">
 							{msg.role === "assistant"
 								? renderMessageContent(msg.content, onVideoJump)
