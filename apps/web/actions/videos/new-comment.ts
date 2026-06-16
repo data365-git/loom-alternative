@@ -5,7 +5,7 @@ import { getCurrentUser } from "@cap/database/auth/session";
 import { nanoId } from "@cap/database/helpers";
 import { comments } from "@cap/database/schema";
 import type { ImageUpload } from "@cap/web-domain";
-import { Comment, type Video } from "@cap/web-domain";
+import { Comment, User, type Video } from "@cap/web-domain";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/Notification";
 
@@ -18,10 +18,6 @@ export async function newComment(data: {
 	timestamp: number;
 }) {
 	const user = await getCurrentUser();
-
-	if (!user) {
-		throw new Error("User not authenticated");
-	}
 
 	const content = data.content;
 	const videoId = data.videoId;
@@ -39,9 +35,13 @@ export async function newComment(data: {
 	}
 	const id = Comment.CommentId.make(nanoId());
 
+	const authorId = user
+		? User.UserId.make(user.id)
+		: User.UserId.make("anonymous");
+
 	const newComment = {
 		id: id,
-		authorId: user.id,
+		authorId: authorId,
 		type: type,
 		content: content,
 		videoId: videoId,
@@ -53,23 +53,24 @@ export async function newComment(data: {
 
 	await db().insert(comments).values(newComment);
 
-	try {
-		await createNotification({
-			type: conditionalType,
-			videoId,
-			authorId: user.id,
-			comment: { id, content },
-			parentCommentId,
-		});
-	} catch (error) {
-		console.error("Failed to create notification:", error);
+	if (user) {
+		try {
+			await createNotification({
+				type: conditionalType,
+				videoId,
+				authorId: user.id,
+				comment: { id, content },
+				parentCommentId,
+			});
+		} catch (error) {
+			console.error("Failed to create notification:", error);
+		}
 	}
 
-	// Add author name to the returned data
 	const commentWithAuthor = {
 		...newComment,
-		authorName: user.name,
-		authorImage: data.authorImage,
+		authorName: user ? user.name : "Guest",
+		authorImage: user ? data.authorImage : null,
 		sending: false,
 	};
 

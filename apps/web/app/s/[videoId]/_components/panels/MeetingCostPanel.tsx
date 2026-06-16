@@ -26,11 +26,7 @@ export function MeetingCostPanel({ videoId }: MeetingCostPanelProps) {
 	});
 
 	if (isLoading) {
-		return (
-			<div className="flex items-center justify-center py-10">
-				<div className="size-5 animate-spin rounded-full border-2 border-gray-300 border-t-gray-700" />
-			</div>
-		);
+		return null;
 	}
 
 	if (error || !data) {
@@ -44,13 +40,7 @@ export function MeetingCostPanel({ videoId }: MeetingCostPanelProps) {
 	const hasActivity = data.totalUsdCents > 0;
 
 	if (!hasActivity) {
-		return (
-			<div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-10 text-center">
-				<p className="text-sm text-gray-500">
-					No AI activity for this meeting yet
-				</p>
-			</div>
-		);
+		return null;
 	}
 
 	return (

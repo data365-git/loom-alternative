@@ -234,12 +234,11 @@ export const Sidebar = forwardRef<{ scrollToBottom: () => void }, SidebarProps>(
 
 		return (
 			<div
-				className="bg-white rounded-2xl border border-gray-5 overflow-hidden flex flex-col"
+				className="flex flex-col gap-3"
 				style={{ width: "320px", position: "sticky", top: "1rem" }}
 			>
 				<div
 					style={{
-						margin: "12px 12px 0",
 						borderRadius: "14px",
 						background: "linear-gradient(135deg, #eef4ff 0%, #f7f9fc 100%)",
 						border: "1px solid rgba(37, 99, 235, .15)",
@@ -253,50 +252,49 @@ export const Sidebar = forwardRef<{ scrollToBottom: () => void }, SidebarProps>(
 					<MeetingCostPanel videoId={data.id} />
 				</div>
 
-				<div
-					className="flex items-center px-4 py-3 border-b border-gray-5"
-					style={{ marginTop: "12px" }}
-				>
-					<span className="text-sm font-semibold text-gray-12">Comments</span>
-				</div>
+				<div className="bg-white rounded-2xl border border-gray-5 overflow-hidden flex flex-col">
+					<div className="flex items-center px-4 py-3 border-b border-gray-5">
+						<span className="text-sm font-semibold text-gray-12">Comments</span>
+					</div>
 
-				{user && isOwnerOrMember && (
-					<Suspense fallback={null}>
-						<SidebarAnalytics
-							videoId={data.id}
-							views={views}
-							comments={optimisticComments}
-							isOwner={isOwner}
+					{user && isOwnerOrMember && (
+						<Suspense fallback={null}>
+							<SidebarAnalytics
+								videoId={data.id}
+								views={views}
+								comments={optimisticComments}
+								isOwner={isOwner}
+							/>
+						</Suspense>
+					)}
+
+					<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+						<Comments
+							ref={ref}
+							handleCommentSuccess={handleCommentSuccess}
+							optimisticComments={optimisticComments}
+							setOptimisticComments={setOptimisticComments}
+							setComments={setCommentsData}
+							videoId={videoId}
+							setShowAuthOverlay={setShowAuthOverlay}
+							onSeek={onSeek}
+							commentsDisabled={commentsDisabled}
+							videoOwnerId={data.owner.id}
 						/>
-					</Suspense>
-				)}
+					</div>
 
-				<div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-					<Comments
-						ref={ref}
-						handleCommentSuccess={handleCommentSuccess}
-						optimisticComments={optimisticComments}
-						setOptimisticComments={setOptimisticComments}
-						setComments={setCommentsData}
-						videoId={videoId}
-						setShowAuthOverlay={setShowAuthOverlay}
-						onSeek={onSeek}
-						commentsDisabled={commentsDisabled}
-						videoOwnerId={data.owner.id}
+					{canReact && (
+						<ReactionsBlock
+							reactions={reactionsByEmoji}
+							onReact={handleEmojiReact}
+						/>
+					)}
+
+					<AuthOverlay
+						isOpen={showAuthOverlay}
+						onClose={() => setShowAuthOverlay(false)}
 					/>
 				</div>
-
-				{canReact && (
-					<ReactionsBlock
-						reactions={reactionsByEmoji}
-						onReact={handleEmojiReact}
-					/>
-				)}
-
-				<AuthOverlay
-					isOpen={showAuthOverlay}
-					onClose={() => setShowAuthOverlay(false)}
-				/>
 			</div>
 		);
 	},

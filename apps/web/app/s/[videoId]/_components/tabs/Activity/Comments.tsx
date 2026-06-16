@@ -1,4 +1,3 @@
-import { Button } from "@cap/ui";
 import { Comment, User, type Video } from "@cap/web-domain";
 import { faCommentSlash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -81,17 +80,14 @@ export const Comments = Object.assign(
 		);
 
 		const handleNewComment = async (content: string) => {
-			if (!user) return;
-
-			// Get current video time from the video element
 			const videoElement = document.querySelector("video") as HTMLVideoElement;
 			const currentTime = videoElement?.currentTime || 0;
 
 			const optimisticComment: CommentType = {
 				id: Comment.CommentId.make(`temp-${Date.now()}`),
-				authorId: User.UserId.make(user.id),
-				authorName: user?.name,
-				authorImage: user.imageUrl,
+				authorId: User.UserId.make(user ? user.id : "anonymous"),
+				authorName: user ? user.name : "Guest",
+				authorImage: user ? user.imageUrl : null,
 				content,
 				createdAt: new Date(),
 				videoId: props.videoId,
@@ -110,7 +106,7 @@ export const Comments = Object.assign(
 				const data = await newComment({
 					content,
 					videoId: props.videoId,
-					authorImage: user.imageUrl,
+					authorImage: user ? user.imageUrl : null,
 					parentCommentId: Comment.CommentId.make(""),
 					type: "text",
 					timestamp: currentTime,
@@ -266,8 +262,6 @@ export const Comments = Object.assign(
 				commentsContainerRef?: React.RefObject<HTMLDivElement | null>;
 			}>,
 		) => {
-			const user = useCurrentUser();
-
 			return (
 				<>
 					<div
@@ -279,21 +273,11 @@ export const Comments = Object.assign(
 
 					{!props.commentInputProps?.disabled && (
 						<div className="flex-none p-2 border-t border-gray-5 bg-gray-2">
-							{user ? (
-								<CommentInput
-									{...props.commentInputProps}
-									placeholder="Leave a comment"
-									buttonLabel="Comment"
-								/>
-							) : (
-								<Button
-									className="min-w-full"
-									variant="primary"
-									onClick={() => props.setShowAuthOverlay(true)}
-								>
-									Sign in to leave a comment
-								</Button>
-							)}
+							<CommentInput
+								{...props.commentInputProps}
+								placeholder="Leave a comment"
+								buttonLabel="Comment"
+							/>
 						</div>
 					)}
 				</>
