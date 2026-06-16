@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { deleteAccount } from "@/actions/account/delete-account";
 import { updatePreferences } from "@/actions/notifications/update-preferences";
 import { SignedImageUrl } from "@/components/SignedImageUrl";
+import type { Locale } from "@/i18n/locales";
 import { isAdminEmail } from "@/lib/dev-mode";
 import { useEffectMutation, useRpcClient } from "@/lib/EffectRuntime";
 import { useDashboardContext } from "../../Contexts";
@@ -32,6 +33,7 @@ import { AiBudgetCard } from "./components/AiBudgetCard";
 import { ApiKeysSection } from "./components/ApiKeysSection";
 import { ProfileImage } from "./components/ProfileImage";
 import { DevModeCard } from "./DevModeCard";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import { patchAccountSettings, signOutAllDevices } from "./server";
 
 type NotificationPrefs = {
@@ -220,6 +222,10 @@ const DangerZone = ({ userEmail }: { userEmail: string }) => {
 export const Settings = () => {
 	const router = useRouter();
 	const { organizationData, user, userPreferences } = useDashboardContext();
+	const currentLocale: Locale =
+		((userPreferences as Record<string, unknown> | null)?.locale as
+			| Locale
+			| undefined) ?? "uz";
 	const [firstName, setFirstName] = useState(user?.name || "");
 	const [lastName, setLastName] = useState(user?.lastName || "");
 	const [defaultOrgId, setDefaultOrgId] = useState<
@@ -471,6 +477,7 @@ export const Settings = () => {
 						preferences={userPreferences?.notifications ?? null}
 						className="md:col-span-2"
 					/>
+					<LanguageSwitcher currentLocale={currentLocale} />
 					<AiBudgetCard />
 					<DevModeCard
 						isAdmin={isAdminEmail(user?.email as string)}

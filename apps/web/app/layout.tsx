@@ -2,6 +2,8 @@ import "@/app/globals.css";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Script from "next/script";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import type { PropsWithChildren } from "react";
 
 const defaultFont = localFont({
@@ -52,9 +54,12 @@ export const metadata: Metadata = {
 	},
 };
 
-export default function RootLayout({ children }: PropsWithChildren) {
+export default async function RootLayout({ children }: PropsWithChildren) {
+	const locale = await getLocale();
+	const messages = await getMessages();
+
 	return (
-		<html className={defaultFont.className} lang="en">
+		<html className={defaultFont.className} lang={locale}>
 			<head>
 				<link
 					rel="apple-touch-icon"
@@ -81,7 +86,9 @@ export default function RootLayout({ children }: PropsWithChildren) {
 			</head>
 			<body suppressHydrationWarning>
 				<Script src="/theme-script.js" strategy="beforeInteractive" />
-				<main className="w-full">{children}</main>
+				<NextIntlClientProvider locale={locale} messages={messages}>
+					<main className="w-full">{children}</main>
+				</NextIntlClientProvider>
 			</body>
 		</html>
 	);

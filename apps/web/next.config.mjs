@@ -2,9 +2,11 @@ import("dotenv").then(({ config }) => config({ path: "../../.env" }));
 
 import fs from "node:fs";
 import path from "node:path";
+import createNextIntlPlugin from "next-intl/plugin";
 import workflowNext from "workflow/next";
 
 const { withWorkflow } = workflowNext;
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const packageJson = JSON.parse(
 	fs.readFileSync(path.resolve("./package.json"), "utf8"),
@@ -156,4 +158,4 @@ const nextConfig = {
 		process.env.NEXT_PUBLIC_DOCKER_BUILD === "true" ? "standalone" : undefined,
 };
 
-export default withWorkflow(nextConfig);
+export default withNextIntl(withWorkflow(nextConfig));
