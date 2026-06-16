@@ -27,7 +27,7 @@ export async function verifyOtp(
 		throw new Error("Invalid or expired code");
 	}
 
-	const record = rows[0];
+	const record = rows[0]!;
 
 	if (record.expires < new Date()) {
 		await db()

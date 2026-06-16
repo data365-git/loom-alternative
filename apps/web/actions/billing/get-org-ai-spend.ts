@@ -59,7 +59,7 @@ async function buildAggregation(
 		.from(aiUsageEvents)
 		.where(
 			and(
-				eq(aiUsageEvents.orgId, orgId),
+				sql`${aiUsageEvents.orgId} = ${orgId}`,
 				gte(aiUsageEvents.createdAt, start),
 				lt(aiUsageEvents.createdAt, end),
 			),

@@ -36,7 +36,12 @@ export async function getMonthlySpend(scope: {
 			totalMicros: sql<number>`COALESCE(SUM(${aiUsageEvents.costUsdMicros}), 0)`,
 		})
 		.from(aiUsageEvents)
-		.where(and(eq(col, scope.id), eq(aiUsageEvents.billingMonth, billingMonth)))
+		.where(
+			and(
+				sql`${col} = ${scope.id}`,
+				eq(aiUsageEvents.billingMonth, billingMonth),
+			),
+		)
 		.groupBy(aiUsageEvents.operation);
 
 	let totalMicros = 0;
