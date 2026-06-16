@@ -25,14 +25,15 @@
 		],
 		"baseUrl": ".",
 		"paths": {
+			"@/actions/*": ["actions/*"],
 			"@/app/*": ["app/*"],
 			"@/components/*": ["components/*"],
-			"@/pages/*": ["components/pages/*"],
-			"@/utils/*": ["utils/*"],
-			"@/lib/*": ["lib/*"],
-			"@/actions/*": ["actions/*"],
 			"@/data/*": ["data/*"],
+			"@/i18n/*": ["i18n/*"],
+			"@/lib/*": ["lib/*"],
+			"@/pages/*": ["components/pages/*"],
 			"@/services": ["services"],
+			"@/utils/*": ["utils/*"],
 			"@/workflows/*": ["workflows/*"]
 		},
 		"types": ["node"]
