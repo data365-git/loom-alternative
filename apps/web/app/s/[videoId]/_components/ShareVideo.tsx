@@ -589,13 +589,12 @@ export const ShareVideo = forwardRef<
 				</div>
 
 				<div className={`ai-aura${aiChatOpen ? " show" : ""}`} />
-				{aiChatOpen && (
-					<AIChatPopup
-						videoId={data.id}
-						onVideoJump={handleSeek}
-						onClose={() => setAiChatOpen(false)}
-					/>
-				)}
+				<AIChatPopup
+					videoId={data.id}
+					onVideoJump={handleSeek}
+					onClose={() => setAiChatOpen(false)}
+					isOpen={aiChatOpen}
+				/>
 				<AIFab onClick={() => setAiChatOpen((v) => !v)} isOpen={aiChatOpen} />
 			</>
 		);
