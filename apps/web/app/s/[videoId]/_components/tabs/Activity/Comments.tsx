@@ -225,26 +225,39 @@ export const Comments = Object.assign(
 					<EmptyState />
 				) : (
 					<div className="p-4 space-y-6">
-						{rootComments.map((comment) => (
-							<CommentComponent
+						<style>{`
+							@keyframes comment-in {
+								from { opacity: 0; transform: translateY(8px); }
+								to   { opacity: 1; transform: translateY(0); }
+							}
+						`}</style>
+						{rootComments.map((comment, index) => (
+							<div
 								key={comment.id}
-								comment={comment}
-								replies={optimisticComments}
-								onReply={(id) => {
-									if (!user) {
-										props.setShowAuthOverlay(true);
-									} else {
-										setReplyingTo(id);
-									}
+								style={{
+									animation: "comment-in 0.3s ease-out both",
+									animationDelay: `${Math.min(index, 4) * 50}ms`,
 								}}
-								replyingToId={replyingTo}
-								handleReply={handleReply}
-								onCancelReply={handleCancelReply}
-								onDelete={handleDeleteComment}
-								onEditSuccess={handleEditComment}
-								videoOwnerId={videoOwnerId}
-								onSeek={onSeek}
-							/>
+							>
+								<CommentComponent
+									comment={comment}
+									replies={optimisticComments}
+									onReply={(id) => {
+										if (!user) {
+											props.setShowAuthOverlay(true);
+										} else {
+											setReplyingTo(id);
+										}
+									}}
+									replyingToId={replyingTo}
+									handleReply={handleReply}
+									onCancelReply={handleCancelReply}
+									onDelete={handleDeleteComment}
+									onEditSuccess={handleEditComment}
+									videoOwnerId={videoOwnerId}
+									onSeek={onSeek}
+								/>
+							</div>
 						))}
 					</div>
 				)}

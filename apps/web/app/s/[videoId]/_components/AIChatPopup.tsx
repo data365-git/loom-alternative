@@ -1,6 +1,16 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useCurrentUser } from "@/app/Layout/AuthContext";
+import { isAdminEmail } from "@/lib/dev-mode";
+import type { GlassSettings } from "@/lib/liquid-glass/types";
+import { DEFAULT_SETTINGS } from "@/lib/liquid-glass/types";
+import { GlassLab } from "./GlassLab";
+import {
+	LiquidGlassContainer,
+	type LiquidGlassHandle,
+} from "./LiquidGlassContainer";
 import "./ai-chat.css";
 
 interface Message {
@@ -230,10 +240,20 @@ export function AIChatPopup({
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [input, setInput] = useState("");
 	const [isStreaming, setIsStreaming] = useState(false);
+	const [glassSettings, setGlassSettings] =
+		useState<GlassSettings>(DEFAULT_SETTINGS);
+	const [showGlassLab, setShowGlassLab] = useState(false);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const popupRef = useRef<HTMLDivElement>(null);
+	const glassHostRef = useRef<HTMLDivElement>(null);
+	const glassRef = useRef<LiquidGlassHandle>(null);
 	const abortRef = useRef<AbortController | null>(null);
+
+	const user = useCurrentUser();
+	const searchParams = useSearchParams();
+	const canUseGlassLab =
+		isAdminEmail(user?.email) && searchParams.get("glass-lab") === "1";
 
 	const resizeState = useRef<{
 		startX: number;
@@ -404,6 +424,11 @@ export function AIChatPopup({
 		window.addEventListener("mouseup", onUp);
 	};
 
+	const handleGlassSettingsChange = useCallback((settings: GlassSettings) => {
+		setGlassSettings(settings);
+		glassRef.current?.applyGlassSettings(settings);
+	}, []);
+
 	const hasMessages = messages.length > 0;
 
 	return (
@@ -413,6 +438,12 @@ export function AIChatPopup({
 			role="dialog"
 			aria-label="AI assistant"
 		>
+			<div ref={glassHostRef} className="ai-glass-host" />
+			<LiquidGlassContainer
+				ref={glassRef}
+				hostRef={glassHostRef}
+				initialSettings={glassSettings}
+			/>
 			<div className="ai-noise" />
 			{/* biome-ignore lint/a11y/noStaticElementInteractions: resize handle is mouse-only by design */}
 			<div className="ai-resize" onMouseDown={onResizeMouseDown} />
@@ -428,6 +459,28 @@ export function AIChatPopup({
 						Ushbu uchrashuv konteksti yuklandi
 					</div>
 				</div>
+				{canUseGlassLab && (
+					<button
+						type="button"
+						className="ai-x"
+						onClick={() => setShowGlassLab((v) => !v)}
+						aria-label="Toggle Glass Lab"
+						style={{ marginRight: 4 }}
+					>
+						<svg
+							width="16"
+							height="16"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							strokeWidth="2.2"
+							aria-hidden="true"
+						>
+							<path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7z" />
+							<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+						</svg>
+					</button>
+				)}
 				<button
 					type="button"
 					className="ai-x"
@@ -548,6 +601,13 @@ export function AIChatPopup({
 					AI javoblari tekshirilishi kerak bo&apos;lishi mumkin
 				</div>
 			</div>
+			{showGlassLab && canUseGlassLab && (
+				<GlassLab
+					currentSettings={glassSettings}
+					onSettingsChange={handleGlassSettingsChange}
+					onClose={() => setShowGlassLab(false)}
+				/>
+			)}
 		</div>
 	);
 }

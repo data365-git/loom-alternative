@@ -25,11 +25,13 @@ import { toast } from "sonner";
 import { deleteAccount } from "@/actions/account/delete-account";
 import { updatePreferences } from "@/actions/notifications/update-preferences";
 import { SignedImageUrl } from "@/components/SignedImageUrl";
+import { isAdminEmail } from "@/lib/dev-mode";
 import { useEffectMutation, useRpcClient } from "@/lib/EffectRuntime";
 import { useDashboardContext } from "../../Contexts";
 import { AiBudgetCard } from "./components/AiBudgetCard";
 import { ApiKeysSection } from "./components/ApiKeysSection";
 import { ProfileImage } from "./components/ProfileImage";
+import { DevModeCard } from "./DevModeCard";
 import { patchAccountSettings, signOutAllDevices } from "./server";
 
 type NotificationPrefs = {
@@ -470,6 +472,13 @@ export const Settings = () => {
 						className="md:col-span-2"
 					/>
 					<AiBudgetCard />
+					<DevModeCard
+						isAdmin={isAdminEmail(user?.email as string)}
+						initialEnabled={
+							!!(userPreferences as Record<string, unknown> | null)
+								?.devModeEnabled
+						}
+					/>
 				</div>
 				<Button
 					disabled={!firstName || updateNamePending || !hasChanges}
