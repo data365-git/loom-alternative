@@ -4,7 +4,11 @@ import { buildEnv, NODE_ENV } from "@cap/env";
 import { Button, LogoBadge } from "@cap/ui";
 import { formatPlatformDateRelative } from "@cap/utils";
 import type { ViewerSettingKey } from "@cap/web-backend";
-import { faChartSimple, faLock } from "@fortawesome/free-solid-svg-icons";
+import {
+	faChartSimple,
+	faChevronDown,
+	faLock,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Clock, Copy, Globe2, Pencil, Scissors, X } from "lucide-react";
@@ -311,6 +315,41 @@ export const ShareHeader = ({
 		}
 	};
 
+	const renderSharedStatus = () => {
+		if (isOwner) {
+			const hasSpaceSharing = effectiveSharedSpaces?.length > 0;
+			const isPublic = data.public;
+
+			if (!hasSpaceSharing && !isPublic) {
+				return (
+					<button
+						type="button"
+						onClick={() => setIsSharingDialogOpen(true)}
+						className="inline-flex items-center rounded-full border border-gray-6 bg-gray-3 px-2.5 py-0.5 text-xs text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12"
+					>
+						Make shareable
+						<FontAwesomeIcon className="ml-1.5 size-2.5" icon={faChevronDown} />
+					</button>
+				);
+			}
+			return (
+				<button
+					type="button"
+					onClick={() => setIsSharingDialogOpen(true)}
+					className="inline-flex items-center rounded-full border border-gray-6 bg-gray-3 px-2.5 py-0.5 text-xs text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12"
+				>
+					Shared
+					<FontAwesomeIcon className="ml-1.5 size-2.5" icon={faChevronDown} />
+				</button>
+			);
+		}
+		return (
+			<span className="inline-flex items-center rounded-full border border-gray-6 bg-gray-3 px-2.5 py-0.5 text-xs text-gray-11">
+				Shared with you
+			</span>
+		);
+	};
+
 	const renderBranding = () => {
 		if (!branding) return null;
 
@@ -514,9 +553,7 @@ export const ShareHeader = ({
 									</p>
 								</div>
 							</div>
-							<span className="inline-flex items-center rounded-full border border-gray-6 bg-gray-3 px-2.5 py-0.5 text-xs text-gray-11">
-								Shared
-							</span>
+							{user && renderSharedStatus()}
 							{userIsOwnerAndNotPro && (
 								<button
 									type="button"
