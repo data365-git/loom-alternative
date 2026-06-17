@@ -363,6 +363,20 @@ export const createS3BucketAccess = Effect.gen(function* () {
 						),
 					),
 				),
+			listParts: (key: string, uploadId: string) =>
+				wrapS3Promise(
+					provider.getInternal.pipe(
+						Effect.map((client) =>
+							client.send(
+								new S3.ListPartsCommand({
+									Bucket: provider.bucket,
+									Key: key,
+									UploadId: uploadId,
+								}),
+							),
+						),
+					),
+				),
 		},
 	};
 });

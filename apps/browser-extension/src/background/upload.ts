@@ -100,11 +100,11 @@ async function uploadPart(
 	}
 
 	const etag = putRes.headers.get("ETag");
-	if (!etag) {
-		throw new Error(`[upload] No ETag returned for part ${partNumber}`);
-	}
 
-	return { ETag: etag.replace(/"/g, ""), PartNumber: partNumber };
+	return {
+		ETag: etag ? etag.replace(/"/g, "") : "RESOLVE_SERVER_SIDE",
+		PartNumber: partNumber,
+	};
 }
 
 export async function initializeUpload(
@@ -252,10 +252,16 @@ export async function finalizeUpload(): Promise<void> {
 	}
 
 	if (parts.length === 0) {
-		console.error("[upload] No parts uploaded — cannot complete multipart");
+		const bufferLen = remaining.length;
+		console.error(
+			`[upload] No parts uploaded — cannot complete multipart. totalBytes=${totalBytes}, remainingBuffer=${bufferLen}`,
+		);
 		await setState({
 			kind: "error",
-			reason: "Recording didn't upload — no data was saved. Please try again.",
+			reason:
+				totalBytes === 0
+					? "No recording data was captured. Check screen-capture permissions and try again."
+					: `Upload failed — ${totalBytes} bytes captured but no parts uploaded. Check network or try again.`,
 			recoverable: true,
 			previousVideoId: videoId,
 		});

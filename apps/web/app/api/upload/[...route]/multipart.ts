@@ -353,10 +353,46 @@ app.post(
 						);
 					}
 
-					const formattedParts = sortedParts.map((part) => ({
-						PartNumber: part.partNumber,
-						ETag: part.etag,
-					}));
+					const needsEtagResolution = sortedParts.some(
+						(p) => !p.etag || p.etag === "RESOLVE_SERVER_SIDE",
+					);
+
+					let formattedParts: { PartNumber: number; ETag: string }[];
+
+					if (needsEtagResolution) {
+						console.log(
+							"Client sent placeholder ETags — resolving via ListParts",
+						);
+						const listResult = yield* bucket.multipart.listParts(
+							fileKey,
+							uploadId,
+						);
+						const s3Parts = listResult.Parts ?? [];
+						const etagMap = new Map(
+							s3Parts
+								.filter(
+									(p): p is typeof p & { PartNumber: number; ETag: string } =>
+										p.PartNumber != null && p.ETag != null,
+								)
+								.map((p) => [p.PartNumber, p.ETag]),
+						);
+
+						formattedParts = sortedParts.map((part) => ({
+							PartNumber: part.partNumber,
+							ETag:
+								etagMap.get(part.partNumber) ??
+								part.etag,
+						}));
+
+						console.log(
+							`Resolved ${etagMap.size} ETags from S3 for ${sortedParts.length} parts`,
+						);
+					} else {
+						formattedParts = sortedParts.map((part) => ({
+							PartNumber: part.partNumber,
+							ETag: part.etag,
+						}));
+					}
 
 					console.log(
 						"Sending to S3:",
