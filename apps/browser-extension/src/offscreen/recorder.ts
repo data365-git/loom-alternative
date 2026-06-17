@@ -146,7 +146,7 @@ async function startCapture(msg: StartCaptureMsg): Promise<void> {
 			const buffer = await e.data.arrayBuffer();
 			sendMsg({
 				type: "RECORDER_CHUNK",
-				chunk: buffer,
+				chunk: Array.from(new Uint8Array(buffer)),
 				index: chunkIndex++,
 				mime: recorder.mimeType,
 				ts: Date.now(),

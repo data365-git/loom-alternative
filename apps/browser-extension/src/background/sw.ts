@@ -303,11 +303,11 @@ async function handleMessage(
 
 		// ── Offscreen: data chunk ─────────────────────────────────────────
 		case "RECORDER_CHUNK": {
-			const chunk = msg.chunk as ArrayBuffer | undefined;
+			const raw = msg.chunk as number[] | undefined;
 			const index = getNumber(msg, "index") ?? 0;
 			const mime = getString(msg, "mime") ?? "video/webm";
-			if (chunk) {
-				await handleChunk(chunk, index, mime);
+			if (raw && Array.isArray(raw) && raw.length > 0) {
+				await handleChunk(new Uint8Array(raw).buffer, index, mime);
 			}
 			return { ok: true };
 		}
