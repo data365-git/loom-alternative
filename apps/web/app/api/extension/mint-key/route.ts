@@ -1,7 +1,7 @@
 import { db } from "@cap/database";
 import { getCurrentUser } from "@cap/database/auth/session";
 import { authApiKeys } from "@cap/database/schema";
-import { eq, sql } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 export async function POST() {
@@ -10,16 +10,18 @@ export async function POST() {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	const [row] = await db()
-		.select({ count: sql<number>`count(*)` })
+	const existing = await db()
+		.select({ id: authApiKeys.id })
 		.from(authApiKeys)
-		.where(eq(authApiKeys.userId, user.id));
+		.where(eq(authApiKeys.userId, user.id))
+		.orderBy(desc(authApiKeys.createdAt))
+		.limit(1);
 
-	if (row && row.count >= 5) {
-		return NextResponse.json(
-			{ error: "Limit of 5 extension keys reached." },
-			{ status: 429 },
-		);
+	if (existing.length > 0) {
+		return NextResponse.json({
+			token: existing[0].id,
+			email: user.email,
+		});
 	}
 
 	const id = crypto.randomUUID();

@@ -84,16 +84,59 @@ function renderNotSignedIn(
 		chrome.tabs.create({ url });
 	});
 
-	const orText = el("p", { className: "footnote" });
-	const pasteLink = el("button", { className: "link-btn" }, "Or paste API key");
-	pasteLink.addEventListener("click", () => {
-		chrome.runtime.openOptionsPage();
+	const apiKeyInput = el("input", {
+		className: "api-key-input",
+		type: "text",
+		placeholder: "Paste your Cap API key",
+	} as unknown as Partial<HTMLInputElement>);
+
+	const connectBtn = el("button", { className: "btn btn-secondary" }, "Connect");
+
+	const inlineMsg = el("p", { className: "inline-msg" });
+
+	connectBtn.addEventListener("click", async () => {
+		const key = (apiKeyInput as HTMLInputElement).value.trim();
+		if (!key) {
+			inlineMsg.textContent = "Please paste a key";
+			return;
+		}
+		inlineMsg.textContent = "";
+		chrome.runtime.sendMessage(
+			{
+				type: "SAVE_SETTINGS",
+				settings: { apiKey: key, apiBaseUrl: settings.apiBaseUrl },
+			},
+			async () => {
+				try {
+					const res = await fetch(`${settings.apiBaseUrl}/api/extension/me`, {
+						headers: { Authorization: `Bearer ${key}` },
+					});
+					if (res.ok) {
+						location.reload();
+					} else {
+						inlineMsg.textContent =
+							"That key isn't valid — check it and try again";
+						chrome.runtime.sendMessage({
+							type: "SAVE_SETTINGS",
+							settings: { apiKey: "", apiBaseUrl: settings.apiBaseUrl },
+						});
+					}
+				} catch {
+					inlineMsg.textContent = "That key isn't valid — check it and try again";
+					chrome.runtime.sendMessage({
+						type: "SAVE_SETTINGS",
+						settings: { apiKey: "", apiBaseUrl: settings.apiBaseUrl },
+					});
+				}
+			},
+		);
 	});
-	orText.appendChild(pasteLink);
 
 	root.appendChild(logoWrap);
 	root.appendChild(signInBtn);
-	root.appendChild(orText);
+	root.appendChild(apiKeyInput);
+	root.appendChild(connectBtn);
+	root.appendChild(inlineMsg);
 }
 
 function renderIdleMeet(
