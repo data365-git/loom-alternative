@@ -24,6 +24,11 @@ export function CallbackClient({
 					method: "POST",
 					credentials: "include",
 				});
+				if (res.status === 401) {
+					const here = window.location.pathname + window.location.search;
+					window.location.href = `/login?next=${encodeURIComponent(here)}`;
+					return;
+				}
 				if (!res.ok) {
 					const body = await res.json().catch(() => ({}));
 					throw new Error(
