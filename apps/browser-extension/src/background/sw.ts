@@ -125,9 +125,15 @@ async function handleMessage(
 			if (state.kind !== "idle" && state.kind !== "error") {
 				return { ok: false, error: "already active" };
 			}
+			const settings = await getSettings();
 			await setState({ kind: "arming", mode: "instruction" });
 			await ensureOffscreenDocument();
-			await sendToOffscreen({ type: "START_CAPTURE", mode: "picker" });
+			await sendToOffscreen({
+				type: "START_CAPTURE",
+				mode: "picker",
+				micEnabled: settings.micEnabled,
+				...(settings.micEnabled ? { micDeviceId: settings.micDeviceId } : {}),
+			});
 			return { ok: true };
 		}
 
@@ -139,6 +145,7 @@ async function handleMessage(
 			if (state.kind !== "idle" && state.kind !== "error") {
 				return { ok: false, error: "already active" };
 			}
+			const settings = await getSettings();
 			await setState({ kind: "arming", mode: "meeting", meetingId, tabId });
 			await ensureOffscreenDocument();
 			await sendToOffscreen({
@@ -146,6 +153,8 @@ async function handleMessage(
 				mode: "picker",
 				meetingId,
 				tabId,
+				micEnabled: settings.micEnabled,
+				...(settings.micEnabled ? { micDeviceId: settings.micDeviceId } : {}),
 			});
 			return { ok: true };
 		}
@@ -216,6 +225,7 @@ async function handleMessage(
 			if (state.kind !== "idle" && state.kind !== "error") {
 				return { ok: false, error: "already active" };
 			}
+			const settings = await getSettings();
 			await setState({ kind: "arming", mode: "meeting", meetingId, tabId });
 			await ensureOffscreenDocument();
 			await sendToOffscreen({
@@ -223,6 +233,8 @@ async function handleMessage(
 				mode: "picker",
 				meetingId,
 				tabId,
+				micEnabled: settings.micEnabled,
+				...(settings.micEnabled ? { micDeviceId: settings.micDeviceId } : {}),
 			});
 			return { ok: true };
 		}

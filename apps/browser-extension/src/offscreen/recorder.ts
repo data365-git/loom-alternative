@@ -4,6 +4,7 @@ interface StartCaptureMsg {
 	type: "START_CAPTURE";
 	mode: CaptureMode;
 	streamId?: string;
+	micEnabled?: boolean;
 	micDeviceId?: string;
 }
 
@@ -96,7 +97,7 @@ async function startCapture(msg: StartCaptureMsg): Promise<void> {
 		}
 
 		let micStream: MediaStream | null = null;
-		if (msg.micDeviceId) {
+		if (msg.micEnabled !== false && msg.micDeviceId) {
 			try {
 				micStream = await navigator.mediaDevices.getUserMedia({
 					audio: { deviceId: { exact: msg.micDeviceId } },

@@ -9,9 +9,11 @@ export interface ExtensionSettings {
 	autoRecordOnMeet: boolean;
 	autoRecordCountdownSec: number;
 	micDeviceId: string;
+	micEnabled: boolean;
 	captureMode: "picker" | "silent-tab";
 	soundEnabled: boolean;
 	cameraOverlay: boolean;
+	cameraDeviceId: string;
 }
 
 interface IdleState {
@@ -86,9 +88,11 @@ const DEFAULT_SETTINGS: ExtensionSettings = {
 	autoRecordOnMeet: false,
 	autoRecordCountdownSec: 5,
 	micDeviceId: "",
+	micEnabled: true,
 	captureMode: "picker",
 	soundEnabled: true,
 	cameraOverlay: false,
+	cameraDeviceId: "",
 };
 
 export async function getState(): Promise<ExtensionState> {

@@ -9,11 +9,34 @@ interface PopupData {
 }
 
 let timerInterval: ReturnType<typeof setInterval> | null = null;
+let micStream: MediaStream | null = null;
+let audioCtx: AudioContext | null = null;
+let analyser: AnalyserNode | null = null;
+let meterRaf: number | null = null;
 
 function stopTimer(): void {
 	if (timerInterval !== null) {
 		clearInterval(timerInterval);
 		timerInterval = null;
+	}
+}
+
+function teardownMic(): void {
+	if (meterRaf !== null) {
+		cancelAnimationFrame(meterRaf);
+		meterRaf = null;
+	}
+	if (analyser) {
+		analyser.disconnect();
+		analyser = null;
+	}
+	if (audioCtx) {
+		audioCtx.close().catch(() => {});
+		audioCtx = null;
+	}
+	if (micStream) {
+		for (const track of micStream.getTracks()) track.stop();
+		micStream = null;
 	}
 }
 
@@ -56,6 +79,284 @@ function sendMsg(msg: Record<string, unknown>): void {
 		if (chrome.runtime.lastError) {
 		}
 	});
+}
+
+function createToggleEl(id: string, checked: boolean): HTMLElement {
+	const label = document.createElement("label");
+	label.className = "toggle";
+	label.htmlFor = id;
+	const input = document.createElement("input");
+	input.type = "checkbox";
+	input.id = id;
+	input.checked = checked;
+	const track = document.createElement("span");
+	track.className = "toggle__track";
+	const knob = document.createElement("span");
+	knob.className = "toggle__knob";
+	track.appendChild(knob);
+	label.appendChild(input);
+	label.appendChild(track);
+	return label;
+}
+
+function startMicMeter(deviceId: string, bars: HTMLElement[]): void {
+	teardownMic();
+
+	const constraints: MediaStreamConstraints = deviceId
+		? { audio: { deviceId: { exact: deviceId } } }
+		: { audio: true };
+
+	navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
+		micStream = stream;
+		audioCtx = new AudioContext();
+		analyser = audioCtx.createAnalyser();
+		analyser.fftSize = 256;
+		const source = audioCtx.createMediaStreamSource(stream);
+		source.connect(analyser);
+		const data = new Uint8Array(analyser.frequencyBinCount);
+
+		function tick(): void {
+			if (!analyser) return;
+			analyser.getByteFrequencyData(data);
+			let sum = 0;
+			for (let i = 0; i < data.length; i++) sum += data[i];
+			const avg = sum / data.length;
+			const level = Math.min(1, avg / 80);
+			const lit = Math.round(level * bars.length);
+			for (let i = 0; i < bars.length; i++) {
+				bars[i].classList.toggle("mic-bar--active", i < lit);
+			}
+			meterRaf = requestAnimationFrame(tick);
+		}
+
+		meterRaf = requestAnimationFrame(tick);
+	}).catch(() => {
+		for (const bar of bars) bar.classList.remove("mic-bar--active");
+	});
+}
+
+function buildMicMeter(): { meterEl: HTMLElement; bars: HTMLElement[] } {
+	const meterEl = el("div", { className: "mic-meter" });
+	const bars: HTMLElement[] = [];
+	for (let i = 0; i < 7; i++) {
+		const bar = el("span", { className: "mic-bar" });
+		meterEl.appendChild(bar);
+		bars.push(bar);
+	}
+	return { meterEl, bars };
+}
+
+async function populateDeviceSelect(
+	select: HTMLSelectElement,
+	kind: "audioinput" | "videoinput",
+	currentDeviceId: string,
+	permissionConstraint: MediaStreamConstraints,
+): Promise<void> {
+	try {
+		const testStream = await navigator.mediaDevices.getUserMedia(permissionConstraint);
+		for (const t of testStream.getTracks()) t.stop();
+	} catch {
+		const opt = document.createElement("option");
+		opt.value = "";
+		opt.textContent = kind === "audioinput" ? "Microphone blocked" : "Camera blocked";
+		select.appendChild(opt);
+		return;
+	}
+
+	const devices = await navigator.mediaDevices.enumerateDevices();
+	const filtered = devices.filter((d) => d.kind === kind);
+
+	const defaultOpt = document.createElement("option");
+	defaultOpt.value = "";
+	defaultOpt.textContent = kind === "audioinput" ? "Default microphone" : "Default camera";
+	select.appendChild(defaultOpt);
+
+	for (const device of filtered) {
+		const label = device.label || `${kind === "audioinput" ? "Mic" : "Camera"} ${device.deviceId.slice(0, 6)}`;
+		const opt = document.createElement("option");
+		opt.value = device.deviceId;
+		opt.textContent = label;
+		if (device.deviceId === currentDeviceId) opt.selected = true;
+		select.appendChild(opt);
+	}
+
+	if (!currentDeviceId) select.value = "";
+}
+
+function renderIdlePanel(
+	root: HTMLElement,
+	settings: ExtensionSettings,
+	isMeetTab: boolean,
+	meetingId: string | null,
+	activeTabId: number | undefined,
+): void {
+	const logo = document.createElement("img");
+	logo.src = "icons/icon-128.png";
+	logo.width = 28;
+	logo.height = 28;
+	logo.alt = "Cap";
+
+	const logoLabel = el("span", { className: "panel-logo-label" }, "Cap Recorder");
+	const logoRow = el("div", { className: "panel-logo-row" }, logo, logoLabel);
+	root.appendChild(logoRow);
+
+	const actionsSection = el("div", { className: "panel-section" });
+
+	const meetBtn = document.createElement("button");
+	meetBtn.className = "btn btn-primary";
+
+	if (isMeetTab && meetingId) {
+		meetBtn.textContent = `Record Meeting · ${meetingId}`;
+		meetBtn.addEventListener("click", () => {
+			const msg: Record<string, unknown> = { type: "START_MEET", meetingId };
+			if (activeTabId !== undefined) msg.tabId = activeTabId;
+			sendMsg(msg);
+			window.close();
+		});
+	} else {
+		meetBtn.textContent = "Record Meeting";
+		meetBtn.disabled = true;
+		meetBtn.classList.add("btn--disabled");
+	}
+
+	const instrBtn = el("button", { className: "btn btn-secondary" }, "Record Instruction");
+	instrBtn.addEventListener("click", () => {
+		sendMsg({ type: "START_INSTRUCTION" });
+		window.close();
+	});
+
+	actionsSection.appendChild(meetBtn);
+	actionsSection.appendChild(instrBtn);
+
+	if (!isMeetTab || !meetingId) {
+		const hint = el("p", { className: "panel-hint" }, "Join a Google Meet to record a meeting");
+		actionsSection.appendChild(hint);
+	}
+
+	root.appendChild(actionsSection);
+	root.appendChild(el("div", { className: "panel-divider" }));
+
+	const devicesSection = el("div", { className: "panel-section" });
+	devicesSection.appendChild(el("p", { className: "panel-section-label" }, "Devices"));
+
+	let micEnabled = settings.micEnabled !== false;
+	let micDeviceId = settings.micDeviceId ?? "";
+
+	const { meterEl, bars } = buildMicMeter();
+
+	const micSelect = document.createElement("select");
+	micSelect.className = "device-select";
+	micSelect.disabled = !micEnabled;
+
+	const micToggleWrap = createToggleEl("mic-toggle", micEnabled);
+	const micToggleInput = micToggleWrap.querySelector("input") as HTMLInputElement;
+
+	const micRow = el("div", { className: "device-row" },
+		el("span", { className: "device-row-label" }, "Mic"),
+		micToggleWrap,
+		micSelect,
+		meterEl,
+	);
+	devicesSection.appendChild(micRow);
+
+	function updateMicState(): void {
+		micSelect.disabled = !micEnabled;
+		if (micEnabled) {
+			meterEl.classList.remove("mic-meter--off");
+			startMicMeter(micDeviceId, bars);
+		} else {
+			meterEl.classList.add("mic-meter--off");
+			teardownMic();
+			for (const bar of bars) bar.classList.remove("mic-bar--active");
+		}
+	}
+
+	micToggleInput.addEventListener("change", () => {
+		micEnabled = micToggleInput.checked;
+		sendMsg({ type: "SAVE_SETTINGS", settings: { micEnabled } });
+		updateMicState();
+	});
+
+	micSelect.addEventListener("change", () => {
+		micDeviceId = micSelect.value;
+		sendMsg({ type: "SAVE_SETTINGS", settings: { micDeviceId } });
+		if (micEnabled) startMicMeter(micDeviceId, bars);
+	});
+
+	populateDeviceSelect(micSelect, "audioinput", micDeviceId, { audio: true }).then(() => {
+		updateMicState();
+	}).catch(() => {
+		meterEl.classList.add("mic-meter--off");
+	});
+
+	let cameraEnabled = settings.cameraOverlay;
+	let cameraDeviceId = settings.cameraDeviceId ?? "";
+
+	const cameraSelect = document.createElement("select");
+	cameraSelect.className = "device-select";
+	cameraSelect.disabled = !cameraEnabled;
+
+	const cameraToggleWrap = createToggleEl("camera-toggle", cameraEnabled);
+	const cameraToggleInput = cameraToggleWrap.querySelector("input") as HTMLInputElement;
+
+	const cameraRow = el("div", { className: "device-row" },
+		el("span", { className: "device-row-label" }, "Camera"),
+		cameraToggleWrap,
+		cameraSelect,
+	);
+	devicesSection.appendChild(cameraRow);
+
+	cameraToggleInput.addEventListener("change", () => {
+		cameraEnabled = cameraToggleInput.checked;
+		cameraSelect.disabled = !cameraEnabled;
+		sendMsg({ type: "SAVE_SETTINGS", settings: { cameraOverlay: cameraEnabled } });
+	});
+
+	cameraSelect.addEventListener("change", () => {
+		cameraDeviceId = cameraSelect.value;
+		sendMsg({ type: "SAVE_SETTINGS", settings: { cameraDeviceId } });
+	});
+
+	populateDeviceSelect(cameraSelect, "videoinput", cameraDeviceId, { video: true }).catch(() => {});
+
+	root.appendChild(devicesSection);
+	root.appendChild(el("div", { className: "panel-divider" }));
+
+	const captureSection = el("div", { className: "panel-section" });
+	captureSection.appendChild(el("p", { className: "panel-section-label" }, "Capture scope"));
+
+	const scopeRow = el("div", { className: "scope-row" });
+
+	const scopes: Array<{ label: string; value: "picker" | "silent-tab" }> = [
+		{ label: "Screen / Window", value: "picker" },
+		{ label: "Tab", value: "silent-tab" },
+	];
+
+	for (const scope of scopes) {
+		const btn = document.createElement("button");
+		btn.className = `scope-btn${settings.captureMode === scope.value ? " scope-btn--active" : ""}`;
+		btn.textContent = scope.label;
+		btn.addEventListener("click", () => {
+			sendMsg({ type: "SAVE_SETTINGS", settings: { captureMode: scope.value } });
+			for (const child of Array.from(scopeRow.children)) {
+				child.classList.remove("scope-btn--active");
+			}
+			btn.classList.add("scope-btn--active");
+		});
+		scopeRow.appendChild(btn);
+	}
+
+	captureSection.appendChild(scopeRow);
+	root.appendChild(captureSection);
+	root.appendChild(el("div", { className: "panel-divider" }));
+
+	const footer = el("div", { className: "panel-footer" });
+	const settingsLink = el("button", { className: "link-btn" }, "Settings");
+	settingsLink.addEventListener("click", () => {
+		chrome.runtime.openOptionsPage();
+	});
+	footer.appendChild(settingsLink);
+	root.appendChild(footer);
 }
 
 function renderNotSignedIn(
@@ -142,88 +443,6 @@ function renderNotSignedIn(
 	root.appendChild(apiKeyInput);
 	root.appendChild(connectBtn);
 	root.appendChild(inlineMsg);
-}
-
-function renderIdleMeet(
-	root: HTMLElement,
-	meetingId: string,
-	activeTabId: number | undefined,
-	settings: ExtensionSettings,
-): void {
-	const logo = el("img", {
-		src: "icons/icon-128.png",
-		width: 32,
-		height: 32,
-		alt: "Cap",
-	} as unknown as Partial<HTMLImageElement>);
-
-	const recordMeetBtn = el(
-		"button",
-		{ className: "btn btn-primary" },
-		"Record this Meeting",
-	);
-	recordMeetBtn.addEventListener("click", () => {
-		const msg: Record<string, unknown> = { type: "START_MEET", meetingId };
-		if (activeTabId !== undefined) msg.tabId = activeTabId;
-		sendMsg(msg);
-		window.close();
-	});
-
-	const recordInstructionBtn = el(
-		"button",
-		{ className: "btn btn-secondary" },
-		"Record Instruction",
-	);
-	recordInstructionBtn.addEventListener("click", () => {
-		sendMsg({ type: "START_INSTRUCTION" });
-		window.close();
-	});
-
-	const autoLabel = settings.autoRecordOnMeet ? "On" : "Off";
-	const statusLine = el(
-		"p",
-		{ className: "status-line" },
-		`Auto-record on Meet: ${autoLabel} · `,
-	);
-	const settingsLink = el("button", { className: "link-btn" }, "Settings");
-	settingsLink.addEventListener("click", () => {
-		chrome.runtime.openOptionsPage();
-	});
-	statusLine.appendChild(settingsLink);
-
-	root.appendChild(logo);
-	root.appendChild(recordMeetBtn);
-	root.appendChild(recordInstructionBtn);
-	root.appendChild(statusLine);
-}
-
-function renderIdleNonMeet(root: HTMLElement): void {
-	const logo = el("img", {
-		src: "icons/icon-128.png",
-		width: 32,
-		height: 32,
-		alt: "Cap",
-	} as unknown as Partial<HTMLImageElement>);
-
-	const recordBtn = el(
-		"button",
-		{ className: "btn btn-primary" },
-		"Record Instruction",
-	);
-	recordBtn.addEventListener("click", () => {
-		sendMsg({ type: "START_INSTRUCTION" });
-		window.close();
-	});
-
-	const footnote = el(
-		"p",
-		{ className: "footnote" },
-		"On Google Meet pages, you can also record meetings.",
-	);
-
-	root.appendChild(logo);
-	root.appendChild(recordBtn);
-	root.appendChild(footnote);
 }
 
 function renderRecording(
@@ -402,6 +621,7 @@ function renderArming(root: HTMLElement): void {
 
 function render(data: PopupData): void {
 	stopTimer();
+	teardownMic();
 
 	const root = document.getElementById("root");
 	if (!root) return;
@@ -427,10 +647,8 @@ function render(data: PopupData): void {
 		renderError(popup, state);
 	} else if (state.kind === "arming") {
 		renderArming(popup);
-	} else if (isMeetTab && meetingId !== null) {
-		renderIdleMeet(popup, meetingId, activeTabId, settings);
 	} else {
-		renderIdleNonMeet(popup);
+		renderIdlePanel(popup, settings, isMeetTab, meetingId, activeTabId);
 	}
 
 	root.appendChild(popup);
@@ -463,9 +681,11 @@ async function getSettingsFromSW(): Promise<ExtensionSettings> {
 						autoRecordOnMeet: false,
 						autoRecordCountdownSec: 5,
 						micDeviceId: "",
+						micEnabled: true,
 						captureMode: "picker",
 						soundEnabled: true,
 						cameraOverlay: false,
+						cameraDeviceId: "",
 					});
 					return;
 				}
@@ -494,12 +714,12 @@ async function getStateFromSW(): Promise<ExtensionState> {
 function renderOnboarding(root: HTMLElement, onDone: () => void): void {
 	const wrap = el("div", { className: "onboarding" });
 
-	const logo = el("img", {
-		src: "icons/icon-128.png",
-		width: 48,
-		height: 48,
-		alt: "Cap",
-	} as unknown as Partial<HTMLImageElement>);
+	const logo = document.createElement("img");
+	logo.src = "icons/icon-128.png";
+	logo.width = 48;
+	logo.height = 48;
+	logo.alt = "Cap";
+
 	const heading = el("h1", {}, "Welcome to Cap");
 
 	const list = el(
@@ -583,8 +803,9 @@ async function init(): Promise<void> {
 	});
 }
 
-window.addEventListener("unload", () => {
+window.addEventListener("beforeunload", () => {
 	stopTimer();
+	teardownMic();
 });
 
 init().catch(() => {});

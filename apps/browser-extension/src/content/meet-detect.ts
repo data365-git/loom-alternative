@@ -153,8 +153,9 @@ const NUDGE_CSS = `
 
 .cap-nudge-container {
 	position: fixed;
-	bottom: 20px;
-	right: 20px;
+	top: 16px;
+	left: 50%;
+	transform: translateX(-50%);
 	z-index: 2147483647;
 	font-family: system-ui, sans-serif;
 	font-size: 14px;
@@ -164,7 +165,7 @@ const NUDGE_CSS = `
 }
 
 @keyframes cap-nudge-in {
-	from { opacity: 0; transform: translateY(12px); }
+	from { opacity: 0; transform: translateY(-12px); }
 	to   { opacity: 1; transform: translateY(0); }
 }
 
