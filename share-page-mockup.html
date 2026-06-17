@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Share Page Mockup</title>
+<style>
+	* { margin: 0; padding: 0; box-sizing: border-box; }
+
+	body {
+		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+		background: #fff;
+		color: #111;
+		min-height: 100vh;
+	}
+
+	/* ========== HEADER ========== */
+	.share-header {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		padding: 16px 24px;
+		gap: 12px;
+	}
+
+	.header-left {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.brand-badge {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 14px;
+		font-weight: 600;
+		color: #333;
+		white-space: nowrap;
+	}
+
+	.brand-badge .dot {
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		background: linear-gradient(135deg, #a78bfa, #7c3aed);
+		flex-shrink: 0;
+	}
+
+	.brand-badge .divider {
+		color: #d1d5db;
+		font-weight: 300;
+	}
+
+	.video-title {
+		font-size: 16px;
+		font-weight: 600;
+		color: #111;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.header-right {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.share-url-box {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		background: #f9fafb;
+		border: 1px solid #e5e7eb;
+		border-radius: 8px;
+		padding: 6px 12px;
+		font-size: 13px;
+		color: #6b7280;
+		max-width: 340px;
+		overflow: hidden;
+	}
+
+	.share-url-box .url-text {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.share-url-box .copy-btn {
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: #9ca3af;
+		flex-shrink: 0;
+	}
+
+	/* ========== AUTHOR ROW ========== */
+	.author-row {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 0 24px 12px;
+	}
+
+	.avatar {
+		width: 36px;
+		height: 36px;
+		border-radius: 50%;
+		background: #7c3aed;
+		color: #fff;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-weight: 600;
+		font-size: 14px;
+		flex-shrink: 0;
+	}
+
+	.author-info {
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+	}
+
+	.author-name {
+		font-size: 14px;
+		font-weight: 600;
+	}
+
+	.author-time {
+		font-size: 12px;
+		color: #9ca3af;
+	}
+
+	.shared-badge {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		padding: 4px 10px;
+		border: 1px solid #e5e7eb;
+		border-radius: 16px;
+		font-size: 13px;
+		color: #374151;
+		background: #fff;
+		cursor: pointer;
+	}
+
+	.shared-badge svg {
+		width: 12px;
+		height: 12px;
+	}
+
+	.owner-actions {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-left: auto;
+	}
+
+	.btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 7px 14px;
+		border-radius: 8px;
+		font-size: 13px;
+		font-weight: 500;
+		cursor: pointer;
+		border: 1px solid #e5e7eb;
+		background: #fff;
+		color: #374151;
+		white-space: nowrap;
+		transition: background 0.15s;
+	}
+
+	.btn:hover {
+		background: #f9fafb;
+	}
+
+	.btn-primary {
+		background: #111;
+		color: #fff;
+		border-color: #111;
+	}
+
+	.btn-primary:hover {
+		background: #333;
+	}
+
+	/* ========== MAIN CONTENT ========== */
+	.main-content {
+		display: flex;
+		gap: 20px;
+		padding: 0 24px 24px;
+		align-items: flex-start;
+	}
+
+	/* ========== VIDEO PLAYER ========== */
+	.video-area {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.video-player {
+		position: relative;
+		width: 100%;
+		aspect-ratio: 16 / 9;
+		background: #000;
+		border-radius: 12px;
+		overflow: hidden;
+	}
+
+	.video-thumbnail {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		opacity: 0.85;
+	}
+
+	.play-button-overlay {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: 72px;
+		height: 72px;
+		background: #3b82f6;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		box-shadow: 0 4px 24px rgba(59, 130, 246, 0.4);
+		transition: transform 0.15s;
+	}
+
+	.play-button-overlay:hover {
+		transform: translate(-50%, -50%) scale(1.08);
+	}
+
+	.play-button-overlay svg {
+		width: 28px;
+		height: 28px;
+		fill: #fff;
+		margin-left: 3px;
+	}
+
+	/* Video controls bar */
+	.video-controls {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		background: linear-gradient(transparent, rgba(0,0,0,0.7));
+		padding: 32px 16px 12px;
+	}
+
+	.progress-bar {
+		width: 100%;
+		height: 4px;
+		background: rgba(255,255,255,0.25);
+		border-radius: 2px;
+		margin-bottom: 10px;
+		cursor: pointer;
+		position: relative;
+	}
+
+	.progress-bar .progress-dot {
+		width: 10px;
+		height: 10px;
+		background: #fff;
+		border-radius: 50%;
+		position: absolute;
+		top: -3px;
+		left: 0;
+	}
+
+	.controls-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.controls-left, .controls-right {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.control-btn {
+		background: none;
+		border: none;
+		color: #fff;
+		cursor: pointer;
+		padding: 4px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		opacity: 0.9;
+	}
+
+	.control-btn:hover {
+		opacity: 1;
+	}
+
+	.time-display {
+		font-size: 13px;
+		color: #fff;
+		font-variant-numeric: tabular-nums;
+		margin-left: 4px;
+	}
+
+	/* ========== SIDEBAR ========== */
+	.sidebar {
+		width: 320px;
+		flex-shrink: 0;
+		border: 1px solid #e5e7eb;
+		border-radius: 12px;
+		background: #fff;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		max-height: 500px;
+	}
+
+	/* Tabs */
+	.sidebar-tabs {
+		display: flex;
+		border-bottom: 1px solid #e5e7eb;
+	}
+
+	.sidebar-tab {
+		flex: 1;
+		padding: 12px 8px;
+		font-size: 14px;
+		font-weight: 500;
+		text-align: center;
+		cursor: pointer;
+		color: #6b7280;
+		border-bottom: 2px solid transparent;
+		transition: all 0.15s;
+		background: none;
+		border-top: none;
+		border-left: none;
+		border-right: none;
+	}
+
+	.sidebar-tab:hover {
+		color: #111;
+	}
+
+	.sidebar-tab.active {
+		color: #111;
+		border-bottom-color: #111;
+	}
+
+	/* Analytics row */
+	.analytics-row {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		padding: 10px 16px;
+		border-bottom: 1px solid #f3f4f6;
+		font-size: 13px;
+		color: #6b7280;
+	}
+
+	.analytics-item {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.analytics-link {
+		color: #3b82f6;
+		text-decoration: none;
+		font-size: 13px;
+		margin-left: auto;
+	}
+
+	/* Comments area */
+	.comments-area {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		padding: 32px 16px;
+		text-align: center;
+		overflow-y: auto;
+	}
+
+	.empty-state-title {
+		font-size: 15px;
+		font-weight: 600;
+		margin-bottom: 4px;
+	}
+
+	.empty-state-subtitle {
+		font-size: 13px;
+		color: #9ca3af;
+	}
+
+	/* Comment input */
+	.comment-input-area {
+		padding: 12px 16px;
+		border-top: 1px solid #e5e7eb;
+	}
+
+	.comment-input-area textarea {
+		width: 100%;
+		border: 1px solid #e5e7eb;
+		border-radius: 8px;
+		padding: 10px 12px;
+		font-size: 13px;
+		font-family: inherit;
+		resize: vertical;
+		min-height: 48px;
+		outline: none;
+		transition: border-color 0.15s;
+	}
+
+	.comment-input-area textarea:focus {
+		border-color: #3b82f6;
+	}
+
+	.comment-input-area textarea::placeholder {
+		color: #9ca3af;
+	}
+
+	.comment-submit-btn {
+		display: inline-block;
+		margin-top: 8px;
+		padding: 6px 16px;
+		background: #f3f4f6;
+		border: none;
+		border-radius: 6px;
+		font-size: 13px;
+		color: #6b7280;
+		cursor: pointer;
+	}
+
+	.comment-submit-btn:hover {
+		background: #e5e7eb;
+		color: #374151;
+	}
+
+	/* ========== EMOJI TOOLBAR ========== */
+	.emoji-toolbar {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 4px;
+		padding: 20px 0 40px;
+	}
+
+	.emoji-pill {
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		background: #f9fafb;
+		border: 1px solid #e5e7eb;
+		border-radius: 999px;
+		padding: 8px 12px;
+	}
+
+	.emoji-btn {
+		width: 40px;
+		height: 40px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 22px;
+		border: none;
+		background: transparent;
+		border-radius: 50%;
+		cursor: pointer;
+		transition: background 0.15s, transform 0.1s;
+	}
+
+	.emoji-btn:hover {
+		background: #f3f4f6;
+		transform: scale(1.15);
+	}
+
+	.toolbar-divider {
+		width: 1px;
+		height: 24px;
+		background: #e5e7eb;
+		margin: 0 6px;
+	}
+
+	.comment-toolbar-btn {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 18px;
+		background: #111;
+		color: #fff;
+		border: none;
+		border-radius: 999px;
+		font-size: 14px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background 0.15s;
+	}
+
+	.comment-toolbar-btn:hover {
+		background: #333;
+	}
+
+	.comment-toolbar-btn .kbd {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 20px;
+		height: 20px;
+		background: rgba(255,255,255,0.2);
+		border-radius: 4px;
+		font-size: 11px;
+		font-weight: 600;
+	}
+
+	/* ========== BELOW-VIDEO TABS ========== */
+	.below-video-tabs {
+		margin-top: 16px;
+		border: 1px solid #e5e7eb;
+		border-radius: 12px;
+		background: #fff;
+		overflow: hidden;
+	}
+
+	.bv-tab-bar {
+		display: flex;
+		border-bottom: 1px solid #e5e7eb;
+	}
+
+	.bv-tab {
+		flex: 1;
+		padding: 12px 8px;
+		font-size: 14px;
+		font-weight: 500;
+		text-align: center;
+		cursor: pointer;
+		color: #6b7280;
+		border: none;
+		border-bottom: 2px solid transparent;
+		background: none;
+		transition: all 0.15s;
+	}
+
+	.bv-tab:hover { color: #111; }
+	.bv-tab.active { color: #111; border-bottom-color: #111; }
+
+	.bv-panel {
+		display: none;
+		max-height: 520px;
+		overflow-y: auto;
+		padding: 24px;
+	}
+
+	.bv-panel.active { display: block; }
+
+	.bv-panel h3 {
+		font-size: 15px;
+		font-weight: 600;
+		margin: 0 0 8px;
+	}
+
+	.bv-panel h3:not(:first-child) { margin-top: 20px; }
+
+	.bv-panel p {
+		font-size: 13px;
+		line-height: 1.65;
+		color: #374151;
+		margin: 0 0 8px;
+	}
+
+	.bv-panel ul {
+		margin: 0 0 8px;
+		padding-left: 20px;
+	}
+
+	.bv-panel li {
+		font-size: 13px;
+		line-height: 1.65;
+		color: #374151;
+		margin-bottom: 4px;
+	}
+
+	/* Tasks */
+	.task-group { margin-bottom: 20px; }
+	.task-group:last-child { margin-bottom: 0; }
+
+	.task-group-header {
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: #6b7280;
+		padding: 8px 0 6px;
+		border-bottom: 1px solid #f3f4f6;
+		margin-bottom: 4px;
+	}
+
+	.task-group-count {
+		display: inline-block;
+		margin-left: 6px;
+		padding: 1px 6px;
+		background: #f3f4f6;
+		border-radius: 8px;
+		color: #9ca3af;
+		font-weight: 600;
+		font-size: 10px;
+		letter-spacing: 0;
+	}
+
+	.task-card {
+		display: flex;
+		gap: 12px;
+		padding: 12px 0;
+		border-bottom: 1px solid #f3f4f6;
+	}
+
+	.task-card:last-child { border-bottom: none; }
+
+	.task-check {
+		width: 20px;
+		height: 20px;
+		border: 2px solid #d1d5db;
+		border-radius: 4px;
+		flex-shrink: 0;
+		margin-top: 1px;
+	}
+
+	.task-check.done {
+		background: #10b981;
+		border-color: #10b981;
+		position: relative;
+	}
+
+	.task-check.done::after {
+		content: '\2713';
+		color: #fff;
+		font-size: 12px;
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+	}
+
+	.task-body { flex: 1; }
+
+	.task-title {
+		font-size: 13px;
+		font-weight: 500;
+		color: #111;
+	}
+
+	.task-meta {
+		display: flex;
+		gap: 8px;
+		margin-top: 4px;
+		flex-wrap: wrap;
+	}
+
+	.task-tag {
+		font-size: 11px;
+		padding: 2px 8px;
+		border-radius: 4px;
+		background: #f3f4f6;
+		color: #6b7280;
+	}
+
+	.task-tag.owner { background: #ede9fe; color: #7c3aed; }
+	.task-tag.deadline { background: #fef3c7; color: #92400e; }
+
+	/* Transcript */
+	.transcript-entry {
+		display: flex;
+		gap: 12px;
+		padding: 12px;
+		border-radius: 10px;
+		margin-bottom: 4px;
+		transition: background 0.15s;
+		cursor: default;
+	}
+
+	.transcript-entry:hover { background: #f9fafb; }
+	.transcript-entry.active { background: #eff6ff; }
+
+	.transcript-avatar-col {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+		flex-shrink: 0;
+	}
+
+	.transcript-avatar {
+		width: 32px;
+		height: 32px;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 12px;
+		font-weight: 600;
+		color: #fff;
+		background: #475569;
+	}
+
+	.transcript-avatar.s2 { background: #7c3aed; }
+
+	.transcript-play {
+		width: 22px;
+		height: 22px;
+		border-radius: 50%;
+		border: none;
+		background: #f3f4f6;
+		color: #6b7280;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		transition: all 0.15s;
+		padding: 0;
+	}
+
+	.transcript-play:hover {
+		background: #3b82f6;
+		color: #fff;
+		transform: scale(1.1);
+	}
+
+	.transcript-play svg { width: 10px; height: 10px; }
+
+	.transcript-body { flex: 1; min-width: 0; }
+
+	.transcript-meta {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-bottom: 4px;
+		font-size: 12px;
+	}
+
+	.transcript-meta-time {
+		color: #9ca3af;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.transcript-meta-speaker { font-weight: 600; color: #374151; }
+	.transcript-meta-speaker.s2 { color: #7c3aed; }
+
+	.transcript-text {
+		color: #374151;
+		font-size: 13px;
+		line-height: 1.65;
+	}
+
+	/* Refined Transcript */
+	.refined-doc-intro {
+		padding: 16px 20px;
+		background: #f9fafb;
+		border-left: 3px solid #7c3aed;
+		border-radius: 6px;
+		margin-bottom: 24px;
+	}
+
+	.refined-doc-intro-label {
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: #7c3aed;
+		margin-bottom: 6px;
+	}
+
+	.refined-doc-intro-text {
+		font-size: 13px;
+		line-height: 1.65;
+		color: #374151;
+	}
+
+	.refined-section { margin-bottom: 24px; }
+	.refined-section:last-child { margin-bottom: 0; }
+
+	.refined-section-title {
+		font-size: 15px;
+		font-weight: 600;
+		color: #111;
+		margin-bottom: 2px;
+	}
+
+	.refined-time-badge {
+		font-size: 11px;
+		color: #9ca3af;
+		font-variant-numeric: tabular-nums;
+		margin-bottom: 10px;
+		display: block;
+	}
+
+	.refined-para {
+		font-size: 13px;
+		line-height: 1.75;
+		color: #374151;
+		margin: 0 0 10px;
+		text-align: justify;
+	}
+
+	.refined-para:last-child { margin-bottom: 0; }
+
+	/* ========== RESPONSIVE ========== */
+	@media (max-width: 900px) {
+		.main-content {
+			flex-direction: column;
+		}
+
+		.sidebar {
+			width: 100%;
+			max-height: none;
+		}
+
+		.share-url-box {
+			display: none;
+		}
+	}
+</style>
+</head>
+<body>
+
+<!-- ======== HEADER ======== -->
+<header class="share-header">
+	<div class="header-left">
+		<div class="brand-badge">
+			<span class="dot"></span>
+			data365
+			<span class="divider">|</span>
+		</div>
+		<span class="video-title">Sayt reklama uchun formani sozlash</span>
+	</div>
+
+	<div class="header-right">
+		<div class="share-url-box">
+			<span class="url-text">https://cap-web-production-4817.up.railway.app/s/fns5dg0m5...</span>
+			<button class="copy-btn" title="Copy link">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+			</button>
+		</div>
+	</div>
+</header>
+
+<!-- ======== AUTHOR ROW ======== -->
+<div class="author-row">
+	<div class="avatar">S</div>
+	<div class="author-info">
+		<span class="author-name">Bunyod</span>
+		<span class="author-time">18 minutes ago</span>
+	</div>
+
+	<button class="shared-badge">
+		Shared
+		<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/></svg>
+	</button>
+
+	<div class="owner-actions">
+		<button class="btn">
+			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg>
+			Edit video
+		</button>
+		<button class="btn">
+			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+			View analytics
+		</button>
+		<button class="btn btn-primary">Go to dashboard</button>
+	</div>
+</div>
+
+<!-- ======== MAIN CONTENT ======== -->
+<div class="main-content">
+
+	<!-- Video Area -->
+	<div class="video-area">
+		<div class="video-player">
+			<!-- Replace this div with actual <video> or thumbnail image -->
+			<div style="width:100%; height:100%; background:#1a1a1a; display:flex; align-items:center; justify-content:center;">
+				<div style="color:#666; font-size:13px;">Video thumbnail area</div>
+			</div>
+
+			<!-- Play button -->
+			<div class="play-button-overlay">
+				<svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+			</div>
+
+			<!-- Controls -->
+			<div class="video-controls">
+				<div class="progress-bar">
+					<div class="progress-dot"></div>
+				</div>
+				<div class="controls-row">
+					<div class="controls-left">
+						<button class="control-btn" title="Play">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+						</button>
+						<button class="control-btn" title="Rewind">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+						</button>
+						<button class="control-btn" title="Forward">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+						</button>
+						<button class="control-btn" title="Volume">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg>
+						</button>
+						<span class="time-display">0:00 / 45:46</span>
+					</div>
+					<div class="controls-right">
+						<button class="control-btn" title="Captions">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 12h2m4 0h4M7 16h10"/></svg>
+						</button>
+						<button class="control-btn" title="Settings">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+						</button>
+						<button class="control-btn" title="Picture-in-picture">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><rect x="12" y="9" width="8" height="6" rx="1"/></svg>
+						</button>
+						<button class="control-btn" title="Fullscreen">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+	<!-- Below-Video Tabs -->
+	<section class="below-video-tabs">
+		<div class="bv-tab-bar">
+			<button class="bv-tab active" data-target="panel-summary">Summary</button>
+			<button class="bv-tab" data-target="panel-tasks">Tasks</button>
+			<button class="bv-tab" data-target="panel-transcript">Transcript</button>
+			<button class="bv-tab" data-target="panel-refined">Refined Transcript</button>
+		</div>
+
+		<!-- ===== SUMMARY ===== -->
+		<div id="panel-summary" class="bv-panel active">
+			<h3>Umumiy ma'lumot</h3>
+			<p>Bunyodbek (Data365 asoschisi va direktori) va Jahongir aka (davlat korxonasi bo'lim boshlig'i) o'rtasidagi ~46 daqiqalik tanishuv uchrashuvi. Uchrashuv davomida Data365 kompaniyasining tarixi, xizmat yo'nalishlari taqdim etildi va Jahongir akaning korxonasidagi raqamlashtirish ehtiyojlari muhokama qilindi. Asosiy mavzular: HR tizimi, GPS monitoring, buxgalteriya/1C muammolari va gaz qidiruv jarayonini raqamlashtirish.</p>
+
+			<h3>Asosiy mavzular</h3>
+			<ul>
+				<li>Data365 tarixi: Korzinka/Makro smart-cart loyihasi (16 yoshda), Pyaterochka investitsiyasi, Amazon parallel</li>
+				<li>M-factor (Hasan-Husan Mamasaidovlar) va Alisher Isoyev yonida ishlash tajribasi</li>
+				<li>Data365 ning 4 yo'nalishi: SaaS (tayyor dasturlar), custom development (noldan), internet do'konlar, sotuvchi saytlar</li>
+				<li>Jahongir akaning ehtiyojlari: HR keldi-ketdi tizimi, 400+ avtomobil uchun GPS monitoring, buxgalteriya/1C real-vaqt muammosi, gaz qidiruv jarayonini raqamlashtirish</li>
+				<li>Davlat korxonalari cheklovlari: Visa orqali to'lov muammosi, serverlar O'zbekistonda bo'lishi sharti, axborot xavfsizligi talablari</li>
+				<li>Gaz qidiruv jarayoni: fleshkada ma'lumot tashish, baza-filial-boshqarma zanjiri, cheling komissiya — hozir to'liq qo'lda</li>
+				<li>BPMN audit metodologiyasi: blok-sxema, TZ, soatlik hisob-kitob, fazama-faza ishlanish, video darsliklar</li>
+				<li>NDA shartnoma, patent imkoniyatlari va xalqaro bozorga chiqish istiqboli</li>
+				<li>Otkat masalasi va qadriyatlar — ikki tomon ham rad etdi</li>
+			</ul>
+
+			<h3>Kelishilgan keyingi qadamlar</h3>
+			<ul>
+				<li>Suhrob orqali texnik vazifa shablonlari va hujjat namunalarini jo'natish</li>
+				<li>Jahongir aka o'z jamoasida maslahatlashib, audit o'tkazish masalasini hal qilish</li>
+				<li>Dushanba yoki seshanba kuni aloqaga chiqish va keyingi uchrashuvni belgilash</li>
+				<li>Gaz qidiruv jarayoni bo'yicha batafsil texnik vazifa tayyorlash (Jahongir aka jamoasi)</li>
+				<li>Audit narxi va ko'lamini aniqlashtirish uchun ikkinchi uchrashuv</li>
+			</ul>
+		</div>
+
+		<!-- ===== TASKS ===== -->
+		<div id="panel-tasks" class="bv-panel">
+
+			<div class="task-group">
+				<div class="task-group-header">Tanishuv va dastlabki aloqa <span class="task-group-count">2</span></div>
+				<div class="task-card">
+					<div class="task-check done"></div>
+					<div class="task-body">
+						<div class="task-title">Tanishuv uchrashuvi o'tkazish va Data365 taqdimoti</div>
+						<div class="task-meta">
+							<span class="task-tag owner">Bunyodbek</span>
+							<span class="task-tag">Bajarildi</span>
+						</div>
+					</div>
+				</div>
+				<div class="task-card">
+					<div class="task-check"></div>
+					<div class="task-body">
+						<div class="task-title">Texnik vazifa shablonlari va hujjat namunalarini jo'natish</div>
+						<div class="task-meta">
+							<span class="task-tag owner">Suhrob</span>
+							<span class="task-tag deadline">Dushanba kuni</span>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="task-group">
+				<div class="task-group-header">Audit va texnik tayyorgarlik <span class="task-group-count">3</span></div>
+				<div class="task-card">
+					<div class="task-check"></div>
+					<div class="task-body">
+						<div class="task-title">Ichki jamoadan gaz qidiruv texnik tafsilotlarini yig'ish</div>
+						<div class="task-meta">
+							<span class="task-tag owner">Jahongir</span>
+							<span class="task-tag deadline">Keyingi hafta</span>
+						</div>
+					</div>
+				</div>
+				<div class="task-card">
+					<div class="task-check"></div>
+					<div class="task-body">
+						<div class="task-title">Audit o'tkazish haqida qaror qabul qilish (o'zlari yoki Data365)</div>
+						<div class="task-meta">
+							<span class="task-tag owner">Jahongir</span>
+							<span class="task-tag deadline">Maslahatlashgandan keyin</span>
+						</div>
+					</div>
+				</div>
+				<div class="task-card">
+					<div class="task-check"></div>
+					<div class="task-body">
+						<div class="task-title">Buxgalteriya/1C muammolari bo'yicha alohida yig'ilish rejalashtirish</div>
+						<div class="task-meta">
+							<span class="task-tag owner">Bunyodbek</span>
+							<span class="task-tag owner">Jahongir</span>
+							<span class="task-tag deadline">Keyingi uchrashuv</span>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="task-group">
+				<div class="task-group-header">Huquqiy va xavfsizlik <span class="task-group-count">2</span></div>
+				<div class="task-card">
+					<div class="task-check"></div>
+					<div class="task-body">
+						<div class="task-title">NDA shartnoma loyihasini tayyorlash</div>
+						<div class="task-meta">
+							<span class="task-tag owner">Bunyodbek</span>
+							<span class="task-tag deadline">Audit oldidan</span>
+						</div>
+					</div>
+				</div>
+				<div class="task-card">
+					<div class="task-check"></div>
+					<div class="task-body">
+						<div class="task-title">Patent imkoniyatlarini o'rganish (gaz qidiruv tizimi uchun)</div>
+						<div class="task-meta">
+							<span class="task-tag owner">Jahongir</span>
+							<span class="task-tag">Uzoq muddatli</span>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="task-group">
+				<div class="task-group-header">Logistika <span class="task-group-count">1</span></div>
+				<div class="task-card">
+					<div class="task-check"></div>
+					<div class="task-body">
+						<div class="task-title">Ofisga tashrif buyurish (Bobur park yonida, Yakkasaroy)</div>
+						<div class="task-meta">
+							<span class="task-tag owner">Jahongir</span>
+							<span class="task-tag deadline">Kelasi hafta</span>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="task-group">
+				<div class="task-group-header">Keyingi qadam <span class="task-group-count">1</span></div>
+				<div class="task-card">
+					<div class="task-check"></div>
+					<div class="task-body">
+						<div class="task-title">Dushanba yoki seshanba kuni aloqaga chiqish va keyingi uchrashuvni belgilash</div>
+						<div class="task-meta">
+							<span class="task-tag owner">Bunyodbek</span>
+							<span class="task-tag deadline">Dushanba/seshanba</span>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</div>
+
+		<!-- ===== TRANSCRIPT ===== -->
+		<div id="panel-transcript" class="bv-panel">
+			<div class="transcript-entry" data-seconds="2"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 0:02"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">0:02</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Xo'p, Jahongir aka, qisqa tanishtirib o'taman o'zimni. O'zi qancha vaqtimiz bor, shunga qarab men moslashardim.</div></div></div>
+			<div class="transcript-entry" data-seconds="8"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 0:08"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">0:08</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">15-20 minut nari-beri. Gaplashsak bo'ladimi shunaqa? Keyin men ham ishimni qilaman, sizlar ham.</div></div></div>
+			<div class="transcript-entry" data-seconds="16"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 0:16"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">0:16</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Ha bo'ldi, menimcha 15-20 minut yetib ortadi deb o'ylayman, ko'ramiz qani. Xo'p.</div></div></div>
+			<div class="transcript-entry" data-seconds="22"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 0:22"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">0:22</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Ismim Bunyodbek, bu korxonamizni 5 yil oldin boshlaganmiz. O'zi yoshligimiz o'sha IT sohasida o'tgan yoshlikdan, otamiz qiziqtirganlar IT-ga, tadbirkorlikka. Asosiy farqimiz biz o'sha tadbirkorlikni, biznesni ichida yurganmiz va tushunishimizda qolgan IT kompaniyalarga nisbatan. Birinchi biz texnologik loyihani, shu IT loyihani 16 yoshda qilganman men. Nima qilganman? Korzinka bilan Makroda o'zi butun dunyoda bunga o'xshagan retail do'konlardagi muammo bu navbat kutib qolishingiz. Ayniqsa soat 5-6 larda borib qolsangiz yoki bayram kunlari borib qolsangiz, asablaringiz buzilib ketadi. Shu muammoni hal qilish uchun biz to'liq kassani olib tashlamoqchi edik. Qanaqa qilib desa, teleshka, ya'ni korzinkani ichiga siz mahsulotlarni tashlaysiz, o'zi avtomatik hisoblaydi, hisoblab sizga mana bu ko'rib turgan ekraningizda ko'rsatib beradi. Ko'rsatib beradi va to'lov do'kon kassasiga borib o'tirmaysiz, shu qurilmanining o'ziga kartadan yoki to'lov tizimidan scanner qilib turib to'lab ketaveradigan loyiha qilmoqchi bo'ldik. Birinchi versiyalar endi bu darajada ideal emas edi, lekin 300 ga yaqin aparatura yasadik. Xitoydan komplektovushiy mikrokontrollerlarni olib kelib bir-biriga ulab, qo'yib, haligi 3D qoliplarni o'zimiz yasab, nechta laboratoriyalarga bordik 3D chiqaradigan qoliplarni. Bir amallab keyin olib kelib oldik yaxshi bir qolipga. O'zimiz haligi Xiaomi-ning powerbanklarini 20000 talik modifikatsiyalar qilib uni joylab, har balo qilib ko'rdik xullas. Oxiri kirdik. Korzinkaning to'rtta filialiga kirib bordik oxirgi versiyamizni yasab turib, keyin Makroning ikkita filialiga kirdik. Rossiyadan bizga bir 1 million dollar atrofida investitsiya chiqdi, faqat O'zbekistonda qoyillatgin, keyin Rossiyaga olib kiramiz dedi, Pyaterochkaning investorlari. Qoyillata olmadik O'zbekistonda, chunki na bir biznes qurish bo'yicha, na bir sotish bo'yicha, na bu texnik taraflari bo'yicha bizda umuman tajriba yo'q edi. To'rtta bosh, beshta bola 30 ming pul bilan 'va' bosamiz deb dush bilan boshladik. Oxirigacha bormadi aytganimdek. Noto'g'ri paytda, noto'g'ri odamlar, noto'g'ri bozorda boshlab qo'ydi bu loyihani. Bizdan bir yarim yil keyin Amazon-ni bilsangiz kerak, to'g'rimi?</div></div></div>
+			<div class="transcript-entry" data-seconds="142"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 2:22"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">2:22</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Ha, bilaman.</div></div></div>
+			<div class="transcript-entry" data-seconds="143"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 2:23"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">2:23</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Amazon-da xuddi shu loyihani qilishdi, faqat yaxshiyam ertaroq tugatibmiz, chunki millionlab dollar ketib qolgan ular qilgan loyihaga. Tepaga potolokka yuzlab kameralar qo'yib tashlagan, sun'iy intellekt ulagan, har bitta polkaga tarozi qo'yib chiqqan, mahsulot necha grammli mahsulotni kim olganini bilish uchun. Umuman kassa yo'q. Xuddi biz xohlagan holatda ideal variantda, lekin millionlab dollar ketgan. Hozirgacha kengaymadi, chunki tannarx aytaylik biz hal qilmoqchi bo'lgan narsaning tannarxi 1000 so'm bo'lsa, muammoning o'zi 100 so'm. Ya'ni muammodan ko'ra tannarx qimmatga tushib ketgani uchun bu loyiha hech qayerda haligacha o'xshagani yo'q. Yaqinda ham bir, bir yillar oldin Sarvar aka nimaning asoschisi, Payme-ning asoschisi chiqib ketdilar-ku O'zbekistondan, keyin o'zlari qilib ko'rdilar har xil loyihalar. Turkiyada shunga o'xshagan loyiha qilib ko'rdilar, ularda ham o'xshamadi bu narsa. Xullas kalom, keyin bu loyihani o'xshamagandan keyin M-factor-ga bordim men. Bizga ustoz kerak ekan endi, o'zimiz o'zboshimchalik qilib bir narsalarni boshlab ko'rdik, unaqa o'xshadi, demak, ustozni qattiq ushlashimiz kerak ekan degan fikr hosil bo'ldi va M-factor-ga bordik. M-factor Hasan-Husan Mamasaidovlar bilan taniysiz kerak, to'g'rimi?</div></div></div>
+			<div class="transcript-entry" data-seconds="211"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 3:31"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">3:31</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Mmm, mmm.</div></div></div>
+			<div class="transcript-entry" data-seconds="212"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 3:32"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">3:32</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Hasan-Husan akaning yonida taxminan ikki yilcha bo'ldik, karantin davri ozgina kirib, o'tib boshlagunigacha. Keyin u yoqdan Alisher akaning yoniga o'tdik. Bu yoqda asosan loyiha menejeri bo'lib ishlaganmiz, keyin sohamiz asosan media ishlari bo'lgani uchun, menga uncha qiziq bo'lmadi to'g'risi media. Ikki yilcha loyiha menejeri bo'lib ishladim. Keyin Alisher aka yoniga bordik, Alisher aka yonida ham deyarli shunga o'xshagan ish. Hali Alisher Isoyev mashhur emas edilar. Borib ishlarni to'g'rilab, noldan... endi akademiyani boshlagan paytlari edi. Media qismi, IT qismi hammasini hal qildik, ishlar tizimlashgandan keyin mana shu Data365 korxonasini, siz bilan gaplashib turgan korxonamizni ochdik. Biz kichik va o'rta biznesni avtomatlashtirish bilan shug'ullanamiz. Xo'p, shu paytgacha aytganimdek, besh yilda 150 dan ortiq mijozlar bilan ishlaganmiz, bu yerda hozir 50 ta eski slide bo'lgani uchun 50 ta deb ko'rsatilgan, ataki 150 tadan oshgan. Bu ma'lum kopchiligi taniydigan odamlaringiz bo'lsa kerak, mana shu tadbirkorlar bilan ishlaganmiz. Undan tashqari mana shu mashhur brendlar bilan ishlaganmiz. Alisher akani ham kuzatib turardimmi?</div></div></div>
+			<div class="transcript-entry" data-seconds="275"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 4:35"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">4:35</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Nima deysiz? Alisher akani ham kuzatib turaman ko'p deyman, mmm.</div></div></div>
+			<div class="transcript-entry" data-seconds="281"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 4:41"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">4:41</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Mmm, shular bilan bir yarim yilcha ishladik. Keyin ularning o'zida qarasak, tadbirkorlar keladi, men savdoimni oshiraman deydi, kelgandan keyin muammo nima savdoni oshiraman desa, tizim yo'q. Xuddi teshik chelakka o'xshaydi, quyaveradi-quyaveradi, bu yoqda teshik, suv oqib tushib ketaveradi. Qarasak, shu muammo bor ekan, biz buni qanaqa qilib hal qila olamiz IT orqali desak, o'zimiz IT-da yoshlikdan beri bo'lganimizga avtomatlashtirish bilan yordam bera olar ekanmiz. Qaysi qismdan boshlash kerak desa, o'sha CRM qismidan boshladik o'sha paytda tadbirkorlarga ko'proq sotuv qiziq edi. Sotuv qismini avtomatlashtirishdan boshlab, keyin-keyin noldan xohlagan tizimni, ERP tizimini quradigan darajaga mana hozir chiqqanmiz allaqachon. Keyindan beri shunaqa tizimni quramiz.</div></div></div>
+			<div class="transcript-entry" data-seconds="330"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 5:30"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">5:30</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Birinchi yo'nalishimiz SaaS yo'nalishi deyiladi. SaaS nima? Software as a service deyiladi. Bu tayyor dasturlar bor, noldan velosiped ixtiro qilish shartmas ko'p joyda. Shunaqa joy bo'ladigan bo'lsa, biz birinchi o'zi har doim mijozlar bilan ishlashdan oldin audit qilamiz. Chunki ikkita bir xil biznes bilan ishlaganimizda ham umuman bir-biriga to'g'ri kelmaydigan case-lar ko'p bo'ladi. Tadbirkorlar aytishadi bizga: "Aka, mana buni qilibsiz-ku mana bu biznesga, mana shu o'xshaydigan bir xil biznes ekan-ku, shuni prosto copy-copy qilib bersangiz bo'lmaydimi, nusxalab bizga ham" deydi, keyin borganimizda umuman boshqa narsa bo'lib chiqadi. SaaS bo'limida bir 20 tacha dastur bor. Biz Amerikadan, Rossiyadan, Ukrainadan hamkorlikka olgan uchta yo'nalish: sotuv yo'nalishi, qurilish yo'nalishi, ta'lim yo'nalishi bo'yicha olgan tizimlarimiz bor. Ikkinchi yechimimiz bu, boshqa ko'chada tayyor dastur bo'lsa jo'natamiz. Uchinchisi, agar ikkita yo'nalish bo'yicha tayyor dasturlar tushmasa, biz noldan dastur o'zimiz yasab beramiz. Uchinchi yo'nalishimiz internet do'konlar. To'rtinchi yo'nalishimiz bu veb-saytlar, sotuvchi veb-saytlar yasaymiz. Endi aka, siz muammoingizni tushuntirsangiz nima bo'lyapti, qanaqa bo'lyapti, nima yechim xohlayapsiz bizdan, qanaqa yordam bera olamiz?</div></div></div>
+			<div class="transcript-entry" data-seconds="517"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 8:37"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">8:37</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Hozir men o'zim davlat korxonasida ishlayman, bitta bo'limning rahbariman. Endi raqamlashtirish bo'yicha topshiriq olganman. Xo'p, raqamlashtirish korxonamizda mana bu xodimlarning keldi-ketdisi bo'yicha hozir markazlashgan bitta dastur olganmiz, uni markazlashtiryapmiz hozir, oxirgi yakunlovchi bosqichiga yetib qoldik ham. HR bo'yicha. Keyin 400 dan ortiq, 500 ga yaqin avtomobil bor bizda. Bizniki gaz bo'yicha o'sha qidiruv ishlari bo'yicha-da.</div></div></div>
+			<div class="transcript-entry" data-seconds="580"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 9:40"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">9:40</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Mmm.</div></div></div>
+			<div class="transcript-entry" data-seconds="583"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 9:43"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">9:43</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">400 dan ortiq mashinamiz bor edi, unga ham yechim qildik, anavi eski dasturdan yangi dasturga o'tib, kerakli natijani olyapmiz undan ham. GPS-lar bo'yicha edi ikkinchisi. Endi uchinchisi ishlab chiqarishimiz bilan bog'liq, to'rtinchisi keyin mana bu buxgalteriya, hisobotlar bilan bog'liq bo'ladi-da. Sizlarda o'sha birinchi, ikkinchi yo'nalishingiz bo'yicha bizda ish bor.</div></div></div>
+			<div class="transcript-entry" data-seconds="619"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 10:19"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">10:19</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Aha.</div></div></div>
+			<div class="transcript-entry" data-seconds="621"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 10:21"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">10:21</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">O'sha omborimiz bo'yicha, buxgalteriyamiz bo'yicha hozir ishlab turgan dasturlar bor, 1C bo'yicha ishlaydi ular. 1C-da ishlaydi, lekin real vaqt rejimida ishlamayapti. Misol uchun otchyot oladigan bo'lsak, bir oydan keyin, kechikib, mana shunga o'xshagan narsalar. Keyin bundan tashqari, ikkinchi sohangiz bo'yicha hali raqamlashmagan, bizning ishlab chiqarishimiz bo'yicha.</div></div></div>
+			<div class="transcript-entry" data-seconds="663"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 11:03"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">11:03</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Mmm.</div></div></div>
+			<div class="transcript-entry" data-seconds="665"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 11:05"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">11:05</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Viloyatlarda, anavi Qoraqalpog'istonda, Qashqadaryoda, keyin Buxoroda, o'sha yerda asosan ishlab chiqarishimiz o'sha yerda-da. Dala poligonlarida gaz qidirish bilan shug'ullanamiz-da.</div></div></div>
+			<div class="transcript-entry" data-seconds="711"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 11:51"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">11:51</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Gaz qidirish dedingizmi?</div></div></div>
+			<div class="transcript-entry" data-seconds="714"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 11:54"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">11:54</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Mmm. Bu lekin raqamlashmagan, inson omili ko'p, monitoring qiladi, har bittasini to'g'ri-noto'g'riligini ko'rib chiqadi, raqamlashmagan-da xullas bu. Shuni bir audit qilish kerak. O'sha anchadan beri men qidirib yuribman endi, butun O'rta Osiyo, SNG bo'yicha ham, Yevropada ham, boshqa davlatlarda ham yo'q ekan-da hozir. U raqamlashmagan bizning soha.</div></div></div>
+			<div class="transcript-entry" data-seconds="780"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 13:00"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">13:00</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">A, ulardan tayyor andoza olamiz desak ham...</div></div></div>
+			<div class="transcript-entry" data-seconds="788"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 13:08"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">13:08</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Ha, tayyor olamiz desak ham, yo'q, bizda ham yo'q. Internetdan ham, chatgipitidan ham, sun'iy intellektdan ham qidirib ko'rdim men, topilmaydi-da xullas u. Unga dastur yozdirishimiz mumkin, lekin uni ish sharoiti... Uni texniklarimiz ham bor, talabi qanaqa bo'ladi, qanaqa file-lar bilan ishlanadi, qaysi server-larda o'tiradi, mutaxassisimiz yetarli. U bo'yicha qanaqa savol bo'ladigan bo'lsa, javob bera oladigan odamimiz bor, faqat o'shani bitta monitoring qilib, dastur qilsa bo'ladimi yo'qmi, moddiy mablag' qanaqaga aylanadi, necha pulga tushadi, qilingan vigodno-mi, ne vigodno-mi. Shunisini bir ko'rib, gaplashib olishimiz kerak. Xullas, ikkita masalamiz bor. Bittasi buxgalteriya, hisobot bo'yicha, ikkinchisi o'sha ishlab chiqarishimiz bilan bog'liq.</div></div></div>
+			<div class="transcript-entry" data-seconds="818"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 13:38"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">13:38</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Qaysi biri ko'proq yonib turibdi?</div></div></div>
+			<div class="transcript-entry" data-seconds="821"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 13:41"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">13:41</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Ko'proq yonib turgani ikkalasi ham ko'proq yonib turibdi. Endi ishlab chiqarishimizni qilsak, ko'pchilikka foydali bo'lardi, realniy narsa ko'rilardi-da u yerda. Katta natija kutyapmiz endi.</div></div></div>
+			<div class="transcript-entry" data-seconds="838"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 13:58"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">13:58</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Jahongir aka, qarang. Men bundan oldin davlat korxonalari bilan ishlaganimda, tayyor yechimlar mana shunaqa bor deb birinchi yo'nalishimizni tushuntirganimizda asosiy bo'ladigan muammo tayyor dasturlarga peresishleniye qilib pul o'tkazib bo'lmaydi-da juda ko'pida. Vizadan to'laysiz pulni, shu har bitta xodimga, boshqaga o'sha tarifikka qarab turib pul to'lanadi. Mana shu muammoni sizlar qanaqa hal qilmoqchisizlar?</div></div></div>
+			<div class="transcript-entry" data-seconds="919"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 15:19"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">15:19</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Yo'q, hali unisigacha bormadik-da, chunki o'zi tegi yo'q dasturni.</div></div></div>
+			<div class="transcript-entry" data-seconds="927"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 15:27"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">15:27</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Mmm. Misol, aytaylik, tayyor dastur chiqib qoladigan bo'lsa, bir esimda yo'q hozir qaysi korxona bilan... davlat qaysidir tashkilot chiqdi bizga. Bizda shu vazifalarni nazorat qilishda muammo bo'lyapti, vazifalar tushadi-da og'zaki, boshqa-boshqa bo'ladi-da, esdan chiqib ketadi. Shuning uchun bitta tizim bo'lsaki, o'sha vazifalarni hammasini boshqara olsak. "Mana mana bu tizim bor, oling, ishlating, mana shuni qo'yib beramiz xohlasangiz" dedik. To'g'ri kelmadi oxiri. Sababi, birinchidan o'sha podpiska puli vizada to'lash kerak bo'lib chiqdi. Ikkinchi muammo, server muammosi, ya'ni qonunchilikda bizning ma'lumotlar mana shu yerda turishi kerak degan masala bor. Sizlarda ham shu ikkita muammo bormi demoqchiman men.</div></div></div>
+			<div class="transcript-entry" data-seconds="994"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 16:34"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">16:34</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Bor, bor, bor, bor, bor. Axborot xavfsizligi bor.</div></div></div>
+			<div class="transcript-entry" data-seconds="999"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 16:39"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">16:39</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Mmm.</div></div></div>
+			<div class="transcript-entry" data-seconds="1001"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 16:41"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">16:41</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">E, bor, bor, bor. Ikkita muammomiz bor mana shunaqa. Endi anavi to'lov tizimini hali ungacha yetib bormadik u bo'lishi, nima qo'yishi, lekin u ham muammo. Serverlar o'zlarida bo'lishi kerak degan talab bor.</div></div></div>
+			<div class="transcript-entry" data-seconds="1051"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 17:31"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">17:31</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">U serverni o'zimizda deganda, sizlarda qanaqadir o'sha O'zbekistonning...</div></div></div>
+			<div class="transcript-entry" data-seconds="1059"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 17:39"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">17:39</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">O'zbekistonniki, O'zbekistonniki, to'g'rimi?</div></div></div>
+			<div class="transcript-entry" data-seconds="1061"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 17:41"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">17:41</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Ha, geografik sizlarda bo'lishi shartmas, to'g'rimi? Korxonaning ichida bo'lishi shartmas-ku, to'g'rimi, binolarning ichida?</div></div></div>
+			<div class="transcript-entry" data-seconds="1066"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 17:46"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">17:46</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Yo'q, yo'q, yo'q.</div></div></div>
+			<div class="transcript-entry" data-seconds="1068"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 17:48"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">17:48</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">A unda tayyor serverlar bor u, Uztelecom o'zining serverlari bor, o'sha bilan ishlab baribir qo'ysak bo'ladi.</div></div></div>
+			<div class="transcript-entry" data-seconds="1075"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 17:55"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">17:55</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Uzinfocom-niki bor, ha, o'sha Uzinfocom shunga o'xshagan narsalar bilan ishlashyapti-ku hozir O'zbekistonda milliy dasturchilar ham.</div></div></div>
+			<div class="transcript-entry" data-seconds="1093"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 18:13"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">18:13</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Yana bitta narsa, nima davlat korxonalariga haligidek qonunchilik eshitgandim. Faqatgina Uzinfocom-midi? Faqat IT dasturlarini davlat korxonasiga qilib beradigan korxonamidi, Uzinfocom-midi, shulargagina qilish mumkin degan narsani eshitgandim.</div></div></div>
+			<div class="transcript-entry" data-seconds="1117"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 18:37"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">18:37</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Yo'q, yo'q, ulaqa narsa yo'q. O'zingizni o'sha tegishli hujjatlaringiz, guvohnomangiz bo'ladigan bo'lsa, sizniki ham milliy brendga qo'shilib ketishi kerak, mana shunaqa deb eshitgandim, o'zingiznikini kuchaytiringlar deb yozishibdi-ku.</div></div></div>
+			<div class="transcript-entry" data-seconds="1127"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 18:47"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">18:47</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Bo'ldi, xo'p bo'lmasa qarang, bir boshidan hozir ishlab chiqarishning o'zida nima muammo bor, siz ko'rayotgan muammolar?</div></div></div>
+			<div class="transcript-entry" data-seconds="1139"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 18:59"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">18:59</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Xo'p, ishlab chiqarishda bizniki geologik razvedka-da, gazniki, neftniki. Men umumiy qilib tushuntiraman sizga. Ma'lum bir hudud belgilanadi, misol uchun Ustyurt regionida, Qoraqalpog'istonda-da, ma'lum bir hudud belgilanadi, mutaxassislar tomonidan har bitta kvadrat santimetri o'lchab chiqilinadi-da ularni bor yoki yo'qligiga. O'sha maxsus texnikalar bor, avtomobillar bor, signal orqali baza, podbaza deymiz-ku, bazaga ma'lumot uzatadi, bazadan keyin filialga yetib boradi u, fleshkada olib yana borishadi-da u narsani.</div></div></div>
+			<div class="transcript-entry" data-seconds="1247"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 20:47"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">20:47</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Baza, fleshkada olib boriladimi u narsa?</div></div></div>
+			<div class="transcript-entry" data-seconds="1249"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 20:49"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">20:49</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Ha, fleshkada olib boriladi u narsalar. O'ziga tegishli chastotalari, signal, elektro qurilmalar orqali aniqlanadi u. Keyin fleshkada uni filialga olib boradi, uni keyin obrabotka qilishadi, uni ichini ko'rib, tozalanadigan shovqin deydi, shu shovqinlarni tozalab, keyin boshqarmaga jo'natadi. Boshqarmada alohida ikkita yo'nalish bor, shuni ko'rib, yana o'rganadi-da, keyin oxirida zaklyucheniye beradigan cheling komissiya bor. Shu cheling komissiya ko'rib chiqadi uni, cheling komissiya ko'rgandan keyin loyiha topshiriladi. Endi biz ham zakazga ishlanadi-da bizda ham.</div></div></div>
+			<div class="transcript-entry" data-seconds="1307"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 21:47"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">21:47</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Aha.</div></div></div>
+			<div class="transcript-entry" data-seconds="1367"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 22:47"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">22:47</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Qarang, sizlarda anaqa bormi o'zi, mana hozir gaplashyapmiz, konkret texnik vazifa bormi, ruschasiga tehnicheskoye zadaniye deydi?</div></div></div>
+			<div class="transcript-entry" data-seconds="1385"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 23:05"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">23:05</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Zadaniye bor, bor, bor. Yana nima qilish kerak, muammoni baribir hozir gaplashganimizdan ko'p gaplashamiz. Menimcha o'sha hujjat jo'natsak osonroq bo'ladi bir-birimizni tushunishimiz, biz o'qib chiqamiz-da.</div></div></div>
+			<div class="transcript-entry" data-seconds="1398"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 23:18"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">23:18</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Tuzi-tuzi bo'ladi-da, ha, tuzi bo'ladi.</div></div></div>
+			<div class="transcript-entry" data-seconds="1414"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 23:34"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">23:34</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Mmm, men aytayotganim sababi biz mana bunaqa tartibda ishlaymiz-da, hozir men sizga ko'rsataman.</div></div></div>
+			<div class="transcript-entry" data-seconds="1425"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 23:45"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">23:45</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Siz yurgan sohani biz og'zaki tushunib ololmaymiz baribir, o'shanga...</div></div></div>
+			<div class="transcript-entry" data-seconds="1481"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 24:41"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">24:41</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Telefondaman.</div></div></div>
+			<div class="transcript-entry" data-seconds="1484"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 24:44"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">24:44</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Ha, biz har doim ishlashdan oldin mana bunaqa hujjatlar bor-da. Bir 10 taga yaqin loyihani boshlashdan oldin hujjat tayyorlab olamiz. O'shalardan eng asosiysi bu BPMN degan narsa bor. BPMN, endi inglizcha so'z bu, Business Process Model and Notation deyiladi, ya'ni o'zbekchada biznes jarayon xaritasi. Blok sxema bo'ladi. Bu nimaga kerak desa, biz shundoq qarab turib tushunib ololamiz nima bo'layotganini bu yerda. Fleshka olinadi, u bo'ladi, bu bo'ladi deyapsiz, start bor, shu startdan to ma'lumot oxiriga yetguncha A dan B gacha nima jarayonlar bor, jarayonlar nechta, hammasi mana shunaqa blok sxema qilib chiziladi. Shunda bizga ma'lum bo'ladi, ha, mana bu uchta zonaga bir hafta vaqt ketayotgan ekan, bu bir haftani biz sekundga tushira olamiz. Sekundga tushirsak, necha pul tejayapmiz, qancha vaqt tejayapmiz degan matematicheskiy sizga ayta olamiz.</div></div></div>
+			<div class="transcript-entry" data-seconds="1612"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 26:52"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">26:52</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Men buni ko'rganman, Bunyodbek. Hozir buni o'zinglar qilasizlarmi audit o'tkazib, yo buni ham qilib beraylikmi?</div></div></div>
+			<div class="transcript-entry" data-seconds="1621"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 27:01"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">27:01</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Qanaqa bo'ladi tartibi?</div></div></div>
+			<div class="transcript-entry" data-seconds="1623"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 27:03"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">27:03</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Agar mana bunaqa byudjet bo'ladigan bo'lsa, o'zimiz qilib berganimiz yaxshi, ichiga kirib. Yo bizda salohiyat yetadi, bundan umuman muammo yo'q desangiz, o'zingiz qilib bersangiz ham hech qanaqa bizga muammosi yo'q.</div></div></div>
+			<div class="transcript-entry" data-seconds="1634"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 27:14"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">27:14</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Ha, mana shu narsalar chiqib olgandan keyin, bu yerda hozir bittasini ko'rsatdim men, eng muhimidan bittasi. Keyin bunga qarab TZ yoziladi, parallel, yana bir 6-7 xil hujjat bor. Ular chiqqandan keyin, keyin narx tayyor bo'ladi. Narx xuddi qurilishga o'xshaydi-da bizning soha ham. Har bitta narsani biz yozib olamiz, guruhlarga bo'lamiz, guruhlarning ichida vazifachalar bo'ladi. Har bitta vazifaga keyin uzun dokument bo'ladi. Soat qo'yib chiqamiz keyin. Bu dizayn bilan development deyilgan. Dizayn degani chizmalar chizishga qancha vaqt ketadi, development degani o'sha dasturlashga qancha vaqt ketadi. Birinchi tannarx qancha chiqyapti, bizda qaysi dasturchini ishlatyapmiz, qanaqa kvalifikatsiyadagi dasturchini ishlatyapmiz, shunga qarab turib narx kelib chiqadi.</div></div></div>
+			<div class="transcript-entry" data-seconds="1720"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 28:40"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">28:40</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Keyin qarang, savolim. Bu produkt tayyor bo'lgandan keyin, shartnoma qilib oldik, hamma narsani qilib berdingiz, misol uchun, uni kodlari bilan, hamma narsasi bilan berasizlarmi? Qanaqa bo'ladi u tartib? Uni kopya qilib, boshqa bo'lib ketib qolmaydimi demoqchiman-da.</div></div></div>
+			<div class="transcript-entry" data-seconds="1735"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 28:55"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">28:55</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Yo'q, bu o'zi avvalo shartnoma qilamiz. NDA degan shartnoma bor, ya'ni sizning ma'lumotlaringiz sizib chiqmasligi haqida, biz har bitta xodim bilan ham NDA qilamiz o'zi, dasturchi bilan, kattaroq loyihalarda. Xavfsizlik muhim bo'lgan loyihalarda NDA qilamiz biz, xodimlar bilan ham. Mana o'zaro biz xodim ishlatsak, xodim bilan ham qilinadi va o'zaro ham qilamiz siz bilan.</div></div></div>
+			<div class="transcript-entry" data-seconds="1783"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 29:43"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">29:43</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Mmm.</div></div></div>
+			<div class="transcript-entry" data-seconds="1785"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 29:45"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">29:45</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Tez berib turib ishlatib boshlaymiz, keyin sekin-sekin fazama-faza ketamiz, har bitta faza tasdiqlov bilan ishlanadi. Tasdiqlaysiz yoki kim mas'ul bo'lsa tasdiqlashga, tasdiqlaydi: "Ha, men qabul qildim, roziman" deyiladi, keyin boshqa fazaga o'tib turib shunaqa tartibda ishlanadi. Fazalar bitib bo'lingandan keyin, keyin obucheniye qilinadi. Ko'pincha online qilamiz, har bitta bo'limlari bo'yicha online darslik qilib chiqiladi. Shuning uchun videodarslik qilib beramiz, qayta-qayta ko'raveradi darslikni. Loyihaning o'zimiz avval ichki test qilamiz, ichki test bo'lganimizdan keyin sizga beramiz, cheklangan odam bilan ishlatib ko'ramiz.</div></div></div>
+			<div class="transcript-entry" data-seconds="1903"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 31:43"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">31:43</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Ma'lum, o'shani... uni yana bir gaplashamiz. Keyingi haftalarga bir aloqaga chiqaman, mana shu audit bo'yicha.</div></div></div>
+			<div class="transcript-entry" data-seconds="1915"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 31:55"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">31:55</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Bo'ldi, bo'ldi.</div></div></div>
+			<div class="transcript-entry" data-seconds="1917"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 31:57"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">31:57</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Bizda odam bo'lsa... men endi boshqa joylar bilan ham ishlaganman-da, bundan tashqari. U yerda anavi ko'rsatgan narsangizni ko'rganman. Bu yerda imkoniyati bormi yo'qmi, agar uni bilsak, yo'q, o'zinglar qilib beraveringlar desak, to'lov bo'ladimi unga, bo'lmaydimi u auditga?</div></div></div>
+			<div class="transcript-entry" data-seconds="1935"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 32:15"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">32:15</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Audit mana bunaqa. Agar bittada bu butun loyiha gaplashadigan bo'lsak, u audit ichida bo'lib ketadi, narxni qo'shib yuboramiz ichiga. Agar yo'q, birinchi audit qilaylik deyiladigan bo'lsa, audit alohida pullik bo'ladi.</div></div></div>
+			<div class="transcript-entry" data-seconds="1966"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 32:46"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">32:46</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Audit qilingandan keyin buni yaxshi tarafi bor, bir marta audit qilib olasiz-u, buni biz to'liq IT-proyektga moslashtiramiz-u, aytaylik, biz bilan ishlamasangiz ham bu hujjatda hech qanaqa savol tug'ilmaydi, birorta IT jamoaga beradigan bo'lsangiz, shundoq olib, qilib ketadi, hech qanaqa savolsiz.</div></div></div>
+			<div class="transcript-entry" data-seconds="1985"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 33:05"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">33:05</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Tushundim.</div></div></div>
+			<div class="transcript-entry" data-seconds="1992"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 33:12"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">33:12</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Ko'lamini bitta ko'rganimizdan keyin, nechta bola olib olishim kerak men, nechta odam focus-da, qanaqa kvalifikatsiyadagi bolalarni tortaman jamoadan, shunga qarab turib, keyin men sizga hisoblab bera olaman auditni. Kichkinaroq loyihada odatda biz auditni bir yarim mingdan boshlaymiz. Borib ichini analiz qilib, uch kun ichida hamma protsesslarni chizib chiqamiz, keyin srazу ish boshlaymiz.</div></div></div>
+			<div class="transcript-entry" data-seconds="2025"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 33:45"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">33:45</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Bo'ldi, bo'ldi, tushundim. Siz u yerda menejersiz-a?</div></div></div>
+			<div class="transcript-entry" data-seconds="2035"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 33:55"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">33:55</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Bu loyihani boshlaydigan bo'lsak, loyiha menejeri... korxona egasiligidan tashqari, korxona egasi o'zimman, korxona egasidan tashqari loyiha menejmentini o'zim qilaman kattaroq loyihalarda. Kichkinaroq loyiha bo'ladigan bo'lsa, kichkinaroq loyihaga yana bolalar bor.</div></div></div>
+			<div class="transcript-entry" data-seconds="2054"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 34:14"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">34:14</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Tushunarli.</div></div></div>
+			<div class="transcript-entry" data-seconds="2057"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 34:17"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">34:17</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Agar anaqa qilsa, patentlash rejamiz ham bor-da buni. Agar o'xshasa.</div></div></div>
+			<div class="transcript-entry" data-seconds="2065"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 34:25"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">34:25</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Patent masalalarini men tushunmayman, lekin kerakli mutaxassisimizni tortib, unga moslashtirib qilishda menimcha muammo ko'rmayman.</div></div></div>
+			<div class="transcript-entry" data-seconds="2076"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 34:36"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">34:36</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Hozir... endi ishonib gapiraveraman endi, birinchi ko'rgan bo'lsak ham. Tegida hozir shuni mo'ljallab turibman, lekin bu agar qila olsak katta loyiha bo'ladi, boshqa joylarga ham, bizdan tashqari odamlarga ham, mamlakatlarga ham manfaatli bo'ladi. O'shaning uchun ko'p ham ochiqlagim ham kelmayapti-da bir tomondan-da. Agar bo'lsa, konkretniy odam bo'ladigan bo'lsa, u bilan ishlab turib, oxiriga yetkazib, boshqa bozorga ham o'tkazish niyati bor.</div></div></div>
+			<div class="transcript-entry" data-seconds="2114"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 35:14"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">35:14</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Jahongir aka qarang, bizning o'zimizga kuchimiz yetmaydigan narsa bo'ladigan bo'lsa, tanishlar juda ko'p komandaga tortishga. Shunaqa odamlar bor, Uskartlarda ishlagan tanishlar bor, hozirgacha Uskartning polniy arxitekturasini qurgan odamlar tanishlarimiz bor, ko'p. O'zimizning salohiyatimiz yetmasa, yo ishni topshiramiz, yo ishni komandaga odam olishda bizda umuman muammo yo'q.</div></div></div>
+			<div class="transcript-entry" data-seconds="2173"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 36:13"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">36:13</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Yo'q yaxshi, bu katta ish bo'lardi agar bo'lsa.</div></div></div>
+			<div class="transcript-entry" data-seconds="2179"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 36:19"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">36:19</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Bo'ldi, bo'lmasa Bunyodbek, men bitta maslahatlashay keyingi haftaga. Anaqasini o'ziga qilishadimi, misol uchun modulini, algoritmning o'ziga tuzishadimi, tuzishmaydimi, o'sha audit o'tkazishda.</div></div></div>
+			<div class="transcript-entry" data-seconds="2204"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 36:44"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">36:44</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Bo'ldi, bo'ldi, men hujjatlar turlarini bo'lmasa sizga Suhrob jo'natib qo'yadilar, shuni ko'rib, shablonlar bilan jo'natishadi, o'shanga qarab qanchalik qila olishadi, qila olmaydi, aytsangiz bo'ladi.</div></div></div>
+			<div class="transcript-entry" data-seconds="2234"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 37:14"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">37:14</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Sizlarning joyinglar qayerda joylashgan?</div></div></div>
+			<div class="transcript-entry" data-seconds="2236"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 37:16"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">37:16</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Bobur parkda, Bobur park tarafdamiz biz.</div></div></div>
+			<div class="transcript-entry" data-seconds="2240"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 37:20"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">37:20</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Qayerida Bobur parkning?</div></div></div>
+			<div class="transcript-entry" data-seconds="2241"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 37:21"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">37:21</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Xo'p, Yakkasaroy nimasi bor-ku asosiy chorrahasi, o'shandan bitta oldingi chorrahada, Bobur parkining yonidan suv bo'yida park bor.</div></div></div>
+			<div class="transcript-entry" data-seconds="2568"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 42:48"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">42:48</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Bo'ldi, bo'ldi, men u yerda yaxshi bilaman. Agar boradigan bo'lsam, aytib, maslahatga boraman. Mana bu hozir bizda shanba odatda, endi dushanbadan boshlab vaziyatga qarab, vaqtga qarab kirib chiqiladi.</div></div></div>
+			<div class="transcript-entry" data-seconds="2587"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 43:07"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">43:07</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Yana bitta nuqtani kelishib olaylik, Jahongir aka, otkat masalalari boshqalarni biz unaqa ishlamaymiz, shuni oldindan ogohlantirib qo'yay. Qadriyatlarimizga to'g'ri kelmaydi. Agar oldindan mana shunaqa masalalarda kelishadigan joylarimiz bo'lib qoladi deydigan bo'lsangiz, bizda anavi qizil bayroq ko'tarishimiz kerak bo'ladi.</div></div></div>
+			<div class="transcript-entry" data-seconds="2608"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 43:28"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">43:28</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Yo'q, men uch-to'rtta joy bilan ishlaganman, hali birovga unaqa taklif ham qilmaganman, birovdan bir so'm pul ham olmaganman u bo'yicha, ishonishingiz mumkin.</div></div></div>
+			<div class="transcript-entry" data-seconds="2623"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 43:43"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">43:43</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Bo'ldi, bo'ldi.</div></div></div>
+			<div class="transcript-entry" data-seconds="2627"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 43:47"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">43:47</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Bizning qadriyatlarga ham to'g'ri kelmaydi.</div></div></div>
+			<div class="transcript-entry" data-seconds="2632"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 43:52"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">43:52</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Bo'ldi, bo'ldi, kelishib olarkanmiz unda, xudo xohlasa.</div></div></div>
+			<div class="transcript-entry" data-seconds="2642"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 44:02"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">44:02</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Mayli Jahongir aka, aloqadamiz bo'lmasa, salomat bo'ling.</div></div></div>
+			<div class="transcript-entry" data-seconds="2651"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 44:11"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">44:11</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Mayli, salomat bo'ling.</div></div></div>
+			<div class="transcript-entry" data-seconds="2654"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 44:14"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">44:14</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Jahongir aka, men hozir sizga lokatsiyalarimizni va kerakli fayllar bo'ladi-yu, o'shalarni hammasini tashlab qo'yaman. Xudo xohlasa, dushanba keldi, dushanbalarga aloqaga chiqsam bo'ladimi aka sizga?</div></div></div>
+			<div class="transcript-entry" data-seconds="2685"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 44:45"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">44:45</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Men o'zim anaqa qilaman, dushanba kuni gaplashsak, vaqtingizga qarab-da, meniyam kirib, tushuntirib beradigan odamim bor-da u yerda.</div></div></div>
+			<div class="transcript-entry" data-seconds="2719"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 45:19"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">45:19</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Bo'ldi, men sizga anaqa...</div></div></div>
+			<div class="transcript-entry" data-seconds="2745"><div class="transcript-avatar-col"><div class="transcript-avatar s2">J</div><button class="transcript-play" title="Jump to 45:45"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">45:45</span><span class="transcript-meta-speaker s2">Jahongir</span></div><div class="transcript-text">Seshanba kuni kechgacha bo'ladi, ungacha ham ataki qilaman nasib bo'lsa.</div></div></div>
+			<div class="transcript-entry" data-seconds="2746"><div class="transcript-avatar-col"><div class="transcript-avatar">B</div><button class="transcript-play" title="Jump to 45:46"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,4 20,12 6,20"/></svg></button></div><div class="transcript-body"><div class="transcript-meta"><span class="transcript-meta-time">45:46</span><span class="transcript-meta-speaker">Bunyodbek</span></div><div class="transcript-text">Xo'p Jahongir aka, aloqadamiz bo'lmasa, salomat bo'ling, mayli, ishlaringizga rivoj. Salomat bo'ling.</div></div></div>
+		</div>
+
+		<!-- ===== REFINED TRANSCRIPT ===== -->
+		<div id="panel-refined" class="bv-panel">
+
+			<div class="refined-doc-intro">
+				<div class="refined-doc-intro-label">Uchrashuv hisoboti</div>
+				<div class="refined-doc-intro-text">
+					<strong>Ishtirokchilar:</strong> Bunyodbek (Data365 asoschisi), Jahongir (davlat korxonasi bo'lim boshlig'i) ·
+					<strong>Davomiyligi:</strong> ~46 daqiqa ·
+					<strong>Maqsad:</strong> Data365 xizmatlari bilan tanishtirish va korxonadagi raqamlashtirish ehtiyojlarini muhokama qilish
+				</div>
+			</div>
+
+			<div class="refined-section">
+				<div class="refined-section-title">1. Ochilish va vaqt kelishuvi</div>
+				<span class="refined-time-badge">0:00 — 0:00:22</span>
+				<p class="refined-para">Uchrashuv qisqa tanishtiruv bilan boshlandi. Vaqt cheklovi 15-20 daqiqa qilib belgilandi va ikkala tomon ham bu muddat asosiy mavzularni qamrab olishi uchun yetarli ekanini tasdiqladi.</p>
+			</div>
+
+			<div class="refined-section">
+				<div class="refined-section-title">2. Korzinka/Makro smart-cart loyihasi</div>
+				<span class="refined-time-badge">0:00:22 — 0:02:22</span>
+				<p class="refined-para">Data365 ning asoschisi 5 yil oldin korxonani ochishdan ancha avval, 16 yoshida, o'zining birinchi IT loyihasini boshlagan: Korzinka va Makro do'konlari uchun kassasiz to'lov tizimi. G'oya oddiy edi — xaridor mahsulotlarni teleshka ichiga tashlaydi, qurilma avtomatik tarzda hisoblaydi va ekranda ko'rsatadi, to'lov esa to'g'ridan-to'g'ri qurilmadan karta orqali amalga oshiriladi.</p>
+				<p class="refined-para">Texnik tomondan 300 ga yaqin qurilma yig'ilgan: Xitoydan mikrokontrollerlar olib kelingan, 3D bosma qoliplari mahalliy laboratoriyalarda yasalgan, hatto Xiaomi powerbanklari modifikatsiya qilingan. Qurilmalar Korzinkaning to'rtta va Makroning ikkita filialida sinovdan o'tkazilgan. Pyaterochka investorlari tomonidan taxminan 1 million dollarlik investitsiya taklif qilingan, lekin O'zbekistonda loyihani kerakli darajaga olib chiqishning iloji bo'lmagan — jamoa biznes qurish, sotish va texnik jihatlar bo'yicha yetarli tajribaga ega emasdi. Loyiha noto'g'ri vaqtda, noto'g'ri bozorda boshlanganligi sababli to'xtatildi.</p>
+			</div>
+
+			<div class="refined-section">
+				<div class="refined-section-title">3. Amazon parallel va tannarx muammosi</div>
+				<span class="refined-time-badge">0:02:23 — 0:03:31</span>
+				<p class="refined-para">Loyiha to'xtatilganidan taxminan bir yarim yil keyin Amazon xuddi shu g'oya ustida ishlay boshladi: shifrga yuzlab kameralar, har bir polkaga tarozi, sun'iy intellekt asosidagi monitoring. Millionlab dollar sarflanganiga qaramay, tizim hozirgacha keng tatbiq etilmadi. Asosiy sabab — yechimning tannarxi hal qilinayotgan muammoning qiymatidan ancha yuqori bo'lib qoldi. Shu yo'nalishda Payme asoschisi Sarvar Asilov ham Turkiyada o'xshash loyihani sinab ko'rgan, ammo natija bo'lmagan.</p>
+				<p class="refined-para">Bu tajriba mustaqil yondashuvning chegaralarini ko'rsatdi va ustozga ehtiyoj borligini tushuntirdi. Shundan so'ng Bunyodbek M-factor jamoasiga — Hasan va Husan Mamasaidovlar tomoniga o'tgan.</p>
+			</div>
+
+			<div class="refined-section">
+				<div class="refined-section-title">4. M-factor va Alisher Isoyev davri</div>
+				<span class="refined-time-badge">0:03:32 — 0:05:30</span>
+				<p class="refined-para">M-factor jamoasida taxminan ikki yil davomida, asosan karantingacha bo'lgan davrda loyiha menejeri sifatida ishlash tajribasi orttirildi. Jamoa asosan media sohasiga ixtisoslashgani uchun bu yo'nalish uzoq qiziqish uyg'otmadi. Keyingi bosqich Alisher Isoyev jamoasida bo'ldi — Alisher aka hali keng tanilmagan, akademiyani endigina boshlagan davri edi. U yerda media va IT yo'nalishlari tizimlashtirildi.</p>
+				<p class="refined-para">Bu davrda tadbirkorlar bilan ishlashda doimiy muammo sezildi: ko'p korxonalarda savdo o'sishi uchun tizim yetishmas edi — Bunyodbek buni "teshik chelakka suv quyilganday" deb tasvirladi. Avtomatlashtirish CRM tizimlaridan boshlandi va vaqt o'tishi bilan noldan to'liq ERP tizimlarini ishlab chiqish darajasiga yetildi. Aynan shu bosqichdan keyin Data365 mustaqil korxona sifatida tashkil etildi.</p>
+			</div>
+
+			<div class="refined-section">
+				<div class="refined-section-title">5. Data365 ning 4 yo'nalishi</div>
+				<span class="refined-time-badge">0:05:30 — 0:08:37</span>
+				<p class="refined-para">Korxona to'rtta asosiy yo'nalish bo'yicha xizmat ko'rsatadi. <strong>Birinchi yo'nalish — SaaS yechimlari.</strong> Bunda Amerika, Rossiya va Ukrainadan olingan tayyor distribuciya dasturlari (masalan, Bitrix24) bozorga moslashtiriladi. Har bir mijoz bilan ishlashdan oldin audit o'tkaziladi: agar Data365 ning yechimlari mos kelmasa, mijozga bozordagi boshqa mahsulotlar (masalan, Bills) xolisona tavsiya qilinadi.</p>
+				<p class="refined-para"><strong>Ikkinchi yo'nalish — noldan dastur ishlab chiqish.</strong> Tayyor yechim topilmagan holatlarda murakkab tizimlar to'liq buyurtma asosida yaratiladi. <strong>Uchinchi yo'nalish — internet do'konlar:</strong> oddiy kataloglardan tortib sun'iy intellekt integratsiyali murakkab elektron tijorat platformalarigacha. <strong>To'rtinchi yo'nalish — sotuvchi veb-saytlar:</strong> shunchaki taqdimot saytlari emas, balki konversiyaga yo'naltirilgan, dizayn va matnga e'tibor qaratilgan saytlar.</p>
+				<p class="refined-para">Korxonaning besh yillik faoliyati davomida 150 dan ortiq mijoz bilan ish olib borilgan. Shundan so'ng Bunyodbek Jahongir akadan o'z korxonasidagi muammolar va kutilayotgan yechimlar haqida so'zlab berishini so'radi.</p>
+			</div>
+
+			<div class="refined-section">
+				<div class="refined-section-title">6. Korxona ehtiyojlari va raqamlashtirish holati</div>
+				<span class="refined-time-badge">0:08:37 — 0:13:38</span>
+				<p class="refined-para">Jahongir akaning korxonasi davlat sektoriga tegishli bo'lib, unga raqamlashtirish bo'yicha topshiriq berilgan. Hozirgi vaqtda HR (xodimlar keldi-ketdisi) tizimi markazlashtirish yakuniy bosqichida, 400-500 ta avtomobil uchun GPS monitoring esa eski dasturdan yangi yechimga o'tkazilgan. Buxgalteriya 1C platformasida ishlasa-da, real-vaqt rejimida emas — hisobotlar taxminan bir oy kechikish bilan tayyorlanadi. Ishlab chiqarish yo'nalishi — gaz qidiruv — esa umuman raqamlashmagan holatda qoladi.</p>
+				<p class="refined-para">Geologik razvedka ishlari Qoraqalpog'iston, Qashqadaryo va Buxoro viloyatlarining dala poligonlarida olib boriladi. Bu soha nafaqat O'zbekistonda, balki butun O'rta Osiyo, MDH va Yevropa bo'yicha ham raqamlashmagan: internet, ChatGPT va sun'iy intellekt asosidagi qidiruvlar tayyor yechimni topib bera olmadi.</p>
+				<p class="refined-para">Korxonada texnik mutaxassislar yetarli bo'lib, har qanday savolga javob bera oladigan ishlab chiqarish bo'yicha yillar tajribasiga ega xodimlar mavjud. Yechilishi kerak bo'lgan asosiy masalalar — monitoring tizimini dasturlash, moddiy mablag' va samaradorlikni hisoblash. Ikki ustuvor yo'nalish aniqlandi: buxgalteriya/hisobot va ishlab chiqarish.</p>
+			</div>
+
+			<div class="refined-section">
+				<div class="refined-section-title">7. Davlat korxonalari uchun cheklovlar</div>
+				<span class="refined-time-badge">0:13:58 — 0:18:47</span>
+				<p class="refined-para">Avvalgi davlat korxonalari bilan ishlash tajribasi shuni ko'rsatdiki, tayyor SaaS yechimlarni joriy etishda ikkita asosiy to'siq yuzaga keladi. Birinchisi — to'lov tizimi: ko'pchilik xalqaro SaaS platformalariga obuna haqi Visa orqali to'lanadi, bu esa davlat korxonalari uchun tartiblangan emas. Ikkinchisi — ma'lumotlar saqlovi: qonunchilik talabiga ko'ra ma'lumotlar O'zbekiston hududidagi serverlarda turishi kerak. Aynan shu ikki masala oldingi loyihalarni to'xtatib qo'ygan.</p>
+				<p class="refined-para">Jahongir akaning korxonasida ham xuddi shu cheklovlar amal qiladi, jumladan axborot xavfsizligi talablari. Server hududi to'g'risida aniqlik kiritildi: server jismonan korxona binosida bo'lishi shart emas, asosiysi — u O'zbekiston jurisdiksiyasida joylashgan bo'lsin. Bu Uztelecom yoki Uzinfocom serverlari orqali hal qilinishi mumkin. Shuningdek, raqamlashtirish bo'yicha xizmatni faqat Uzinfocom-niki davlat korxonalariga ko'rsata olishi haqidagi qoida tasdiqlanmadi: tegishli guvohnoma va milliy brendga qo'shilish sharti bilan boshqa mahalliy kompaniyalar ham bu sohada faoliyat yurita oladi.</p>
+			</div>
+
+			<div class="refined-section">
+				<div class="refined-section-title">8. Gaz qidiruv jarayoni</div>
+				<span class="refined-time-badge">0:18:59 — 0:23:34</span>
+				<p class="refined-para">Geologik razvedka ishlari quyidagi tartibda olib boriladi. Avval ma'lum bir hudud (masalan, Ustyurt regioni) belgilanadi, so'ng mutaxassislar har bir kvadrat santimetrni o'lchab chiqishadi. Maxsus texnika va avtomobillar elektromagnit signallar orqali ma'lumotni mahalliy bazaga uzatadi. Bazadan ma'lumot fleshka orqali filialga olib boriladi, u yerda obrabotka — shovqin tozalash — amalga oshiriladi. Tozalangan ma'lumot boshqarmaga jo'natiladi, ikkita yo'nalish bo'yicha qayta tahlil qilinadi va oxirida cheling komissiya yakuniy xulosa beradi. Buyurtma loyihasi shu xulosa asosida topshiriladi.</p>
+				<p class="refined-para">Korxonada texnik vazifa (TZ) hujjati mavjud, ammo soha o'ziga xosligi tufayli og'zaki tushunish qiyin — hujjatni elektron tarzda almashish bir-birini tushunishni ancha osonlashtirishi belgilab o'tildi.</p>
+			</div>
+
+			<div class="refined-section">
+				<div class="refined-section-title">9. BPMN va audit metodologiyasi</div>
+				<span class="refined-time-badge">0:24:44 — 0:28:40</span>
+				<p class="refined-para">Data365 har bir loyihani boshlashdan oldin taxminan o'nta hujjatni tayyorlaydi. Bularning eng muhimi — BPMN (Business Process Model and Notation) chizmasi: jarayonning blok-sxemasi shaklida tasviri, A nuqtadan B nuqtagacha bo'lgan barcha qadamlarni qamrab oladi. Bu chizma orqali aniq ko'rinadiki, ayrim bosqichlarga haftalab vaqt sarflanmoqda va ularni sekundlar darajasiga tushirib bo'ladi. Natijada qancha vaqt, qancha mablag' tejalishini aniq matematik tarzda hisoblab chiqish mumkin.</p>
+				<p class="refined-para">Metodologiya uy qurilishi jarayoniga o'xshatildi: avval arxitekturaviy chizma, keyin smeta, faqat shundan keyin qurilish. Auditdan so'ng texnik vazifa hujjati yoziladi, vazifalar guruhlarga taqsimlanadi, har biriga dizayn va dasturlash vaqti, mutaxassis kvalifikatsiya darajasi va shunga qarab narx aniqlanadi. Operatsion xarajatlar va marja ustiga qo'shilib, mijozga to'liq shaffof jadval taqdim etiladi.</p>
+				<p class="refined-para">Jahongir aka bu tipdagi hujjatlarni avvalroq ham ko'rganini bildirdi. Auditni Data365 ham o'tkazishi mumkin, korxonaning o'z jamoasi ham — har ikkala variant maqbul deb topildi.</p>
+			</div>
+
+			<div class="refined-section">
+				<div class="refined-section-title">10. NDA, fazalar, test va o'qitish</div>
+				<span class="refined-time-badge">0:28:40 — 0:33:45</span>
+				<p class="refined-para">Mahsulot tugatilgandan keyin manba kodi va boshqa intellektual mulk mijozga topshirilishi, hech kim tomonidan ruxsatsiz ko'paytirilmasligiga oid savol ko'tarildi. Bu masala NDA shartnomasi orqali tartibga solinadi: shartnoma nafaqat tomonlar o'rtasida, balki Data365 ning har bir xodimi va dasturchisi bilan ham imzolanadi. Yuqori xavfsizlik talab qiluvchi loyihalarda bu standart amaliyot.</p>
+				<p class="refined-para">Loyiha ishlanishi fazalarga bo'linadi. Yondashuv startap usulida: avval minimal ishchi versiya (MVP) chiqariladi va foydalanishga beriladi, keyin bosqichma-bosqich kengaytiriladi. Har bir faza tugagandan keyin mas'ul shaxs uni tasdiqlaydi, faqat shundan so'ng keyingi bosqichga o'tiladi. O'qitish jarayoni ko'p hollarda onlayn formatda olib boriladi — chunki offlayn darslarning katta qismi statistik jihatdan bir kun ichida unutiladi, video darsliklar esa qayta-qayta ko'rilishi mumkin. Test bosqichi avval ichki, keyin cheklangan foydalanuvchilar bilan o'tkaziladi, xatolar tuzatilgach keng tatbiq amalga oshiriladi.</p>
+				<p class="refined-para">Audit narxi loyiha ko'lamiga qarab belgilanadi. Kichik loyihalar uchun u taxminan 1500 dollardan boshlanadi va uch kun davom etadi; katta loyihalarda esa kerakli mutaxassislar soni va ko'lamiga ko'ra alohida hisob-kitob qilinadi.</p>
+			</div>
+
+			<div class="refined-section">
+				<div class="refined-section-title">11. Patent va xalqaro kengayish istiqboli</div>
+				<span class="refined-time-badge">0:34:17 — 0:36:19</span>
+				<p class="refined-para">Jahongir akaning korxonasida gaz qidiruv yechimi muvaffaqiyatli amalga oshirilgan taqdirda uni patentlash rejasi mavjud. Bu yo'nalishda yechim O'zbekistondan tashqarida ham — boshqa davlatlarning shu sohadagi korxonalariga ham — yetkazib berilishi mumkin, shuning uchun loyiha tafsilotlari hozircha tor doirada saqlanadi.</p>
+				<p class="refined-para">Patent bo'yicha tor mutaxassislik talab qilinsa, Data365 kerakli huquqshunoslarni jamoaga jalb etishda muammo ko'rmaydi. Ichki salohiyat yetmagan holatda 20-25 million dollar miqyosidagi loyihalarda, jumladan Uskart arxitekturasini qurgan tajribali mutaxassislar bilan ishlash imkoniyati ham mavjud.</p>
+			</div>
+
+			<div class="refined-section">
+				<div class="refined-section-title">12. Ofis joylashuvi</div>
+				<span class="refined-time-badge">0:37:14 — 0:42:48</span>
+				<p class="refined-para">Ofis joylashuvi muhokama qilindi: Bobur park yonida, Yakkasaroy chorrahasi yaqinida, Shota Rustaveli ko'chasida qurilayotgan Nirvana binosida, suv bo'yidagi tomonda.</p>
+			</div>
+
+			<div class="refined-section">
+				<div class="refined-section-title">13. Otkat masalasi va qadriyatlar</div>
+				<span class="refined-time-badge">0:43:07 — 0:43:52</span>
+				<p class="refined-para">Hamkorlik shartlarini muhokama qilishdan oldin Bunyodbek alohida muhim nuqtani aytdi: Data365 otkat asosida ishlamaydi, bunday yondashuv korxonaning qadriyatlariga zid. Jahongir aka ham ushbu prinsipni qo'llab-quvvatladi — u avvalgi to'rtta hamkorlikda ham bunday taklif qilmagan va olmagan, bu uning shaxsiy qadriyatlariga ham mos kelmaydi. Tomonlar bu masalada bir tomonlama kelishuvga keldi.</p>
+			</div>
+
+			<div class="refined-section">
+				<div class="refined-section-title">14. Yopilish va keyingi qadamlar</div>
+				<span class="refined-time-badge">0:44:02 — 0:45:46</span>
+				<p class="refined-para">Uchrashuv yakunida keyingi qadamlar belgilandi. Bunyodbek lokatsiya va kerakli hujjatlarni elektron tarzda jo'natishini, hujjat shablonlarini esa Suhrob orqali yetkazib berishini va'da qildi. Jahongir aka dushanba yoki seshanba kuni gaplashishni rejalashtirdi va seshanba kunigacha aniq aloqaga chiqishini tasdiqladi. Keyingi suhbat ofisni borib ko'rish va audit bo'yicha aniq qaror qabul qilish atrofida bo'lishi kutilmoqda.</p>
+			</div>
+
+		</div>
+
+	</section>
+	</div>
+
+	<!-- Sidebar -->
+	<aside class="sidebar">
+		<div style="padding:14px 16px;border-bottom:1px solid #e5e7eb;font-weight:600;font-size:15px;">Comments</div>
+
+		<!-- Analytics row -->
+		<div class="analytics-row">
+			<span class="analytics-item">
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+				0
+			</span>
+			<span class="analytics-item">
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+				0
+			</span>
+			<span class="analytics-item">
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+				0
+			</span>
+			<a href="#" class="analytics-link">View analytics</a>
+		</div>
+
+		<!-- Comments content (empty state) -->
+		<div class="comments-area">
+			<p class="empty-state-title">No comments yet</p>
+			<p class="empty-state-subtitle">Be the first to share your thoughts!</p>
+		</div>
+
+		<!-- Comment input -->
+		<div class="comment-input-area">
+			<textarea placeholder="Leave a comment" rows="2"></textarea>
+			<button class="comment-submit-btn">Comment</button>
+		</div>
+	</aside>
+
+</div>
+
+<!-- ======== EMOJI TOOLBAR ======== -->
+<div class="emoji-toolbar">
+	<div class="emoji-pill">
+		<button class="emoji-btn" title="Laugh">&#x1F602;</button>
+		<button class="emoji-btn" title="Love">&#x1F60D;</button>
+		<button class="emoji-btn" title="Wow">&#x1F62E;</button>
+		<button class="emoji-btn" title="Celebrate">&#x1F64C;</button>
+		<button class="emoji-btn" title="Thumbs up">&#x1F44D;</button>
+		<button class="emoji-btn" title="Thumbs down">&#x1F44E;</button>
+	</div>
+	<div class="toolbar-divider"></div>
+	<button class="comment-toolbar-btn">
+		Comment
+		<span class="kbd">C</span>
+	</button>
+</div>
+
+<script>
+(function() {
+	const TOTAL_SECONDS = 45 * 60 + 46;
+	const timeDisplay = document.querySelector('.time-display');
+	const progressDot = document.querySelector('.progress-bar .progress-dot');
+
+	function fmt(s) {
+		const m = Math.floor(s / 60);
+		const r = Math.floor(s % 60);
+		return `${m}:${String(r).padStart(2, '0')}`;
+	}
+
+	document.querySelectorAll('.transcript-play').forEach(btn => {
+		btn.addEventListener('click', (e) => {
+			const entry = e.currentTarget.closest('.transcript-entry');
+			const seconds = parseInt(entry.dataset.seconds, 10);
+			const pct = Math.min(100, (seconds / TOTAL_SECONDS) * 100);
+
+			if (timeDisplay) timeDisplay.textContent = `${fmt(seconds)} / ${fmt(TOTAL_SECONDS)}`;
+			if (progressDot) progressDot.style.left = pct + '%';
+
+			document.querySelectorAll('.transcript-entry.active').forEach(x => x.classList.remove('active'));
+			entry.classList.add('active');
+		});
+	});
+})();
+</script>
+
+<script>
+document.querySelectorAll('.bv-tab').forEach(t => t.addEventListener('click', () => {
+	document.querySelectorAll('.bv-tab').forEach(x => x.classList.remove('active'));
+	document.querySelectorAll('.bv-panel').forEach(x => x.classList.remove('active'));
+	t.classList.add('active');
+	document.getElementById(t.dataset.target).classList.add('active');
+}));
+</script>
+
+</body>
+</html>
