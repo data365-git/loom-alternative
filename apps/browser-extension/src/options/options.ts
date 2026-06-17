@@ -151,6 +151,86 @@ async function populateMicrophoneSelect(
 	}
 }
 
+async function buildPermissionsSection(container: HTMLElement): Promise<void> {
+	container.appendChild(sectionHeader("Permissions"));
+
+	async function permRow(
+		label: string,
+		constraint: MediaStreamConstraints,
+		permName: PermissionName,
+	): Promise<void> {
+		const group = document.createElement("div");
+		group.className = "field-group";
+
+		const rowEl = document.createElement("div");
+		rowEl.className = "perm-row";
+
+		const labelEl = document.createElement("span");
+		labelEl.className = "field-label";
+		labelEl.textContent = label;
+
+		const statusEl = document.createElement("span");
+		statusEl.className = "perm-status";
+
+		const grantBtn = document.createElement("button");
+		grantBtn.type = "button";
+		grantBtn.className = "btn btn--primary";
+		grantBtn.textContent = `Grant ${label.toLowerCase()} access`;
+
+		async function refresh(): Promise<void> {
+			let state: PermissionState = "prompt";
+			try {
+				const s = await navigator.permissions.query({ name: permName });
+				state = s.state;
+			} catch {
+				state = "prompt";
+			}
+
+			if (state === "granted") {
+				statusEl.textContent = "✓ Enabled";
+				statusEl.className = "perm-status perm-status--ok";
+				grantBtn.style.display = "none";
+			} else if (state === "denied") {
+				statusEl.textContent = "Blocked — check browser settings";
+				statusEl.className = "perm-status perm-status--denied";
+				grantBtn.style.display = "none";
+			} else {
+				statusEl.textContent = "Not granted";
+				statusEl.className = "perm-status perm-status--unknown";
+				grantBtn.style.display = "";
+			}
+		}
+
+		grantBtn.addEventListener("click", async () => {
+			grantBtn.disabled = true;
+			try {
+				const stream = await navigator.mediaDevices.getUserMedia(constraint);
+				for (const t of stream.getTracks()) t.stop();
+				statusEl.textContent = "✓ Enabled";
+				statusEl.className = "perm-status perm-status--ok";
+				grantBtn.style.display = "none";
+			} catch {
+				statusEl.textContent = "Permission denied — check browser settings";
+				statusEl.className = "perm-status perm-status--denied";
+				grantBtn.style.display = "none";
+			} finally {
+				grantBtn.disabled = false;
+			}
+		});
+
+		rowEl.appendChild(labelEl);
+		rowEl.appendChild(statusEl);
+		group.appendChild(rowEl);
+		group.appendChild(grantBtn);
+		container.appendChild(group);
+
+		await refresh();
+	}
+
+	await permRow("Microphone", { audio: true }, "microphone" as PermissionName);
+	await permRow("Camera", { video: true }, "camera" as PermissionName);
+}
+
 function buildAccountSection(
 	settings: ExtensionSettings,
 	container: HTMLElement,
@@ -571,6 +651,9 @@ async function init(): Promise<void> {
 
 	const container = document.createElement("div");
 	container.className = "settings-container";
+
+	await buildPermissionsSection(container);
+	container.appendChild(divider());
 
 	const { apiBaseUrlInput, apiKeyInput } = buildAccountSection(
 		settings,

@@ -118,6 +118,10 @@ body {
 	align-items: center;
 	gap: 8px;
 	justify-content: center;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+	border-radius: 8px;
+	padding: 8px 12px;
+	background: #fff;
 }
 
 .rec-dot {
@@ -175,6 +179,10 @@ body {
 	flex-direction: column;
 	align-items: center;
 	gap: 8px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+	border-radius: 8px;
+	padding: 12px;
+	background: #fff;
 }
 
 .uploading-title {
@@ -201,6 +209,17 @@ body {
 .parts-count {
 	font-size: 12px;
 	color: #6b7280;
+}
+
+.complete-wrap {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+	border-radius: 8px;
+	padding: 12px;
+	background: #fff;
 }
 
 .error-wrap {
@@ -291,6 +310,10 @@ body {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+	border-radius: 6px;
+	padding: 8px;
+	background: #fafafa;
 }
 
 .panel-section-label {
@@ -454,4 +477,11 @@ body {
 .scope-btn--active:hover {
 	background: #5549e0;
 	border-color: #5549e0;
+}
+
+.popup-content {
+	transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.popup-content--entering {
+	opacity: 0;
 }

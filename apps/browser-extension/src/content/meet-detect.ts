@@ -171,7 +171,7 @@ const NUDGE_CSS = `
 
 @keyframes cap-nudge-out {
 	from { opacity: 1; transform: translateY(0); }
-	to   { opacity: 0; transform: translateY(8px); }
+	to   { opacity: 0; transform: translateY(-8px); }
 }
 
 @keyframes cap-nudge-pulse {
@@ -182,14 +182,14 @@ const NUDGE_CSS = `
 .cap-nudge-card {
 	background: #ffffff;
 	border-radius: 12px;
-	box-shadow: 0 4px 24px rgba(0,0,0,.18), 0 1px 4px rgba(0,0,0,.08);
+	box-shadow: 0 8px 24px rgba(0,0,0,0.18);
 	padding: 16px;
 	width: 320px;
 	box-sizing: border-box;
-	animation: cap-nudge-in .2s cubic-bezier(.2,.8,.4,1) both;
+	animation: cap-nudge-in .25s cubic-bezier(.2,.8,.4,1) both;
 }
 
-.cap-nudge-card.cap-nudge-leaving { animation: cap-nudge-out .18s ease-in both; }
+.cap-nudge-card.cap-nudge-leaving { animation: cap-nudge-out .2s ease-in both; }
 
 .cap-nudge-title {
 	font-weight: 700;
@@ -220,11 +220,21 @@ const NUDGE_CSS = `
 	font-weight: 600;
 	cursor: pointer;
 	font-family: inherit;
-	transition: filter .15s;
+	transition: filter .15s, transform .1s, outline .1s;
 	white-space: nowrap;
 }
 
 .cap-nudge-btn-primary:hover { filter: brightness(1.1); }
+
+.cap-nudge-btn-primary:active {
+	transform: scale(0.97);
+	opacity: 0.85;
+}
+
+.cap-nudge-btn-primary:focus-visible {
+	outline: 2px solid #6366f1;
+	outline-offset: 2px;
+}
 
 .cap-nudge-btn-secondary {
 	background: #f3f4f6;
@@ -236,11 +246,21 @@ const NUDGE_CSS = `
 	font-weight: 500;
 	cursor: pointer;
 	font-family: inherit;
-	transition: background .15s;
+	transition: background .15s, transform .1s, outline .1s;
 	white-space: nowrap;
 }
 
 .cap-nudge-btn-secondary:hover { background: #e5e7eb; }
+
+.cap-nudge-btn-secondary:active {
+	transform: scale(0.97);
+	opacity: 0.85;
+}
+
+.cap-nudge-btn-secondary:focus-visible {
+	outline: 2px solid #6366f1;
+	outline-offset: 2px;
+}
 
 .cap-nudge-btn-dismiss {
 	background: transparent;
@@ -252,9 +272,12 @@ const NUDGE_CSS = `
 	padding: 4px 8px;
 	text-decoration: underline;
 	white-space: nowrap;
+	transition: color .15s, opacity .1s;
 }
 
 .cap-nudge-btn-dismiss:hover { color: #6b7280; }
+
+.cap-nudge-btn-dismiss:active { opacity: 0.5; }
 
 .cap-nudge-btn-cancel {
 	display: block;
@@ -295,9 +318,11 @@ const NUDGE_CSS = `
 	display: inline-flex;
 	align-items: center;
 	gap: 10px;
-	box-shadow: 0 2px 12px rgba(0,0,0,.30);
-	animation: cap-nudge-in .2s cubic-bezier(.2,.8,.4,1) both;
+	box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+	animation: cap-nudge-in .25s cubic-bezier(.2,.8,.4,1) both;
 }
+
+.cap-nudge-pill.cap-nudge-leaving { animation: cap-nudge-out .2s ease-in both; }
 
 .cap-nudge-dot {
 	width: 8px;
@@ -331,10 +356,20 @@ const NUDGE_CSS = `
 	font-weight: 600;
 	cursor: pointer;
 	font-family: inherit;
-	transition: filter .15s;
+	transition: filter .15s, transform .1s, outline .1s;
 }
 
 .cap-nudge-btn-stop:hover { filter: brightness(1.1); }
+
+.cap-nudge-btn-stop:active {
+	transform: scale(0.97);
+	opacity: 0.85;
+}
+
+.cap-nudge-btn-stop:focus-visible {
+	outline: 2px solid #6366f1;
+	outline-offset: 2px;
+}
 
 .cap-nudge-progress {
 	font-size: 11px;
@@ -345,12 +380,14 @@ const NUDGE_CSS = `
 .cap-nudge-complete-card {
 	background: #ffffff;
 	border-radius: 12px;
-	box-shadow: 0 4px 24px rgba(0,0,0,.18), 0 1px 4px rgba(0,0,0,.08);
+	box-shadow: 0 8px 24px rgba(0,0,0,0.18);
 	padding: 16px;
 	width: 320px;
 	box-sizing: border-box;
-	animation: cap-nudge-in .2s cubic-bezier(.2,.8,.4,1) both;
+	animation: cap-nudge-in .25s cubic-bezier(.2,.8,.4,1) both;
 }
+
+.cap-nudge-complete-card.cap-nudge-leaving { animation: cap-nudge-out .2s ease-in both; }
 
 .cap-nudge-complete-check {
 	font-size: 28px;
@@ -375,11 +412,21 @@ const NUDGE_CSS = `
 	font-weight: 600;
 	cursor: pointer;
 	font-family: inherit;
-	transition: filter .15s;
+	transition: filter .15s, transform .1s, outline .1s;
 	white-space: nowrap;
 }
 
 .cap-nudge-btn-copy:hover { filter: brightness(1.1); }
+
+.cap-nudge-btn-copy:active {
+	transform: scale(0.97);
+	opacity: 0.85;
+}
+
+.cap-nudge-btn-copy:focus-visible {
+	outline: 2px solid #6366f1;
+	outline-offset: 2px;
+}
 
 .cap-nudge-btn-open {
 	background: #f3f4f6;
@@ -404,8 +451,10 @@ const NUDGE_CSS = `
 	padding: 16px;
 	width: 320px;
 	box-sizing: border-box;
-	animation: cap-nudge-in .2s cubic-bezier(.2,.8,.4,1) both;
+	animation: cap-nudge-in .25s cubic-bezier(.2,.8,.4,1) both;
 }
+
+.cap-nudge-error-card.cap-nudge-leaving { animation: cap-nudge-out .2s ease-in both; }
 
 .cap-nudge-error-msg {
 	font-size: 12px;

@@ -283,6 +283,31 @@ body {
 	color: #6b7280;
 }
 
+.perm-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 6px;
+}
+
+.perm-status {
+	font-size: 13px;
+	font-weight: 500;
+}
+
+.perm-status--ok {
+	color: #065f46;
+}
+
+.perm-status--denied {
+	color: #991b1b;
+}
+
+.perm-status--unknown {
+	color: #6b7280;
+}
+
 .toast {
 	position: fixed;
 	bottom: 24px;

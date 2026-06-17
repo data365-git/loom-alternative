@@ -1,4 +1,4 @@
-type CaptureMode = "picker" | "silent-tab";
+type CaptureMode = "picker" | "silent-tab" | "desktop";
 
 interface StartCaptureMsg {
 	type: "START_CAPTURE";
@@ -68,7 +68,23 @@ async function startCapture(msg: StartCaptureMsg): Promise<void> {
 	try {
 		let displayStream: MediaStream;
 
-		if (msg.mode === "picker") {
+		if (msg.mode === "desktop") {
+			if (!msg.streamId) throw new Error("streamId required for desktop mode");
+			displayStream = await navigator.mediaDevices.getUserMedia({
+				video: {
+					mandatory: {
+						chromeMediaSource: "desktop",
+						chromeMediaSourceId: msg.streamId,
+					},
+				} as unknown as MediaTrackConstraints,
+				audio: {
+					mandatory: {
+						chromeMediaSource: "desktop",
+						chromeMediaSourceId: msg.streamId,
+					},
+				} as unknown as MediaTrackConstraints,
+			});
+		} else if (msg.mode === "picker") {
 			displayStream = await navigator.mediaDevices.getDisplayMedia({
 				video: {
 					width: { ideal: 1920 },

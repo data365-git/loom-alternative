@@ -8,6 +8,38 @@ import {
 	retryPendingUploads,
 } from "./upload";
 
+// ── Pending desktop-capture picker ────────────────────────────────────────
+
+let pendingPickerId: number | null = null;
+
+function chooseDesktopMediaAsync(
+	sources: chrome.desktopCapture.DesktopCaptureSourceType[],
+	tab: chrome.tabs.Tab | undefined,
+): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const callback = (streamId: string) => {
+			pendingPickerId = null;
+			if (!streamId) {
+				reject(new Error("cancelled"));
+			} else {
+				resolve(streamId);
+			}
+		};
+		if (tab) {
+			pendingPickerId = chrome.desktopCapture.chooseDesktopMedia(
+				sources,
+				tab,
+				callback,
+			);
+		} else {
+			pendingPickerId = chrome.desktopCapture.chooseDesktopMedia(
+				sources,
+				callback,
+			);
+		}
+	});
+}
+
 // ── Offscreen document ─────────────────────────────────────────────────────
 
 async function ensureOffscreenDocument(): Promise<void> {
@@ -127,10 +159,22 @@ async function handleMessage(
 			}
 			const settings = await getSettings();
 			await setState({ kind: "arming", mode: "instruction" });
+			let streamId: string;
+			try {
+				streamId = await chooseDesktopMediaAsync(
+					["screen", "window", "tab"],
+					undefined,
+				);
+			} catch {
+				await setState({ kind: "idle" });
+				updateBadge({ kind: "idle" });
+				return { ok: true };
+			}
 			await ensureOffscreenDocument();
 			await sendToOffscreen({
 				type: "START_CAPTURE",
-				mode: "picker",
+				mode: "desktop",
+				streamId,
 				micEnabled: settings.micEnabled,
 				...(settings.micEnabled ? { micDeviceId: settings.micDeviceId } : {}),
 			});
@@ -147,10 +191,26 @@ async function handleMessage(
 			}
 			const settings = await getSettings();
 			await setState({ kind: "arming", mode: "meeting", meetingId, tabId });
+			let meetStreamId: string;
+			try {
+				const senderTab =
+					tabId !== undefined
+						? await chrome.tabs.get(tabId)
+						: undefined;
+				meetStreamId = await chooseDesktopMediaAsync(
+					["screen", "window", "tab"],
+					senderTab,
+				);
+			} catch {
+				await setState({ kind: "idle" });
+				updateBadge({ kind: "idle" });
+				return { ok: true };
+			}
 			await ensureOffscreenDocument();
 			await sendToOffscreen({
 				type: "START_CAPTURE",
-				mode: "picker",
+				mode: "desktop",
+				streamId: meetStreamId,
 				meetingId,
 				tabId,
 				micEnabled: settings.micEnabled,
@@ -179,6 +239,10 @@ async function handleMessage(
 
 		// ── Popup: cancel ─────────────────────────────────────────────────
 		case "CANCEL": {
+			if (pendingPickerId !== null) {
+				chrome.desktopCapture.cancelChooseDesktopMedia(pendingPickerId);
+				pendingPickerId = null;
+			}
 			await sendToOffscreen({ type: "STOP_CAPTURE" }).catch(() => {});
 			await closeOffscreenDocument();
 			await setState({ kind: "idle" });
@@ -227,10 +291,23 @@ async function handleMessage(
 			}
 			const settings = await getSettings();
 			await setState({ kind: "arming", mode: "meeting", meetingId, tabId });
+			let nudgeStreamId: string;
+			try {
+				const senderTab = _sender.tab ?? undefined;
+				nudgeStreamId = await chooseDesktopMediaAsync(
+					["screen", "window", "tab"],
+					senderTab,
+				);
+			} catch {
+				await setState({ kind: "idle" });
+				updateBadge({ kind: "idle" });
+				return { ok: true };
+			}
 			await ensureOffscreenDocument();
 			await sendToOffscreen({
 				type: "START_CAPTURE",
-				mode: "picker",
+				mode: "desktop",
+				streamId: nudgeStreamId,
 				meetingId,
 				tabId,
 				micEnabled: settings.micEnabled,

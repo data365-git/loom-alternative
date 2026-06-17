@@ -106,33 +106,36 @@ function startMicMeter(deviceId: string, bars: HTMLElement[]): void {
 		? { audio: { deviceId: { exact: deviceId } } }
 		: { audio: true };
 
-	navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
-		micStream = stream;
-		audioCtx = new AudioContext();
-		analyser = audioCtx.createAnalyser();
-		analyser.fftSize = 256;
-		const source = audioCtx.createMediaStreamSource(stream);
-		source.connect(analyser);
-		const data = new Uint8Array(analyser.frequencyBinCount);
+	navigator.mediaDevices
+		.getUserMedia(constraints)
+		.then((stream) => {
+			micStream = stream;
+			audioCtx = new AudioContext();
+			analyser = audioCtx.createAnalyser();
+			analyser.fftSize = 256;
+			const source = audioCtx.createMediaStreamSource(stream);
+			source.connect(analyser);
+			const data = new Uint8Array(analyser.frequencyBinCount);
 
-		function tick(): void {
-			if (!analyser) return;
-			analyser.getByteFrequencyData(data);
-			let sum = 0;
-			for (let i = 0; i < data.length; i++) sum += data[i];
-			const avg = sum / data.length;
-			const level = Math.min(1, avg / 80);
-			const lit = Math.round(level * bars.length);
-			for (let i = 0; i < bars.length; i++) {
-				bars[i].classList.toggle("mic-bar--active", i < lit);
+			function tick(): void {
+				if (!analyser) return;
+				analyser.getByteFrequencyData(data);
+				let sum = 0;
+				for (let i = 0; i < data.length; i++) sum += data[i];
+				const avg = sum / data.length;
+				const level = Math.min(1, avg / 80);
+				const lit = Math.round(level * bars.length);
+				for (let i = 0; i < bars.length; i++) {
+					bars[i].classList.toggle("mic-bar--active", i < lit);
+				}
+				meterRaf = requestAnimationFrame(tick);
 			}
-			meterRaf = requestAnimationFrame(tick);
-		}
 
-		meterRaf = requestAnimationFrame(tick);
-	}).catch(() => {
-		for (const bar of bars) bar.classList.remove("mic-bar--active");
-	});
+			meterRaf = requestAnimationFrame(tick);
+		})
+		.catch(() => {
+			for (const bar of bars) bar.classList.remove("mic-bar--active");
+		});
 }
 
 function buildMicMeter(): { meterEl: HTMLElement; bars: HTMLElement[] } {
@@ -146,21 +149,35 @@ function buildMicMeter(): { meterEl: HTMLElement; bars: HTMLElement[] } {
 	return { meterEl, bars };
 }
 
+async function checkPermission(name: PermissionName): Promise<PermissionState> {
+	try {
+		const status = await navigator.permissions.query({ name });
+		return status.state;
+	} catch {
+		return "prompt";
+	}
+}
+
 async function populateDeviceSelect(
 	select: HTMLSelectElement,
 	kind: "audioinput" | "videoinput",
 	currentDeviceId: string,
 	permissionConstraint: MediaStreamConstraints,
-): Promise<void> {
-	try {
-		const testStream = await navigator.mediaDevices.getUserMedia(permissionConstraint);
-		for (const t of testStream.getTracks()) t.stop();
-	} catch {
-		const opt = document.createElement("option");
-		opt.value = "";
-		opt.textContent = kind === "audioinput" ? "Microphone blocked" : "Camera blocked";
-		select.appendChild(opt);
-		return;
+): Promise<"granted" | "blocked"> {
+	const permName = (
+		kind === "audioinput" ? "microphone" : "camera"
+	) as PermissionName;
+	let permState = await checkPermission(permName);
+
+	if (permState !== "granted") {
+		try {
+			const testStream =
+				await navigator.mediaDevices.getUserMedia(permissionConstraint);
+			for (const t of testStream.getTracks()) t.stop();
+			permState = "granted";
+		} catch {
+			return "blocked";
+		}
 	}
 
 	const devices = await navigator.mediaDevices.enumerateDevices();
@@ -168,11 +185,14 @@ async function populateDeviceSelect(
 
 	const defaultOpt = document.createElement("option");
 	defaultOpt.value = "";
-	defaultOpt.textContent = kind === "audioinput" ? "Default microphone" : "Default camera";
+	defaultOpt.textContent =
+		kind === "audioinput" ? "Default microphone" : "Default camera";
 	select.appendChild(defaultOpt);
 
 	for (const device of filtered) {
-		const label = device.label || `${kind === "audioinput" ? "Mic" : "Camera"} ${device.deviceId.slice(0, 6)}`;
+		const label =
+			device.label ||
+			`${kind === "audioinput" ? "Mic" : "Camera"} ${device.deviceId.slice(0, 6)}`;
 		const opt = document.createElement("option");
 		opt.value = device.deviceId;
 		opt.textContent = label;
@@ -181,6 +201,7 @@ async function populateDeviceSelect(
 	}
 
 	if (!currentDeviceId) select.value = "";
+	return "granted";
 }
 
 function renderIdlePanel(
@@ -196,7 +217,11 @@ function renderIdlePanel(
 	logo.height = 28;
 	logo.alt = "Cap";
 
-	const logoLabel = el("span", { className: "panel-logo-label" }, "Cap Recorder");
+	const logoLabel = el(
+		"span",
+		{ className: "panel-logo-label" },
+		"Cap Recorder",
+	);
 	const logoRow = el("div", { className: "panel-logo-row" }, logo, logoLabel);
 	root.appendChild(logoRow);
 
@@ -219,7 +244,11 @@ function renderIdlePanel(
 		meetBtn.classList.add("btn--disabled");
 	}
 
-	const instrBtn = el("button", { className: "btn btn-secondary" }, "Record Instruction");
+	const instrBtn = el(
+		"button",
+		{ className: "btn btn-secondary" },
+		"Record Instruction",
+	);
 	instrBtn.addEventListener("click", () => {
 		sendMsg({ type: "START_INSTRUCTION" });
 		window.close();
@@ -229,7 +258,11 @@ function renderIdlePanel(
 	actionsSection.appendChild(instrBtn);
 
 	if (!isMeetTab || !meetingId) {
-		const hint = el("p", { className: "panel-hint" }, "Join a Google Meet to record a meeting");
+		const hint = el(
+			"p",
+			{ className: "panel-hint" },
+			"Join a Google Meet to record a meeting",
+		);
 		actionsSection.appendChild(hint);
 	}
 
@@ -237,7 +270,9 @@ function renderIdlePanel(
 	root.appendChild(el("div", { className: "panel-divider" }));
 
 	const devicesSection = el("div", { className: "panel-section" });
-	devicesSection.appendChild(el("p", { className: "panel-section-label" }, "Devices"));
+	devicesSection.appendChild(
+		el("p", { className: "panel-section-label" }, "Devices"),
+	);
 
 	let micEnabled = settings.micEnabled !== false;
 	let micDeviceId = settings.micDeviceId ?? "";
@@ -249,12 +284,27 @@ function renderIdlePanel(
 	micSelect.disabled = !micEnabled;
 
 	const micToggleWrap = createToggleEl("mic-toggle", micEnabled);
-	const micToggleInput = micToggleWrap.querySelector("input") as HTMLInputElement;
+	const micToggleInput = micToggleWrap.querySelector(
+		"input",
+	) as HTMLInputElement;
 
-	const micRow = el("div", { className: "device-row" },
+	const micEnableBtn = el(
+		"button",
+		{ className: "btn btn-secondary perm-btn" },
+		"Enable microphone",
+	);
+	micEnableBtn.style.display = "none";
+	micEnableBtn.addEventListener("click", () => {
+		chrome.runtime.openOptionsPage();
+	});
+
+	const micRow = el(
+		"div",
+		{ className: "device-row" },
 		el("span", { className: "device-row-label" }, "Mic"),
 		micToggleWrap,
 		micSelect,
+		micEnableBtn,
 		meterEl,
 	);
 	devicesSection.appendChild(micRow);
@@ -283,11 +333,20 @@ function renderIdlePanel(
 		if (micEnabled) startMicMeter(micDeviceId, bars);
 	});
 
-	populateDeviceSelect(micSelect, "audioinput", micDeviceId, { audio: true }).then(() => {
-		updateMicState();
-	}).catch(() => {
-		meterEl.classList.add("mic-meter--off");
-	});
+	populateDeviceSelect(micSelect, "audioinput", micDeviceId, { audio: true })
+		.then((result) => {
+			if (result === "blocked") {
+				micSelect.style.display = "none";
+				meterEl.style.display = "none";
+				micToggleWrap.style.display = "none";
+				micEnableBtn.style.display = "";
+			} else {
+				updateMicState();
+			}
+		})
+		.catch(() => {
+			meterEl.classList.add("mic-meter--off");
+		});
 
 	let cameraEnabled = settings.cameraOverlay;
 	let cameraDeviceId = settings.cameraDeviceId ?? "";
@@ -297,19 +356,37 @@ function renderIdlePanel(
 	cameraSelect.disabled = !cameraEnabled;
 
 	const cameraToggleWrap = createToggleEl("camera-toggle", cameraEnabled);
-	const cameraToggleInput = cameraToggleWrap.querySelector("input") as HTMLInputElement;
+	const cameraToggleInput = cameraToggleWrap.querySelector(
+		"input",
+	) as HTMLInputElement;
 
-	const cameraRow = el("div", { className: "device-row" },
+	const cameraEnableBtn = el(
+		"button",
+		{ className: "btn btn-secondary perm-btn" },
+		"Enable camera",
+	);
+	cameraEnableBtn.style.display = "none";
+	cameraEnableBtn.addEventListener("click", () => {
+		chrome.runtime.openOptionsPage();
+	});
+
+	const cameraRow = el(
+		"div",
+		{ className: "device-row" },
 		el("span", { className: "device-row-label" }, "Camera"),
 		cameraToggleWrap,
 		cameraSelect,
+		cameraEnableBtn,
 	);
 	devicesSection.appendChild(cameraRow);
 
 	cameraToggleInput.addEventListener("change", () => {
 		cameraEnabled = cameraToggleInput.checked;
 		cameraSelect.disabled = !cameraEnabled;
-		sendMsg({ type: "SAVE_SETTINGS", settings: { cameraOverlay: cameraEnabled } });
+		sendMsg({
+			type: "SAVE_SETTINGS",
+			settings: { cameraOverlay: cameraEnabled },
+		});
 	});
 
 	cameraSelect.addEventListener("change", () => {
@@ -317,37 +394,19 @@ function renderIdlePanel(
 		sendMsg({ type: "SAVE_SETTINGS", settings: { cameraDeviceId } });
 	});
 
-	populateDeviceSelect(cameraSelect, "videoinput", cameraDeviceId, { video: true }).catch(() => {});
+	populateDeviceSelect(cameraSelect, "videoinput", cameraDeviceId, {
+		video: true,
+	})
+		.then((result) => {
+			if (result === "blocked") {
+				cameraSelect.style.display = "none";
+				cameraToggleWrap.style.display = "none";
+				cameraEnableBtn.style.display = "";
+			}
+		})
+		.catch(() => {});
 
 	root.appendChild(devicesSection);
-	root.appendChild(el("div", { className: "panel-divider" }));
-
-	const captureSection = el("div", { className: "panel-section" });
-	captureSection.appendChild(el("p", { className: "panel-section-label" }, "Capture scope"));
-
-	const scopeRow = el("div", { className: "scope-row" });
-
-	const scopes: Array<{ label: string; value: "picker" | "silent-tab" }> = [
-		{ label: "Screen / Window", value: "picker" },
-		{ label: "Tab", value: "silent-tab" },
-	];
-
-	for (const scope of scopes) {
-		const btn = document.createElement("button");
-		btn.className = `scope-btn${settings.captureMode === scope.value ? " scope-btn--active" : ""}`;
-		btn.textContent = scope.label;
-		btn.addEventListener("click", () => {
-			sendMsg({ type: "SAVE_SETTINGS", settings: { captureMode: scope.value } });
-			for (const child of Array.from(scopeRow.children)) {
-				child.classList.remove("scope-btn--active");
-			}
-			btn.classList.add("scope-btn--active");
-		});
-		scopeRow.appendChild(btn);
-	}
-
-	captureSection.appendChild(scopeRow);
-	root.appendChild(captureSection);
 	root.appendChild(el("div", { className: "panel-divider" }));
 
 	const footer = el("div", { className: "panel-footer" });
@@ -406,6 +465,8 @@ function renderNotSignedIn(
 			return;
 		}
 		inlineMsg.textContent = "";
+		connectBtn.disabled = true;
+		connectBtn.textContent = "Verifying...";
 		chrome.runtime.sendMessage(
 			{
 				type: "SAVE_SETTINGS",
@@ -421,6 +482,8 @@ function renderNotSignedIn(
 					} else {
 						inlineMsg.textContent =
 							"That key isn't valid — check it and try again";
+						connectBtn.disabled = false;
+						connectBtn.textContent = "Connect";
 						chrome.runtime.sendMessage({
 							type: "SAVE_SETTINGS",
 							settings: { apiKey: "", apiBaseUrl: settings.apiBaseUrl },
@@ -429,6 +492,8 @@ function renderNotSignedIn(
 				} catch {
 					inlineMsg.textContent =
 						"That key isn't valid — check it and try again";
+					connectBtn.disabled = false;
+					connectBtn.textContent = "Connect";
 					chrome.runtime.sendMessage({
 						type: "SAVE_SETTINGS",
 						settings: { apiKey: "", apiBaseUrl: settings.apiBaseUrl },
@@ -473,11 +538,20 @@ function renderRecording(
 	const pauseLabel = state.paused ? "Resume" : "Pause";
 	const pauseBtn = el("button", { className: "btn btn-secondary" }, pauseLabel);
 	pauseBtn.addEventListener("click", () => {
+		pauseBtn.disabled = true;
+		pauseBtn.textContent = state.paused ? "Resuming..." : "Pausing...";
 		sendMsg({ type: state.paused ? "RESUME" : "PAUSE" });
+		setTimeout(() => {
+			pauseBtn.disabled = false;
+			pauseBtn.textContent = state.paused ? "Resume" : "Pause";
+		}, 200);
 	});
 
 	const stopBtn = el("button", { className: "btn btn-danger" }, "Stop");
 	stopBtn.addEventListener("click", () => {
+		stopBtn.disabled = true;
+		stopBtn.textContent = "Finishing...";
+		pauseBtn.disabled = true;
 		sendMsg({ type: "STOP" });
 	});
 
@@ -628,7 +702,7 @@ function render(data: PopupData): void {
 
 	root.innerHTML = "";
 
-	const popup = el("div", { className: "popup" });
+	const popup = el("div", { className: "popup popup-content popup-content--entering" });
 
 	const { state, settings, isMeetTab, meetingId, activeTabId } = data;
 	const signedIn = settings.apiKey.length > 0;
@@ -652,6 +726,11 @@ function render(data: PopupData): void {
 	}
 
 	root.appendChild(popup);
+	requestAnimationFrame(() => {
+		requestAnimationFrame(() => {
+			popup.classList.remove("popup-content--entering");
+		});
+	});
 }
 
 function getMeetingId(url: string): string | null {
