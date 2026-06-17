@@ -34,6 +34,7 @@ interface RecordingState {
 	parts: CompletedPart[];
 	nextPartNumber: number;
 	totalBytes: number;
+	uploadedBytes: number;
 	meetingId?: string;
 	tabId?: number;
 	mime: string;
@@ -46,6 +47,18 @@ interface UploadingState {
 	uploadId: string;
 	parts: CompletedPart[];
 	totalBytes: number;
+	uploadedBytes: number;
+}
+
+interface FinishingState {
+	kind: "finishing";
+	videoId: string;
+}
+
+interface CompleteState {
+	kind: "complete";
+	videoId: string;
+	shareUrl: string;
 }
 
 interface ErrorState {
@@ -60,6 +73,8 @@ export type ExtensionState =
 	| ArmingState
 	| RecordingState
 	| UploadingState
+	| FinishingState
+	| CompleteState
 	| ErrorState;
 
 const STATE_KEY = "capExtState";
@@ -83,6 +98,24 @@ export async function getState(): Promise<ExtensionState> {
 
 export async function setState(state: ExtensionState): Promise<void> {
 	await chrome.storage.local.set({ [STATE_KEY]: state });
+	broadcastState(state);
+}
+
+function broadcastState(state: ExtensionState): void {
+	const payload = { type: "STATE_CHANGED", state };
+
+	chrome.runtime.sendMessage(payload).catch(() => {});
+
+	chrome.tabs
+		.query({ url: "https://meet.google.com/*" })
+		.then((tabs) => {
+			for (const tab of tabs) {
+				if (tab.id != null) {
+					chrome.tabs.sendMessage(tab.id, payload).catch(() => {});
+				}
+			}
+		})
+		.catch(() => {});
 }
 
 export async function getSettings(): Promise<ExtensionSettings> {

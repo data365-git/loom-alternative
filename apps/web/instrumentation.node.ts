@@ -5,6 +5,7 @@
 import {
 	BucketAlreadyOwnedByYou,
 	CreateBucketCommand,
+	PutBucketCorsCommand,
 	PutBucketPolicyCommand,
 	S3Client,
 } from "@aws-sdk/client-s3";
@@ -54,6 +55,26 @@ export async function register() {
 	setTimeout(() => createS3Bucket(), 5000);
 }
 
+async function applyS3BucketCors(s3Client: S3Client) {
+	await s3Client.send(
+		new PutBucketCorsCommand({
+			Bucket: serverEnv().CAP_AWS_BUCKET,
+			CORSConfiguration: {
+				CORSRules: [
+					{
+						AllowedMethods: ["PUT", "POST", "GET", "HEAD"],
+						AllowedOrigins: ["*"],
+						AllowedHeaders: ["*"],
+						ExposeHeaders: ["ETag"],
+						MaxAgeSeconds: 3600,
+					},
+				],
+			},
+		}),
+	);
+	console.log("Configured S3 bucket CORS");
+}
+
 async function createS3Bucket() {
 	const s3Client = new S3Client({
 		endpoint: serverEnv().S3_INTERNAL_ENDPOINT,
@@ -88,10 +109,12 @@ async function createS3Bucket() {
 		})
 		.then(() => {
 			console.log("Configured S3 buckeet");
+			return applyS3BucketCors(s3Client);
 		})
-		.catch((e) => {
+		.catch(async (e) => {
 			if (e instanceof BucketAlreadyOwnedByYou) {
 				console.log("Found existing S3 bucket");
+				await applyS3BucketCors(s3Client);
 				return;
 			}
 		});

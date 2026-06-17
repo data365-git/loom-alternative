@@ -144,7 +144,7 @@ export async function initializeUpload(
 }
 
 export async function handleChunk(
-	chunk: number[],
+	chunk: ArrayBuffer,
 	_index: number,
 	_mime: string,
 ): Promise<void> {
@@ -177,8 +177,10 @@ export async function handleChunk(
 				parts: [...freshState.parts, completedPart],
 				nextPartNumber: freshState.nextPartNumber + 1,
 				totalBytes: newTotalBytes,
+				uploadedBytes: freshState.uploadedBytes + partData.length,
 			});
-		} catch (_err) {
+		} catch (err) {
+			console.error("[upload] Part upload failed:", err);
 			await addToRetryQueue({
 				kind: "part",
 				payload: {
@@ -209,6 +211,8 @@ export async function finalizeUpload(): Promise<void> {
 	let nextPartNumber =
 		state.kind === "recording" ? state.nextPartNumber : state.parts.length + 1;
 	const totalBytes = state.totalBytes;
+	const uploadedBytes =
+		"uploadedBytes" in state ? (state.uploadedBytes as number) : 0;
 	const { videoId, uploadId } = state;
 
 	if (state.kind === "recording") {
@@ -218,6 +222,7 @@ export async function finalizeUpload(): Promise<void> {
 			uploadId,
 			parts,
 			totalBytes,
+			uploadedBytes,
 		});
 	}
 
@@ -233,7 +238,8 @@ export async function finalizeUpload(): Promise<void> {
 			);
 			parts = [...parts, completedPart];
 			nextPartNumber += 1;
-		} catch (_err) {
+		} catch (err) {
+			console.error("[upload] Final part upload failed:", err);
 			await addToRetryQueue({
 				kind: "part",
 				payload: {
@@ -244,6 +250,19 @@ export async function finalizeUpload(): Promise<void> {
 			});
 		}
 	}
+
+	if (parts.length === 0) {
+		console.error("[upload] No parts uploaded — cannot complete multipart");
+		await setState({
+			kind: "error",
+			reason: "Recording didn't upload — no data was saved. Please try again.",
+			recoverable: true,
+			previousVideoId: videoId,
+		});
+		return;
+	}
+
+	await setState({ kind: "finishing", videoId });
 
 	try {
 		const apiParts = parts.map((p) => ({
@@ -257,7 +276,8 @@ export async function finalizeUpload(): Promise<void> {
 			videoId,
 			subpath: "result.mp4",
 		});
-	} catch (_err) {
+	} catch (err) {
+		console.error("[upload] completeMultipart failed:", err);
 		await addToRetryQueue({
 			kind: "complete",
 			payload: {
@@ -270,19 +290,27 @@ export async function finalizeUpload(): Promise<void> {
 				})),
 			},
 		});
+		await setState({
+			kind: "error",
+			reason: `Upload finalization failed: ${err instanceof Error ? err.message : String(err)}`,
+			recoverable: true,
+			previousVideoId: videoId,
+		});
 		return;
 	}
 
 	try {
 		await api.recordingComplete({ videoId });
-	} catch (_err) {
+	} catch (err) {
+		console.error("[upload] recordingComplete failed:", err);
 		await addToRetryQueue({
 			kind: "recording-complete",
 			payload: { videoId },
 		});
 	}
 
-	await setState({ kind: "idle" });
+	const shareUrl = `${settings.apiBaseUrl}/s/${videoId}`;
+	await setState({ kind: "complete", videoId, shareUrl });
 }
 
 export async function retryPendingUploads(): Promise<void> {
@@ -322,7 +350,8 @@ export async function retryPendingUploads(): Promise<void> {
 				const { videoId } = item.payload as { videoId: string };
 				await api.recordingComplete({ videoId });
 			}
-		} catch {
+		} catch (err) {
+			console.error(`[upload] Retry failed for ${item.kind}:`, err);
 			const nextAttempts = item.attempts + 1;
 			if (nextAttempts >= MAX_ATTEMPTS) {
 				await moveToDeadLetter({ ...item, attempts: nextAttempts });
@@ -338,16 +367,6 @@ export async function retryPendingUploads(): Promise<void> {
 	}
 
 	await setRetryQueue(remaining);
-
-	const uploadingState = await getState();
-	if (uploadingState.kind === "uploading") {
-		const allPartsDone = (await getRetryQueue()).every(
-			(i) => i.kind !== "part",
-		);
-		if (allPartsDone) {
-			await setState({ kind: "idle" });
-		}
-	}
 }
 
 export async function checkApiHealth(): Promise<boolean> {

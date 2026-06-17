@@ -90,7 +90,11 @@ function renderNotSignedIn(
 		placeholder: "Paste your Cap API key",
 	} as unknown as Partial<HTMLInputElement>);
 
-	const connectBtn = el("button", { className: "btn btn-secondary" }, "Connect");
+	const connectBtn = el(
+		"button",
+		{ className: "btn btn-secondary" },
+		"Connect",
+	);
 
 	const inlineMsg = el("p", { className: "inline-msg" });
 
@@ -122,7 +126,8 @@ function renderNotSignedIn(
 						});
 					}
 				} catch {
-					inlineMsg.textContent = "That key isn't valid — check it and try again";
+					inlineMsg.textContent =
+						"That key isn't valid — check it and try again";
 					chrome.runtime.sendMessage({
 						type: "SAVE_SETTINGS",
 						settings: { apiKey: "", apiBaseUrl: settings.apiBaseUrl },
@@ -270,6 +275,12 @@ function renderRecording(
 	}, 1000);
 }
 
+function formatBytes(bytes: number): string {
+	if (bytes < 1024) return `${bytes} B`;
+	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function renderUploading(
 	root: HTMLElement,
 	state: Extract<ExtensionState, { kind: "uploading" }>,
@@ -278,11 +289,13 @@ function renderUploading(
 
 	const title = el("p", { className: "uploading-title" }, "Uploading...");
 	const spinner = el("div", { className: "spinner" });
-	const partsEl = el(
-		"p",
-		{ className: "parts-count" },
-		`${state.parts.length} parts uploaded`,
-	);
+
+	const pct =
+		state.totalBytes > 0
+			? Math.round((state.uploadedBytes / state.totalBytes) * 100)
+			: 0;
+	const progressText = `${formatBytes(state.uploadedBytes)} uploaded (${pct}%)`;
+	const partsEl = el("p", { className: "parts-count" }, progressText);
 
 	const cancelLink = el("button", { className: "link-btn" }, "Cancel upload");
 	cancelLink.addEventListener("click", () => {
@@ -293,6 +306,59 @@ function renderUploading(
 	wrap.appendChild(spinner);
 	wrap.appendChild(partsEl);
 	wrap.appendChild(cancelLink);
+	root.appendChild(wrap);
+}
+
+function renderFinishing(root: HTMLElement): void {
+	const wrap = el("div", { className: "uploading-wrap" });
+	const title = el("p", { className: "uploading-title" }, "Finishing up...");
+	const spinner = el("div", { className: "spinner" });
+	wrap.appendChild(title);
+	wrap.appendChild(spinner);
+	root.appendChild(wrap);
+}
+
+function renderComplete(
+	root: HTMLElement,
+	state: Extract<ExtensionState, { kind: "complete" }>,
+): void {
+	const wrap = el("div", { className: "complete-wrap" });
+
+	const check = el("div", { className: "complete-icon" }, "✓");
+	const title = el("p", { className: "complete-title" }, "Recording saved!");
+
+	const linkEl = el("p", { className: "share-url" }, state.shareUrl);
+
+	const btnRow = el("div", { className: "btn-row" });
+
+	const copyBtn = el("button", { className: "btn btn-primary" }, "Copy link");
+	copyBtn.addEventListener("click", () => {
+		navigator.clipboard.writeText(state.shareUrl).then(() => {
+			copyBtn.textContent = "Copied!";
+			setTimeout(() => {
+				copyBtn.textContent = "Copy link";
+			}, 2000);
+		});
+	});
+
+	const openBtn = el("button", { className: "btn btn-secondary" }, "Open");
+	openBtn.addEventListener("click", () => {
+		chrome.tabs.create({ url: state.shareUrl });
+	});
+
+	const doneBtn = el("button", { className: "link-btn" }, "Done");
+	doneBtn.addEventListener("click", () => {
+		sendMsg({ type: "CANCEL" });
+	});
+
+	btnRow.appendChild(copyBtn);
+	btnRow.appendChild(openBtn);
+
+	wrap.appendChild(check);
+	wrap.appendChild(title);
+	wrap.appendChild(linkEl);
+	wrap.appendChild(btnRow);
+	wrap.appendChild(doneBtn);
 	root.appendChild(wrap);
 }
 
@@ -353,6 +419,10 @@ function render(data: PopupData): void {
 		renderRecording(popup, state);
 	} else if (state.kind === "uploading") {
 		renderUploading(popup, state);
+	} else if (state.kind === "finishing") {
+		renderFinishing(popup);
+	} else if (state.kind === "complete") {
+		renderComplete(popup, state);
 	} else if (state.kind === "error") {
 		renderError(popup, state);
 	} else if (state.kind === "arming") {
@@ -499,6 +569,14 @@ async function init(): Promise<void> {
 		) {
 			const newState = (message as Record<string, unknown>)
 				.state as ExtensionState;
+			currentData = { ...currentData, state: newState };
+			render(currentData);
+		}
+	});
+
+	chrome.storage.onChanged.addListener((changes, area) => {
+		if (area === "local" && changes.capExtState?.newValue) {
+			const newState = changes.capExtState.newValue as ExtensionState;
 			currentData = { ...currentData, state: newState };
 			render(currentData);
 		}

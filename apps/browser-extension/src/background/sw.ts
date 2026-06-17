@@ -52,8 +52,13 @@ function updateBadge(state: ExtensionState): void {
 			chrome.action.setBadgeBackgroundColor({ color: "#e53e3e" });
 			break;
 		case "uploading":
+		case "finishing":
 			chrome.action.setBadgeText({ text: "↑" });
 			chrome.action.setBadgeBackgroundColor({ color: "#3182ce" });
+			break;
+		case "complete":
+			chrome.action.setBadgeText({ text: "✓" });
+			chrome.action.setBadgeBackgroundColor({ color: "#38a169" });
 			break;
 		case "error":
 			chrome.action.setBadgeText({ text: "!" });
@@ -244,7 +249,24 @@ async function handleMessage(
 			const meetingId = state.kind === "arming" ? state.meetingId : undefined;
 			const tabId = state.kind === "arming" ? state.tabId : undefined;
 
-			const { videoId, uploadId } = await initializeUpload(mode, meetingId);
+			let videoId: string;
+			let uploadId: string;
+			try {
+				const result = await initializeUpload(mode, meetingId);
+				videoId = result.videoId;
+				uploadId = result.uploadId;
+			} catch (err) {
+				console.error("[sw] initializeUpload failed:", err);
+				const errState: ExtensionState = {
+					kind: "error",
+					reason: `Failed to initialize upload: ${err instanceof Error ? err.message : String(err)}`,
+					recoverable: true,
+				};
+				await setState(errState);
+				updateBadge(errState);
+				await closeOffscreenDocument().catch(() => {});
+				return { ok: false, error: "initializeUpload failed" };
+			}
 
 			const nextState: ExtensionState = {
 				kind: "recording",
@@ -255,6 +277,7 @@ async function handleMessage(
 				parts: [],
 				nextPartNumber: 1,
 				totalBytes: 0,
+				uploadedBytes: 0,
 				meetingId,
 				tabId,
 				mime,
@@ -268,7 +291,7 @@ async function handleMessage(
 
 		// ── Offscreen: data chunk ─────────────────────────────────────────
 		case "RECORDER_CHUNK": {
-			const chunk = msg.chunk as number[] | undefined;
+			const chunk = msg.chunk as ArrayBuffer | undefined;
 			const index = getNumber(msg, "index") ?? 0;
 			const mime = getString(msg, "mime") ?? "video/webm";
 			if (chunk) {
@@ -284,6 +307,8 @@ async function handleMessage(
 			const uploadId = state.kind === "recording" ? state.uploadId : "stub";
 			const parts = state.kind === "recording" ? state.parts : [];
 			const totalBytes = state.kind === "recording" ? state.totalBytes : 0;
+			const uploadedBytes =
+				state.kind === "recording" ? state.uploadedBytes : 0;
 
 			const nextState: ExtensionState = {
 				kind: "uploading",
@@ -291,6 +316,7 @@ async function handleMessage(
 				uploadId,
 				parts,
 				totalBytes,
+				uploadedBytes,
 			};
 			await setState(nextState);
 			stopKeepAlive();
@@ -433,6 +459,7 @@ chrome.runtime.onStartup.addListener(async () => {
 			uploadId: state.uploadId,
 			parts: state.parts,
 			totalBytes: state.totalBytes,
+			uploadedBytes: state.uploadedBytes,
 		};
 		await setState(nextState);
 		updateBadge(nextState);

@@ -1,6 +1,13 @@
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-type NudgeState = "default" | "countdown" | "recording" | "hidden";
+type NudgeState =
+	| "default"
+	| "countdown"
+	| "recording"
+	| "finishing"
+	| "complete"
+	| "error"
+	| "hidden";
 
 interface Settings {
 	autoRecord: boolean;
@@ -8,12 +15,18 @@ interface Settings {
 	soundEnabled: boolean;
 }
 
-interface BackgroundMessage {
-	type:
-		| "RECORDING_STARTED"
-		| "RECORDING_STOPPED"
-		| "RECORDING_PAUSED"
-		| "RECORDING_RESUMED";
+interface StateChangedMessage {
+	type: "STATE_CHANGED";
+	state: {
+		kind: string;
+		shareUrl?: string;
+		reason?: string;
+		recoverable?: boolean;
+		uploadedBytes?: number;
+		totalBytes?: number;
+		paused?: boolean;
+		startedAt?: number;
+	};
 }
 
 type OutboundMessage =
@@ -23,7 +36,9 @@ type OutboundMessage =
 	| { type: "MEET_NUDGE_LATER" }
 	| { type: "MEET_NUDGE_DISMISS" }
 	| { type: "GET_SETTINGS" }
-	| { type: "STOP" };
+	| { type: "STOP" }
+	| { type: "CANCEL" }
+	| { type: "RETRY" };
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -319,6 +334,83 @@ const NUDGE_CSS = `
 }
 
 .cap-nudge-btn-stop:hover { filter: brightness(1.1); }
+
+.cap-nudge-progress {
+	font-size: 11px;
+	color: #9ca3af;
+	margin-left: 4px;
+}
+
+.cap-nudge-complete-card {
+	background: #ffffff;
+	border-radius: 12px;
+	box-shadow: 0 4px 24px rgba(0,0,0,.18), 0 1px 4px rgba(0,0,0,.08);
+	padding: 16px;
+	width: 320px;
+	box-sizing: border-box;
+	animation: cap-nudge-in .2s cubic-bezier(.2,.8,.4,1) both;
+}
+
+.cap-nudge-complete-check {
+	font-size: 28px;
+	color: #38a169;
+	margin: 0 0 4px 0;
+}
+
+.cap-nudge-share-url {
+	font-size: 11px;
+	color: #666;
+	word-break: break-all;
+	margin: 4px 0 10px 0;
+}
+
+.cap-nudge-btn-copy {
+	background: #675FFF;
+	color: #fff;
+	border: none;
+	border-radius: 8px;
+	padding: 7px 14px;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	font-family: inherit;
+	transition: filter .15s;
+	white-space: nowrap;
+}
+
+.cap-nudge-btn-copy:hover { filter: brightness(1.1); }
+
+.cap-nudge-btn-open {
+	background: #f3f4f6;
+	color: #374151;
+	border: none;
+	border-radius: 8px;
+	padding: 7px 14px;
+	font-size: 12px;
+	font-weight: 500;
+	cursor: pointer;
+	font-family: inherit;
+	transition: background .15s;
+	white-space: nowrap;
+}
+
+.cap-nudge-btn-open:hover { background: #e5e7eb; }
+
+.cap-nudge-error-card {
+	background: #ffffff;
+	border-radius: 12px;
+	box-shadow: 0 4px 24px rgba(0,0,0,.18), 0 1px 4px rgba(0,0,0,.08);
+	padding: 16px;
+	width: 320px;
+	box-sizing: border-box;
+	animation: cap-nudge-in .2s cubic-bezier(.2,.8,.4,1) both;
+}
+
+.cap-nudge-error-msg {
+	font-size: 12px;
+	color: #e53e3e;
+	margin: 4px 0 10px 0;
+}
 `;
 
 function ensureShadowRoot(): ShadowRoot {
@@ -544,6 +636,114 @@ function renderRecordingPill(paused = false): void {
 	});
 }
 
+function renderFinishingPill(): void {
+	const root = ensureShadowRoot();
+	const container = root.getElementById("cap-nudge-container");
+	if (!container) return;
+
+	container.textContent = "";
+	if (elapsedTimer !== null) {
+		clearInterval(elapsedTimer);
+		elapsedTimer = null;
+	}
+
+	const pill = makeEl("div", "cap-nudge-pill");
+	const dot = makeEl("span", "cap-nudge-dot");
+	dot.style.background = "#3182ce";
+	dot.style.animation = "none";
+	const label = makeEl("span", "cap-nudge-elapsed", "Finishing up...");
+	pill.append(dot, label);
+	container.appendChild(pill);
+	nudgeState = "finishing";
+}
+
+function renderCompletePill(shareUrl: string): void {
+	const root = ensureShadowRoot();
+	const container = root.getElementById("cap-nudge-container");
+	if (!container) return;
+
+	container.textContent = "";
+	if (elapsedTimer !== null) {
+		clearInterval(elapsedTimer);
+		elapsedTimer = null;
+	}
+	recordingStartTime = 0;
+
+	const card = makeEl("div", "cap-nudge-complete-card");
+
+	const check = makeEl("div", "cap-nudge-complete-check", "✓");
+	const title = makeEl("div", "cap-nudge-title", "Recording saved!");
+	const urlEl = makeEl("div", "cap-nudge-share-url", shareUrl);
+
+	const buttons = makeEl("div", "cap-nudge-buttons");
+	const copyBtn = makeBtn("cap-nudge-btn-copy", "Copy link");
+	const openBtn = makeBtn("cap-nudge-btn-open", "Open");
+
+	copyBtn.addEventListener("click", () => {
+		navigator.clipboard.writeText(shareUrl).then(() => {
+			copyBtn.textContent = "Copied!";
+			setTimeout(() => {
+				copyBtn.textContent = "Copy link";
+			}, 2000);
+		});
+	});
+
+	openBtn.addEventListener("click", () => {
+		window.open(shareUrl, "_blank");
+	});
+
+	const dismissBtn = makeBtn("cap-nudge-btn-dismiss", "Dismiss");
+	dismissBtn.addEventListener("click", () => {
+		sendToBackground({ type: "CANCEL" } as OutboundMessage);
+		clearNudge();
+		nudgeState = "hidden";
+	});
+
+	buttons.append(copyBtn, openBtn);
+	card.append(check, title, urlEl, buttons, dismissBtn);
+	container.appendChild(card);
+	nudgeState = "complete";
+}
+
+function renderErrorCard(reason: string, recoverable: boolean): void {
+	const root = ensureShadowRoot();
+	const container = root.getElementById("cap-nudge-container");
+	if (!container) return;
+
+	container.textContent = "";
+	if (elapsedTimer !== null) {
+		clearInterval(elapsedTimer);
+		elapsedTimer = null;
+	}
+	recordingStartTime = 0;
+
+	const card = makeEl("div", "cap-nudge-error-card");
+	const title = makeEl("div", "cap-nudge-title", "Upload failed");
+	const msg = makeEl("div", "cap-nudge-error-msg", reason);
+
+	const buttons = makeEl("div", "cap-nudge-buttons");
+
+	if (recoverable) {
+		const retryBtn = makeBtn("cap-nudge-btn-primary", "Retry");
+		retryBtn.addEventListener("click", () => {
+			sendToBackground({ type: "RETRY" } as OutboundMessage);
+		});
+		buttons.appendChild(retryBtn);
+	}
+
+	const dismissBtn = makeBtn("cap-nudge-btn-secondary", "Dismiss");
+	dismissBtn.addEventListener("click", () => {
+		sendToBackground({ type: "CANCEL" } as OutboundMessage);
+		clearNudge();
+		nudgeState = "hidden";
+	});
+
+	buttons.appendChild(dismissBtn);
+	card.append(title, msg, buttons);
+	container.appendChild(card);
+	nudgeState = "error";
+}
+
 // ── Message protocol ──────────────────────────────────────────────────────────
 
 function sendToBackground(msg: OutboundMessage): void {
@@ -591,7 +791,14 @@ function maybeShow(): void {
 		playAudio(soundDroplet);
 	}
 
-	if (nudgeState === "recording" || nudgeState === "countdown") return;
+	if (
+		nudgeState === "recording" ||
+		nudgeState === "countdown" ||
+		nudgeState === "finishing" ||
+		nudgeState === "complete" ||
+		nudgeState === "error"
+	)
+		return;
 	if (dismissed || nudgeState === "default" || Date.now() < laterUntil) return;
 
 	if (settings.autoRecord) {
@@ -601,36 +808,63 @@ function maybeShow(): void {
 	}
 }
 
-// ── Background message listener ───────────────────────────────────────────────
+// ── State change listener ─────────────────────────────────────────────────────
+
+function handleStateChange(state: StateChangedMessage["state"]): void {
+	switch (state.kind) {
+		case "recording":
+			stopCountdown();
+			if (recordingStartTime === 0) {
+				recordingStartTime = state.startedAt ?? Date.now();
+			}
+			clearNudge(() => renderRecordingPill(state.paused ?? false));
+			break;
+		case "uploading":
+		case "finishing":
+			clearNudge(() => renderFinishingPill());
+			break;
+		case "complete":
+			if (state.shareUrl) {
+				clearNudge(() => renderCompletePill(state.shareUrl as string));
+			}
+			break;
+		case "error":
+			clearNudge(() =>
+				renderErrorCard(
+					state.reason ?? "Unknown error",
+					state.recoverable ?? false,
+				),
+			);
+			break;
+		case "idle":
+			if (elapsedTimer !== null) {
+				clearInterval(elapsedTimer);
+				elapsedTimer = null;
+			}
+			recordingStartTime = 0;
+			clearNudge();
+			nudgeState = "hidden";
+			if (isInMeeting()) {
+				dismissed = false;
+				setTimeout(maybeShow, 800);
+			}
+			break;
+	}
+}
 
 chrome.runtime.onMessage.addListener((msg: unknown) => {
-	const message = msg as BackgroundMessage;
-	if (!message || typeof message.type !== "string") return;
+	if (!msg || typeof msg !== "object") return;
+	const message = msg as Record<string, unknown>;
+	if (message.type === "STATE_CHANGED" && message.state) {
+		handleStateChange(message.state as StateChangedMessage["state"]);
+	}
+});
 
-	if (message.type === "RECORDING_STARTED") {
-		stopCountdown();
-		recordingStartTime = Date.now();
-		clearNudge(() => renderRecordingPill(false));
-	} else if (message.type === "RECORDING_STOPPED") {
-		if (elapsedTimer !== null) {
-			clearInterval(elapsedTimer);
-			elapsedTimer = null;
-		}
-		recordingStartTime = 0;
-		clearNudge();
-		nudgeState = "hidden";
-		if (isInMeeting()) {
-			dismissed = false;
-			setTimeout(maybeShow, 800);
-		}
-	} else if (message.type === "RECORDING_PAUSED") {
-		if (elapsedTimer !== null) {
-			clearInterval(elapsedTimer);
-			elapsedTimer = null;
-		}
-		clearNudge(() => renderRecordingPill(true));
-	} else if (message.type === "RECORDING_RESUMED") {
-		clearNudge(() => renderRecordingPill(false));
+chrome.storage.onChanged.addListener((changes, area) => {
+	if (area === "local" && changes.capExtState?.newValue) {
+		handleStateChange(
+			changes.capExtState.newValue as StateChangedMessage["state"],
+		);
 	}
 });
 
